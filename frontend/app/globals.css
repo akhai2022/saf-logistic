@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-50 text-gray-900 font-sans antialiased;
+}
+
+/* Material Symbols size utilities */
+.icon-sm {
+  font-size: 18px;
+}
+.icon-md {
+  font-size: 22px;
+}
+.icon-lg {
+  font-size: 28px;
+}
+
+/* Sidebar transitions */
+.sidebar-transition {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+/* Table styling utilities */
+.table-header {
+  @apply bg-gray-50/80 text-left;
+}
+
+.table-header th {
+  @apply px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider;
+}
+
+.table-body tr {
+  @apply border-b border-gray-100 transition-colors;
+}
+
+.table-body tr:hover {
+  @apply bg-blue-50/50;
+}
+
+.table-body td {
+  @apply px-4 py-3 text-sm;
+}
+
+/* Select styling */
+select {
+  @apply border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary;
+}

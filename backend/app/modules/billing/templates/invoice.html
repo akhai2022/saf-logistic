@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11pt; color: #333; margin: 40px; }
+  .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
+  .company { font-size: 14pt; font-weight: bold; }
+  .company-details { font-size: 9pt; color: #666; margin-top: 5px; }
+  .invoice-title { font-size: 20pt; font-weight: bold; color: #2563eb; text-align: right; }
+  .invoice-meta { text-align: right; font-size: 10pt; color: #666; margin-top: 5px; }
+  .client-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; margin-bottom: 30px; max-width: 300px; }
+  .client-box h3 { margin: 0 0 8px 0; font-size: 10pt; color: #64748b; text-transform: uppercase; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+  th { background: #2563eb; color: white; padding: 10px 12px; text-align: left; font-size: 10pt; }
+  td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 10pt; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  .totals { float: right; width: 280px; }
+  .totals table { margin-bottom: 0; }
+  .totals td { border: none; padding: 6px 12px; }
+  .totals tr:last-child { font-weight: bold; font-size: 13pt; border-top: 2px solid #2563eb; }
+  .totals tr:last-child td { padding-top: 10px; }
+  .footer { clear: both; margin-top: 60px; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 8pt; color: #94a3b8; text-align: center; }
+  .text-right { text-align: right; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="company">{{ tenant.name if tenant else 'SAF Transport' }}</div>
+      <div class="company-details">
+        {% if tenant and tenant.address %}{{ tenant.address }}<br>{% endif %}
+        {% if tenant and tenant.siren %}SIREN: {{ tenant.siren }}{% endif %}
+      </div>
+    </div>
+    <div>
+      <div class="invoice-title">FACTURE</div>
+      <div class="invoice-meta">
+        {% if invoice.invoice_number %}N° {{ invoice.invoice_number }}<br>{% endif %}
+        Date: {{ invoice.issue_date }}<br>
+        Échéance: {{ invoice.due_date }}
+      </div>
+    </div>
+  </div>
+
+  <div class="client-box">
+    <h3>Client</h3>
+    <strong>{{ customer.name if customer else 'N/A' }}</strong><br>
+    {% if customer and customer.address %}{{ customer.address }}<br>{% endif %}
+    {% if customer and customer.siren %}SIREN: {{ customer.siren }}{% endif %}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:50%">Description</th>
+        <th class="text-right">Qté</th>
+        <th class="text-right">P.U. HT</th>
+        <th class="text-right">Montant HT</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+      <tr>
+        <td>{{ line.description }}</td>
+        <td class="text-right">{{ "%.2f"|format(line.quantity) }}</td>
+        <td class="text-right">{{ "%.2f"|format(line.unit_price) }} €</td>
+        <td class="text-right">{{ "%.2f"|format(line.amount_ht) }} €</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <table>
+      <tr><td>Total HT</td><td class="text-right">{{ "%.2f"|format(invoice.total_ht) }} €</td></tr>
+      <tr><td>TVA {{ "%.1f"|format(invoice.tva_rate) }}%</td><td class="text-right">{{ "%.2f"|format(invoice.total_tva) }} €</td></tr>
+      <tr><td>Total TTC</td><td class="text-right">{{ "%.2f"|format(invoice.total_ttc) }} €</td></tr>
+    </table>
+  </div>
+
+  <div class="footer">
+    {{ tenant.name if tenant else 'SAF Transport' }} — Document généré automatiquement
+  </div>
+</body>
+</html>

@@ -1,0 +1,112 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: saf
+      POSTGRES_PASSWORD: saf
+      POSTGRES_DB: saf
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saf"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio12345
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    volumes:
+      - minio_data:/data
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.api
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://saf:saf@postgres:5432/saf"
+      CELERY_BROKER_URL: "redis://redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+      S3_ENDPOINT_URL: "http://minio:9000"
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: minio12345
+      S3_BUCKET: saf-docs
+      S3_REGION: eu-west-3
+      S3_USE_PATH_STYLE: "true"
+      APP_SECRET_KEY: "dev-secret-change-in-prod"
+      OCR_PROVIDER: "MOCK"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  worker-default:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.api
+    command: ["bash", "-lc", "celery -A app.infra.tasks_register worker -l INFO -Q default"]
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://saf:saf@postgres:5432/saf"
+      CELERY_BROKER_URL: "redis://redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+      S3_ENDPOINT_URL: "http://minio:9000"
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: minio12345
+      S3_BUCKET: saf-docs
+      S3_REGION: eu-west-3
+      S3_USE_PATH_STYLE: "true"
+      APP_SECRET_KEY: "dev-secret-change-in-prod"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker-ocr:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.ocr_worker
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://saf:saf@postgres:5432/saf"
+      CELERY_BROKER_URL: "redis://redis:6379/1"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+      S3_ENDPOINT_URL: "http://minio:9000"
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: minio12345
+      S3_BUCKET: saf-docs
+      S3_REGION: eu-west-3
+      S3_USE_PATH_STYLE: "true"
+      APP_SECRET_KEY: "dev-secret-change-in-prod"
+      OCR_PROVIDER: "OPEN_SOURCE"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pg_data:
+  minio_data:

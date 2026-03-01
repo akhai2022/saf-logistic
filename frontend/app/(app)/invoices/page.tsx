@@ -1,0 +1,121 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { apiGet, apiPost } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import type { Invoice, Customer, Job } from "@/lib/types";
+import Button from "@/components/Button";
+import Card from "@/components/Card";
+import PageHeader from "@/components/PageHeader";
+import EmptyState from "@/components/EmptyState";
+
+export default function InvoicesPage() {
+  const { user } = useAuth();
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState("");
+  const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
+
+  useEffect(() => {
+    apiGet<Invoice[]>("/v1/billing/invoices").then(setInvoices);
+    apiGet<Customer[]>("/v1/masterdata/customers").then(setCustomers);
+    apiGet<Job[]>("/v1/jobs?status=closed").then(setJobs);
+  }, []);
+
+  const handleCreate = async () => {
+    if (!selectedCustomer || selectedJobs.length === 0) return;
+    const inv = await apiPost<Invoice>("/v1/billing/invoices", {
+      customer_id: selectedCustomer,
+      job_ids: selectedJobs,
+    });
+    setInvoices([inv, ...invoices]);
+    setShowCreate(false);
+    setSelectedJobs([]);
+  };
+
+  const customerJobs = jobs.filter((j) => j.customer_id === selectedCustomer);
+
+  const statusLabel = (s: string) => ({ draft: "Brouillon", validated: "Validée", paid: "Payée" }[s] || s);
+
+  return (
+    <div className="space-y-6">
+      <PageHeader icon="receipt_long" title="Factures" description="Facturation clients">
+        <Button onClick={() => setShowCreate(!showCreate)} icon={showCreate ? "close" : "add"}>
+          {showCreate ? "Annuler" : "Nouvelle facture"}
+        </Button>
+      </PageHeader>
+
+      {showCreate && (
+        <Card title="Créer une facture" icon="add_circle">
+          <div className="space-y-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Client</label>
+              <select value={selectedCustomer} onChange={(e) => { setSelectedCustomer(e.target.value); setSelectedJobs([]); }}>
+                <option value="">-- Sélectionner --</option>
+                {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            {selectedCustomer && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Missions clôturées à facturer</label>
+                {customerJobs.length === 0 && <p className="text-sm text-gray-400">Aucune mission clôturée pour ce client</p>}
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {customerJobs.map((j) => (
+                    <label key={j.id} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={selectedJobs.includes(j.id)} onChange={(e) => {
+                        setSelectedJobs(e.target.checked ? [...selectedJobs, j.id] : selectedJobs.filter((x) => x !== j.id));
+                      }} />
+                      {j.reference || j.id.slice(0, 8)} — {j.distance_km || 0} km
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            <Button onClick={handleCreate} disabled={!selectedCustomer || selectedJobs.length === 0} icon="check">Créer la facture</Button>
+          </div>
+        </Card>
+      )}
+
+      <Card>
+        <table className="w-full text-sm">
+          <thead className="table-header">
+            <tr>
+              <th>N° Facture</th>
+              <th>Client</th>
+              <th>Statut</th>
+              <th>Total HT</th>
+              <th>Total TTC</th>
+              <th>Échéance</th>
+            </tr>
+          </thead>
+          <tbody className="table-body">
+            {invoices.map((inv) => (
+              <tr key={inv.id}>
+                <td>
+                  <Link href={`/invoices/${inv.id}`} className="text-primary hover:underline font-medium">
+                    {inv.invoice_number || "Brouillon"}
+                  </Link>
+                </td>
+                <td className="text-gray-600">{customers.find((c) => c.id === inv.customer_id)?.name || "—"}</td>
+                <td>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${inv.status === "validated" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                    {statusLabel(inv.status)}
+                  </span>
+                </td>
+                <td>{inv.total_ht.toFixed(2)} EUR</td>
+                <td className="font-medium">{inv.total_ttc.toFixed(2)} EUR</td>
+                <td className="text-gray-500">{inv.due_date || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {invoices.length === 0 && (
+          <EmptyState icon="receipt_long" title="Aucune facture" description="Créez votre première facture" />
+        )}
+      </Card>
+    </div>
+  );
+}

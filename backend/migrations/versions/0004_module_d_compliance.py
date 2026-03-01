@@ -57,7 +57,8 @@ def upgrade() -> None:
         WHERE issue_date IS NOT NULL OR expiry_date IS NOT NULL
     """)
 
-    # Indexes on documents
+    # Replace old index with tenant-scoped one
+    op.drop_index("ix_documents_entity", "documents")
     op.create_index("ix_documents_entity", "documents",
                      ["tenant_id", "entity_type", "entity_id"])
     op.create_index("ix_documents_expiration", "documents",

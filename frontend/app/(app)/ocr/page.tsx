@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "@/lib/api";
-import { uploadFile } from "@/lib/upload";
+import { uploadFile, getDownloadUrl } from "@/lib/upload";
 import { useAuth } from "@/lib/auth";
 import type { OcrJob } from "@/lib/types";
 import Card from "@/components/Card";
@@ -16,6 +16,7 @@ export default function OcrPage() {
   const [jobs, setJobs] = useState<OcrJob[]>([]);
   const [uploading, setUploading] = useState(false);
   const [pollingId, setPollingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data: polledJob } = usePolling<OcrJob>(
     pollingId ? `/v1/ocr/jobs/${pollingId}` : null,
@@ -43,6 +44,11 @@ export default function OcrPage() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleViewPdf = async (s3Key: string) => {
+    const url = await getDownloadUrl(s3Key);
+    window.open(url, "_blank");
   };
 
   const statusLabel = (s: string) => ({
@@ -76,26 +82,77 @@ export default function OcrPage() {
               <th>N° Facture</th>
               <th>Total TTC</th>
               <th>Date</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody className="table-body">
             {jobs.map((job) => {
               const data = job.extracted_data || {};
+              const isExpanded = expandedId === job.id;
               return (
-                <tr key={job.id}>
-                  <td>{job.file_name || "—"}</td>
-                  <td>
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusColor(job.status)}`}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 13 }}>{statusIcon(job.status)}</span>
-                      {statusLabel(job.status)}
-                    </span>
-                  </td>
-                  <td>{job.confidence != null ? `${(job.confidence * 100).toFixed(0)}%` : "—"}</td>
-                  <td>{(data.supplier_name as string) || "—"}</td>
-                  <td>{(data.invoice_number as string) || "—"}</td>
-                  <td>{data.total_ttc != null ? `${Number(data.total_ttc).toFixed(2)} EUR` : "—"}</td>
-                  <td className="text-gray-500">{job.created_at?.split("T")[0] || "—"}</td>
-                </tr>
+                <>
+                  <tr key={job.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setExpandedId(isExpanded ? null : job.id)}>
+                    <td className="font-medium text-primary">{job.file_name || "—"}</td>
+                    <td>
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusColor(job.status)}`}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 13 }}>{statusIcon(job.status)}</span>
+                        {statusLabel(job.status)}
+                      </span>
+                    </td>
+                    <td>{job.confidence != null ? `${(job.confidence * 100).toFixed(0)}%` : "—"}</td>
+                    <td>{(data.supplier_name as string) || "—"}</td>
+                    <td>{(data.invoice_number as string) || "—"}</td>
+                    <td>{data.total_ttc != null ? `${Number(data.total_ttc).toFixed(2)} EUR` : "—"}</td>
+                    <td className="text-gray-500">{job.created_at?.split("T")[0] || "—"}</td>
+                    <td>
+                      <div className="flex gap-2">
+                        {job.s3_key && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleViewPdf(job.s3_key); }}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-primary hover:bg-primary-50 rounded transition-colors"
+                            title="Voir le document"
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>open_in_new</span>
+                            Voir
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setExpandedId(isExpanded ? null : job.id); }}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                          title="Détails"
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{isExpanded ? "expand_less" : "expand_more"}</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {isExpanded && (
+                    <tr key={`${job.id}-detail`}>
+                      <td colSpan={8} className="bg-gray-50 p-4">
+                        <div className="grid grid-cols-2 gap-6">
+                          <div>
+                            <h4 className="text-sm font-semibold mb-2">Données extraites</h4>
+                            <dl className="space-y-1 text-sm">
+                              <div className="flex gap-2"><dt className="text-gray-500 w-32">Fournisseur:</dt><dd className="font-medium">{(data.supplier_name as string) || "—"}</dd></div>
+                              <div className="flex gap-2"><dt className="text-gray-500 w-32">N° Facture:</dt><dd className="font-medium">{(data.invoice_number as string) || "—"}</dd></div>
+                              <div className="flex gap-2"><dt className="text-gray-500 w-32">Date facture:</dt><dd className="font-medium">{(data.invoice_date as string) || "—"}</dd></div>
+                              <div className="flex gap-2"><dt className="text-gray-500 w-32">Total HT:</dt><dd className="font-medium">{data.total_ht != null ? `${Number(data.total_ht).toFixed(2)} EUR` : "—"}</dd></div>
+                              <div className="flex gap-2"><dt className="text-gray-500 w-32">TVA:</dt><dd className="font-medium">{data.tva != null ? `${Number(data.tva).toFixed(2)} EUR` : "—"}</dd></div>
+                              <div className="flex gap-2"><dt className="text-gray-500 w-32">Total TTC:</dt><dd className="font-medium">{data.total_ttc != null ? `${Number(data.total_ttc).toFixed(2)} EUR` : "—"}</dd></div>
+                              <div className="flex gap-2"><dt className="text-gray-500 w-32">Confiance:</dt><dd className="font-medium">{job.confidence != null ? `${(job.confidence * 100).toFixed(0)}%` : "—"}</dd></div>
+                            </dl>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-semibold mb-2">Texte brut OCR</h4>
+                            <pre className="bg-white border rounded p-3 text-xs text-gray-700 max-h-60 overflow-auto whitespace-pre-wrap">
+                              {(data.raw_text as string) || "Aucun texte extrait"}
+                            </pre>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               );
             })}
           </tbody>

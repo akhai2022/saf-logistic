@@ -1,4 +1,4 @@
-import { apiPost } from "./api";
+import { apiGet, apiPost } from "./api";
 
 interface PresignResponse {
   upload_url: string;
@@ -37,7 +37,7 @@ export async function uploadFile(
 }
 
 export async function getDownloadUrl(s3Key: string): Promise<string> {
-  const res = await apiPost<{ download_url: string }>(
+  const res = await apiGet<{ download_url: string }>(
     `/v1/files/presign-download?s3_key=${encodeURIComponent(s3Key)}`
   );
   return res.download_url;

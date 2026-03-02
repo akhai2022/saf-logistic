@@ -28,6 +28,12 @@ class OcrJobOut(BaseModel):
     provider: str | None
     extracted_data: dict | None = None
     confidence: float | None = None
+    doc_type: str | None = None
+    doc_type_confidence: float | None = None
+    extracted_fields: dict | None = None
+    field_confidences: dict | None = None
+    global_confidence: float | None = None
+    extraction_errors: list[str] | None = None
     supplier_invoice_id: str | None = None
     created_at: str | None = None
 
@@ -40,6 +46,41 @@ class OcrValidateRequest(BaseModel):
     total_ht: float | None = None
     total_tva: float | None = None
     total_ttc: float | None = None
+
+
+def _mask_iban_in_fields(fields: dict | None) -> dict | None:
+    """Mask IBAN values in extracted fields for API responses."""
+    if not fields:
+        return fields
+    from app.modules.ocr.extractors.validators import mask_iban
+    result = dict(fields)
+    if "iban" in result and result["iban"]:
+        result["iban_masked"] = mask_iban(result["iban"])
+    return result
+
+
+def _row_to_out(r) -> OcrJobOut:
+    """Convert a DB row to OcrJobOut with IBAN masking."""
+    extracted_fields = r.extracted_fields if hasattr(r, "extracted_fields") else None
+    extraction_errors = r.extraction_errors if hasattr(r, "extraction_errors") else None
+
+    return OcrJobOut(
+        id=str(r.id),
+        s3_key=r.s3_key,
+        file_name=r.file_name,
+        status=r.status,
+        provider=r.provider,
+        extracted_data=r.extracted_data,
+        confidence=float(r.confidence) if r.confidence else None,
+        doc_type=r.doc_type if hasattr(r, "doc_type") else None,
+        doc_type_confidence=float(r.doc_type_confidence) if hasattr(r, "doc_type_confidence") and r.doc_type_confidence else None,
+        extracted_fields=_mask_iban_in_fields(extracted_fields),
+        field_confidences=r.field_confidences if hasattr(r, "field_confidences") else None,
+        global_confidence=float(r.global_confidence) if hasattr(r, "global_confidence") and r.global_confidence else None,
+        extraction_errors=extraction_errors if extraction_errors else None,
+        supplier_invoice_id=str(r.supplier_invoice_id) if r.supplier_invoice_id else None,
+        created_at=str(r.created_at) if r.created_at else None,
+    )
 
 
 @router.post("/jobs", response_model=OcrJobOut, status_code=201)
@@ -84,14 +125,7 @@ async def list_ocr_jobs(
         params["status"] = status
     q += " ORDER BY created_at DESC"
     rows = await db.execute(text(q), params)
-    return [OcrJobOut(
-        id=str(r.id), s3_key=r.s3_key, file_name=r.file_name,
-        status=r.status, provider=r.provider,
-        extracted_data=r.extracted_data,
-        confidence=float(r.confidence) if r.confidence else None,
-        supplier_invoice_id=str(r.supplier_invoice_id) if r.supplier_invoice_id else None,
-        created_at=str(r.created_at) if r.created_at else None,
-    ) for r in rows.fetchall()]
+    return [_row_to_out(r) for r in rows.fetchall()]
 
 
 @router.get("/jobs/{job_id}", response_model=OcrJobOut)
@@ -107,14 +141,7 @@ async def get_ocr_job(
     )).first()
     if not row:
         raise HTTPException(404, "OCR job not found")
-    return OcrJobOut(
-        id=str(row.id), s3_key=row.s3_key, file_name=row.file_name,
-        status=row.status, provider=row.provider,
-        extracted_data=row.extracted_data,
-        confidence=float(row.confidence) if row.confidence else None,
-        supplier_invoice_id=str(row.supplier_invoice_id) if row.supplier_invoice_id else None,
-        created_at=str(row.created_at) if row.created_at else None,
-    )
+    return _row_to_out(row)
 
 
 @router.post("/jobs/{job_id}/validate")

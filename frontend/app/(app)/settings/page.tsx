@@ -327,6 +327,3 @@ function NotificationsTab() {
   );
 }
 
-function apiDelete<T>(path: string) {
-  return import("@/lib/api").then((m) => m.apiFetch<T>(path, { method: "DELETE" }));
-}

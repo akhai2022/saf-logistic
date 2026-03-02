@@ -88,11 +88,21 @@ def extract_iban_from_text(text: str) -> str | None:
     return None
 
 
+_BIC_FALSE_POSITIVES = {
+    "IDENTITE", "BANCAIRE", "RELEVE", "DOMICILI", "TITULAIRE",
+    "ATTESTAT", "ASSURANCE", "GARANTIE", "FACTURE", "COMMERCE",
+    "TRIBUNAL", "IMMATRICU", "FORMULAIR", "DOCUMENT", "CERTIFIA",
+    "OBLIGATOI", "EXPLOITAT", "TRANSPORT", "PRESTATAI",
+}
+
+
 def extract_bic_from_text(text: str) -> str | None:
     """Find a BIC/SWIFT code in text."""
     pattern = r"\b([A-Z]{4}[A-Z]{2}[A-Z0-9]{2}(?:[A-Z0-9]{3})?)\b"
     for m in re.finditer(pattern, text.upper()):
         candidate = m.group(1)
+        if candidate in _BIC_FALSE_POSITIVES:
+            continue
         if validate_bic(candidate):
             return candidate
     return None

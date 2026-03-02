@@ -302,6 +302,12 @@ def send_due_reminders_daily() -> dict:
 @celery_app.task(name="app.infra.tasks.ocr_process_job", queue="ocr")
 def ocr_process_job(ocr_job_id: str) -> dict:
     from app.modules.ocr.providers.base import OcrResult
+    from app.modules.ocr.extractors.base import DocType
+    from app.modules.ocr.extractors.classifier import classify_document
+    from app.modules.ocr.extractors.utils_text import normalize_text
+    from app.modules.ocr.extractors.invoice_extractor import InvoiceExtractor
+    from app.modules.ocr.extractors.bank_rib_extractor import BankRibExtractor
+    from app.modules.ocr.extractors.compliance_extractor import ComplianceExtractor
 
     with _session() as db:
         row = db.execute(
@@ -329,7 +335,7 @@ def ocr_process_job(ocr_job_id: str) -> dict:
                 total_ttc=1200.00,
                 tva=200.00,
                 confidence=0.95,
-                raw_text="Mock OCR text",
+                raw_text="Mock OCR text\nFACTURE N° MOCK-001\nTotal HT: 1 000,00 €\nTVA: 200,00 €\nTotal TTC: 1 200,00 €",
                 line_items=[],
             )
         elif provider_name == "OPEN_SOURCE":
@@ -355,33 +361,98 @@ def ocr_process_job(ocr_job_id: str) -> dict:
                 confidence=0.0, raw_text="Unknown provider", line_items=[],
             )
 
+        # ── Phase 2: Normalize text ──────────────────────────────
+        raw_text = result.raw_text or ""
+        normalized = normalize_text(raw_text)
+        lines = normalized.split("\n")
+
+        # ── Phase 3: Classify document type ──────────────────────
+        classification = classify_document(normalized)
+        doc_type = classification.doc_type
+
+        # ── Phase 4: Route to typed extractor ────────────────────
+        extraction_result = None
+        try:
+            if doc_type == DocType.INVOICE:
+                extraction_result = InvoiceExtractor().extract(normalized, lines)
+            elif doc_type == DocType.BANK_RIB:
+                extraction_result = BankRibExtractor().extract(normalized, lines)
+            elif doc_type in (DocType.KBIS, DocType.URSSAF, DocType.INSURANCE):
+                extraction_result = ComplianceExtractor().extract(normalized, lines, doc_type)
+            else:
+                # UNKNOWN — try invoice extraction as fallback
+                extraction_result = InvoiceExtractor().extract(normalized, lines)
+        except Exception as e:
+            logger.error("Extractor failed for job %s: %s", ocr_job_id, e)
+
+        # ── Phase 5: Build legacy extracted_data + new fields ────
+        # Keep backward-compatible extracted_data for existing UI
+        legacy_data = {
+            "supplier_name": result.supplier_name,
+            "invoice_number": result.invoice_number,
+            "invoice_date": result.invoice_date,
+            "total_ht": result.total_ht,
+            "total_ttc": result.total_ttc,
+            "tva": result.tva,
+            "raw_text": raw_text,
+            "line_items": result.line_items,
+        }
+
+        # Overlay extracted fields from typed extractor if available
+        extracted_fields = {}
+        field_confidences = {}
+        global_confidence = result.confidence
+        extraction_errors: list[str] = []
+
+        if extraction_result:
+            extracted_fields = extraction_result.extracted_fields
+            field_confidences = extraction_result.field_confidences
+            global_confidence = extraction_result.global_confidence
+            extraction_errors = extraction_result.errors
+
+            # For invoices, overlay typed fields into legacy data
+            if doc_type in (DocType.INVOICE, DocType.UNKNOWN):
+                for legacy_key in ("supplier_name", "invoice_number", "invoice_date", "total_ht", "total_ttc", "tva"):
+                    typed_val = extracted_fields.get(legacy_key)
+                    if typed_val is not None and legacy_data.get(legacy_key) is None:
+                        legacy_data[legacy_key] = typed_val
+
         db.execute(
             text("""
                 UPDATE ocr_jobs SET
                     status = 'needs_review',
                     finished_at = NOW(),
                     extracted_data = :data,
-                    confidence = :conf
+                    confidence = :conf,
+                    doc_type = :doc_type,
+                    doc_type_confidence = :doc_type_conf,
+                    extracted_fields = :extracted_fields,
+                    field_confidences = :field_confidences,
+                    global_confidence = :global_confidence,
+                    normalized_text = :normalized_text,
+                    extraction_errors = :extraction_errors
                 WHERE id = :id
             """),
             {
                 "id": ocr_job_id,
-                "data": json.dumps({
-                    "supplier_name": result.supplier_name,
-                    "invoice_number": result.invoice_number,
-                    "invoice_date": result.invoice_date,
-                    "total_ht": result.total_ht,
-                    "total_ttc": result.total_ttc,
-                    "tva": result.tva,
-                    "raw_text": result.raw_text,
-                    "line_items": result.line_items,
-                }),
+                "data": json.dumps(legacy_data),
                 "conf": result.confidence,
+                "doc_type": doc_type.value,
+                "doc_type_conf": classification.confidence,
+                "extracted_fields": json.dumps(extracted_fields),
+                "field_confidences": json.dumps(field_confidences),
+                "global_confidence": global_confidence,
+                "normalized_text": normalized,
+                "extraction_errors": json.dumps(extraction_errors) if extraction_errors else None,
             },
         )
         db.commit()
 
-    return {"status": "needs_review", "confidence": result.confidence}
+    return {
+        "status": "needs_review",
+        "doc_type": doc_type.value,
+        "confidence": global_confidence,
+    }
 
 
 # ---------------------------------------------------------------------------

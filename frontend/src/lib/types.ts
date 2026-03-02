@@ -583,6 +583,12 @@ export interface OcrJob {
   provider?: string;
   extracted_data?: Record<string, unknown>;
   confidence?: number;
+  doc_type?: string;
+  doc_type_confidence?: number;
+  extracted_fields?: Record<string, unknown>;
+  field_confidences?: Record<string, number>;
+  global_confidence?: number;
+  extraction_errors?: string[];
   supplier_invoice_id?: string;
   created_at?: string;
 }

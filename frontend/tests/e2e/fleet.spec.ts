@@ -112,11 +112,15 @@ test.describe("Maintenance List (Module H)", () => {
     await page.waitForSelector("text=Chargement...", { state: "hidden", timeout: 10000 }).catch(() => {});
     const hasTable = await page.locator("table").isVisible();
     if (hasTable) {
+      await expect(page.locator("thead")).toContainText("Vehicule");
       await expect(page.locator("thead")).toContainText("Type");
-      await expect(page.locator("thead")).toContainText("Libelle");
       await expect(page.locator("thead")).toContainText("Statut");
-      await expect(page.locator("thead")).toContainText("Cout HT");
+      await expect(page.locator("thead")).toContainText("Actions");
     }
+  });
+
+  test("should show 'Nouvelle intervention' create button", async ({ page }) => {
+    await expect(page.locator("button:has-text('Nouvelle intervention')")).toBeVisible();
   });
 });
 
@@ -132,16 +136,16 @@ test.describe("Claims List (Module H)", () => {
     await expect(page.locator("h1")).toContainText("Sinistres");
   });
 
+  test("should show 'Declarer un sinistre' create button", async ({ page }) => {
+    await expect(page.locator("button:has-text('Declarer un sinistre')")).toBeVisible();
+  });
+
   test("should show vehicle filter dropdown with all vehicles option", async ({ page }) => {
-    const vehicleSelect = page.locator("select").first();
-    await expect(vehicleSelect).toBeVisible();
-    await expect(vehicleSelect).toContainText("Tous les vehicules");
+    await expect(page.locator("select:has(option:has-text('Tous les vehicules'))")).toBeVisible();
   });
 
   test("should show status filter dropdown with all statuses option", async ({ page }) => {
-    const statusSelect = page.locator("select").nth(1);
-    await expect(statusSelect).toBeVisible();
-    await expect(statusSelect).toContainText("Tous les statuts");
+    await expect(page.locator("select:has(option:has-text('Tous les statuts'))")).toBeVisible();
   });
 
   test("should filter claims by DECLARE status", async ({ page }) => {
@@ -163,10 +167,9 @@ test.describe("Claims List (Module H)", () => {
     if (hasTable) {
       await expect(page.locator("thead")).toContainText("Numero");
       await expect(page.locator("thead")).toContainText("Vehicule");
-      await expect(page.locator("thead")).toContainText("Date");
-      await expect(page.locator("thead")).toContainText("Type");
-      await expect(page.locator("thead")).toContainText("Responsabilite");
+      await expect(page.locator("thead")).toContainText("Conducteur");
       await expect(page.locator("thead")).toContainText("Statut");
+      await expect(page.locator("thead")).toContainText("Actions");
     }
   });
 });

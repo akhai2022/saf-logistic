@@ -729,6 +729,28 @@ async def change_claim_status(
 
 
 # =====================================================================
+# All Claims (global list — avoids N+1 on frontend)
+# =====================================================================
+
+@router.get("/claims", response_model=list[ClaimOut])
+async def list_all_claims(
+    statut: str | None = None,
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    tid = str(tenant.tenant_id)
+    q = "SELECT * FROM vehicle_claims WHERE tenant_id = :tid"
+    params: dict = {"tid": tid}
+    if statut:
+        q += " AND statut = :statut"
+        params["statut"] = statut
+    q += " ORDER BY date_sinistre DESC LIMIT 200"
+    rows = (await db.execute(text(q), params)).fetchall()
+    return [_claim_from_row(r) for r in rows]
+
+
+# =====================================================================
 # Fleet Dashboard
 # =====================================================================
 

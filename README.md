@@ -936,6 +936,447 @@ Chaque persona est testee pour verifier :
 
 ---
 
+## Guide technique : lancer, tester, maintenir
+
+### Demarrer chaque composant individuellement
+
+#### Infrastructure (PostgreSQL, Redis, MinIO)
+
+```bash
+# Demarrer uniquement l'infrastructure (sans API ni workers)
+docker compose up -d postgres redis minio
+
+# Verifier que les services sont sains
+docker compose ps
+# postgres (healthy), redis (healthy), minio (started)
+```
+
+| Service | Port local | Port interne | Healthcheck |
+|---------|-----------|-------------|-------------|
+| PostgreSQL 16 | `5433` | `5432` | `pg_isready -U saf` |
+| Redis 7 | `6380` | `6379` | `redis-cli ping` |
+| MinIO (S3) | `9002` (API) / `9003` (console) | `9000` / `9001` | — |
+
+#### Backend API (FastAPI)
+
+```bash
+# Option 1 : via Docker (recommande)
+docker compose up -d api
+# API disponible sur http://localhost:8001
+# Swagger UI sur http://localhost:8001/docs
+
+# Option 2 : en local (developpement rapide, hot-reload)
+cd backend
+pip install -r requirements.txt
+export DATABASE_URL="postgresql+asyncpg://saf:saf@localhost:5433/saf"
+export CELERY_BROKER_URL="redis://localhost:6380/1"
+export CELERY_RESULT_BACKEND="redis://localhost:6380/2"
+export APP_SECRET_KEY="dev-secret-change-in-prod"
+export OCR_PROVIDER="MOCK"
+export S3_ENDPOINT_URL="http://localhost:9002"
+export S3_ACCESS_KEY=minio
+export S3_SECRET_KEY=minio12345
+export S3_BUCKET=saf-docs
+export S3_REGION=eu-west-3
+export S3_USE_PATH_STYLE=true
+uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+```
+
+#### Workers Celery
+
+```bash
+# Option 1 : via Docker
+docker compose up -d worker-default worker-ocr
+
+# Option 2 : en local
+# Worker default (conformite, rappels, taches async)
+cd backend
+celery -A app.infra.tasks_register worker -l INFO -Q default
+
+# Worker OCR (extraction factures) -- necessite PaddleOCR
+cd backend
+celery -A app.infra.tasks_register worker -l INFO -Q ocr -c 2
+```
+
+| Worker | Queue | Concurrence | Responsabilite |
+|--------|-------|-------------|----------------|
+| `worker-default` | `default` | 1 | Conformite, alertes, rappels, taches async |
+| `worker-ocr` | `ocr` | 2 | Extraction OCR (PaddleOCR / Textract) |
+
+#### Frontend (Next.js)
+
+```bash
+cd frontend
+npm install          # Installation des dependances
+npm run dev          # Mode developpement (http://localhost:3000, hot-reload)
+npm run build        # Build production
+npm run start        # Serveur production
+npm run lint         # Linter ESLint
+```
+
+### Lancer les tests
+
+#### Tests backend (pytest)
+
+```bash
+# Via Docker (utilise le PostgreSQL du compose)
+make test
+# equivalent a : docker compose exec api pytest -v --tb=short
+
+# En local (necessite PostgreSQL + Redis accessibles)
+make test-local
+# equivalent a : cd backend && pytest -v --tb=short
+
+# Lancer un fichier de test specifique
+docker compose exec api pytest tests/test_auth.py -v
+
+# Lancer un test specifique
+docker compose exec api pytest tests/test_jobs.py::test_create_job -v
+
+# Avec couverture de code
+docker compose exec api pytest --cov=app --cov-report=term-missing
+```
+
+#### Tests E2E frontend (Playwright)
+
+```bash
+cd frontend
+
+# Installer les navigateurs Playwright (une seule fois)
+npx playwright install
+
+# Lancer tous les tests E2E
+npm run test:e2e
+# equivalent a : npx playwright test
+
+# Lancer une suite specifique
+npx playwright test tests/e2e/fleet.spec.ts
+npx playwright test tests/e2e/personas.spec.ts
+npx playwright test tests/e2e/reports.spec.ts
+npx playwright test tests/e2e/navigation.spec.ts
+
+# Mode interactif (avec navigateur visible)
+npx playwright test --headed
+
+# Mode debug (pas a pas)
+npx playwright test --debug
+
+# Generer le rapport HTML
+npx playwright test --reporter=html
+npx playwright show-report
+```
+
+> **Pre-requis E2E** : l'API backend et le frontend doivent etre demarres (`make up` + `cd frontend && npm run dev`).
+
+#### Linter et qualite de code
+
+```bash
+# Backend (ruff) + Frontend (eslint)
+make lint
+
+# Backend seul
+cd backend && python -m ruff check .
+cd backend && python -m ruff check . --fix   # auto-fix
+
+# Frontend seul
+cd frontend && npx eslint .
+cd frontend && npx eslint . --fix            # auto-fix
+```
+
+### CI/CD (GitHub Actions)
+
+Le pipeline CI (`.github/workflows/ci.yml`) s'execute sur chaque push/PR vers `main` :
+
+| Job | Etapes | Services |
+|-----|--------|----------|
+| `backend-tests` | Install deps → Migrations → pytest | PostgreSQL 16, Redis 7 |
+| `frontend-build` | npm ci → next build | — |
+
+### Maintenance courante
+
+```bash
+# Appliquer les migrations apres un pull
+make migrate
+
+# Recharger les donnees de demo
+make seed
+
+# Logs en temps reel
+make logs              # Tous les services
+make logs-api          # API seule
+make logs-worker       # Workers Celery
+
+# Redemarrer l'API (apres modification de code)
+make restart-api
+
+# Connexion PostgreSQL interactive
+make psql
+# Exemple: SELECT count(*) FROM jobs WHERE tenant_id = '00000000-0000-0000-0000-000000000001';
+
+# Reconstruire les images Docker (apres modification Dockerfile ou requirements)
+make build
+
+# Arreter tous les services
+make down
+```
+
+### Ajouter une nouvelle migration
+
+```bash
+# Generer un squelette de migration
+docker compose exec api alembic revision -m "description_de_la_migration"
+
+# Editer le fichier genere dans backend/migrations/versions/
+# Puis appliquer
+make migrate
+
+# Verifier le statut des migrations
+docker compose exec api alembic current
+docker compose exec api alembic history
+```
+
+---
+
+## Matrice des permissions (RBAC)
+
+### Permissions granulaires par role
+
+| Permission | admin | exploitation | compta | rh_paie | flotte | lecture_seule | soustraitant |
+|------------|:-----:|:------------:|:------:|:-------:|:------:|:-------------:|:------------:|
+| `jobs.create` | * | x | | | | | |
+| `jobs.read` | * | x | x | | | x | x |
+| `jobs.update` | * | x | | | | | |
+| `jobs.assign` | * | x | | | | | |
+| `masterdata.read` | * | x | x | | | x | |
+| `masterdata.update` | * | x | | | | | |
+| `masterdata.driver.read` | * | | | x | | | |
+| `masterdata.driver.update` | * | | | x | | | |
+| `masterdata.vehicle.read` | * | | | | x | | |
+| `masterdata.vehicle.update` | * | | | | x | | |
+| `documents.read` | * | x | | x | x | x | x |
+| `documents.create` | * | x | | x | x | | x |
+| `billing.invoice.create` | * | | x | | | | |
+| `billing.invoice.read` | * | | x | | | x | |
+| `billing.invoice.validate` | * | | x | | | | |
+| `billing.pricing.read` | * | | x | | | x | |
+| `billing.pricing.update` | * | | x | | | | |
+| `ocr.read` | * | | x | | | | |
+| `ocr.create` | * | | x | | | | |
+| `ocr.validate` | * | | x | | | | |
+| `payroll.read` | * | | | x | | x | |
+| `payroll.import` | * | | | x | | | |
+| `payroll.export` | * | | | x | | | |
+| `payroll.submit` | * | | | x | | | |
+| `payroll.approve` | * | | | x | | | |
+| `fleet.read` | * | | | | x | x | |
+| `fleet.create` | * | | | | x | | |
+| `fleet.update` | * | | | | x | | |
+| `reports.read` | * | | | | | x | |
+| `tasks.read` | * | x | x | x | x | x | |
+| `tasks.update` | * | x | x | x | x | | |
+
+> `*` = le role `admin` dispose du wildcard `["*"]` qui accorde toutes les permissions.
+
+### Verification des permissions dans le code
+
+Les endpoints utilisent le decorateur `require_permission()` :
+
+```python
+# Exemple : seuls les roles avec "billing.invoice.validate" peuvent valider
+@router.post("/approve", dependencies=[Depends(require_permission("billing.invoice.validate"))])
+async def approve_invoice(...):
+    ...
+```
+
+Logique de verification (`backend/app/core/security.py`) :
+1. Le role `admin` est toujours autorise (wildcard `*`)
+2. Les permissions du role sont chargees depuis la table `roles` (colonne JSONB `permissions`)
+3. Si au moins une des permissions requises est presente, l'acces est accorde
+4. Sinon, HTTP 403 Forbidden
+
+### Ajouter une permission a un role existant
+
+```sql
+-- Via PostgreSQL (make psql)
+UPDATE roles
+SET permissions = permissions || '["nouvelle.permission"]'::jsonb
+WHERE tenant_id = '00000000-0000-0000-0000-000000000001'
+  AND name = 'exploitation';
+```
+
+Ou modifier la liste `ROLES` dans `backend/app/core/seed.py` et relancer `make seed`.
+
+---
+
+## Gestion multi-entreprise (multi-tenant)
+
+### Principe
+
+SAF-Logistic est concu en mode **multi-tenant a base partagee** : toutes les entreprises partagent la meme base de donnees PostgreSQL, mais leurs donnees sont strictement isolees par un champ `tenant_id` present sur chaque table.
+
+```
++------------------------------------------+
+|          PostgreSQL (single DB)           |
+|                                          |
+|  Tenant A (SAF Transport)               |
+|  ├── users, roles, agencies             |
+|  ├── clients, drivers, vehicles         |
+|  ├── jobs, invoices, documents          |
+|  └── fleet, payroll, reports            |
+|                                          |
+|  Tenant B (Express Logistics)           |
+|  ├── users, roles, agencies             |
+|  ├── clients, drivers, vehicles         |
+|  └── ...                                |
+|                                          |
+|  Isolation: WHERE tenant_id = :tid      |
++------------------------------------------+
+```
+
+### Isolation des donnees
+
+| Couche | Mecanisme |
+|--------|-----------|
+| **Base de donnees** | Chaque table metier a une colonne `tenant_id` (FK vers `tenants`, `ON DELETE CASCADE`). Contraintes d'unicite scopees : `UNIQUE(tenant_id, email)`, `UNIQUE(tenant_id, name)`, etc. |
+| **API** | Chaque requete inclut `WHERE tenant_id = :tid`. Le tenant est extrait du header `X-Tenant-ID` et verifie contre le JWT. |
+| **JWT** | Le token contient `tid` (tenant_id), `sub` (user_id), `role`. Le backend verifie que le header correspond au token. |
+| **Frontend** | Le `tenant_id` est stocke en `localStorage` apres login et envoye via le header `X-Tenant-ID` a chaque requete API. |
+
+### Tables avec isolation tenant
+
+Toutes les tables metier incluent `tenant_id` :
+
+```
+tenants (racine)
+├── agencies
+├── roles (UNIQUE tenant_id + name)
+├── users (UNIQUE tenant_id + email)
+├── customers, contacts, addresses
+├── drivers
+├── vehicles
+├── subcontractors, contracts
+├── jobs, delivery_points, mission_goods, proof_of_delivery, disputes
+├── documents, compliance_templates, compliance_checklists, compliance_alerts
+├── invoices, invoice_lines
+├── supplier_invoices, ocr_jobs
+├── payroll_periods, payroll_variables, payroll_type_definitions, silae_mappings
+├── maintenance_schedules, maintenance_records, vehicle_costs, vehicle_claims
+└── tasks
+```
+
+### Creer une nouvelle entreprise (tenant)
+
+```sql
+-- 1. Creer le tenant
+INSERT INTO tenants (id, name, siren, modules_enabled)
+VALUES (
+  gen_random_uuid(),
+  'Express Logistics SAS',
+  '987654321',
+  '["A","B","C","D","E","F","G","H","I"]'
+);
+
+-- 2. Creer l'agence principale
+INSERT INTO agencies (id, tenant_id, name, code)
+VALUES (
+  gen_random_uuid(),
+  '<tenant_id>',
+  'Siege Lyon',
+  'LYO'
+);
+
+-- 3. Creer les roles (reprendre la liste standard)
+-- Voir backend/app/core/seed.py pour la liste complete
+
+-- 4. Creer le premier utilisateur admin
+INSERT INTO users (id, tenant_id, agency_id, role_id, email, password_hash, full_name, is_active)
+VALUES (
+  gen_random_uuid(),
+  '<tenant_id>',
+  '<agency_id>',
+  '<admin_role_id>',
+  'admin@express-logistics.fr',
+  '<bcrypt_hash>',
+  'Admin Express',
+  true
+);
+```
+
+Ou utiliser le endpoint d'onboarding :
+
+```bash
+# Verifier le statut d'onboarding d'un tenant
+curl -H "Authorization: Bearer $TOKEN" \
+     -H "X-Tenant-ID: <tenant_id>" \
+     http://localhost:8001/v1/onboarding/status
+
+# Charger les donnees de demo pour un nouveau tenant
+curl -X POST \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "X-Tenant-ID: <tenant_id>" \
+     http://localhost:8001/v1/onboarding/demo-setup
+```
+
+### Modules activables par tenant
+
+Chaque tenant peut activer/desactiver des modules via le champ `modules_enabled` (JSON array) :
+
+| Module | Code | Description |
+|--------|------|-------------|
+| Parametrage | A | Onboarding, agences, utilisateurs, RBAC |
+| Referentiels | B | Clients, conducteurs, vehicules, sous-traitants |
+| Missions | C | Dossiers transport, livraisons, POD, litiges |
+| Conformite | D | Documents, alertes, checklists, templates |
+| Facturation | E | Factures clients, PDF, validation |
+| Achats | F | Factures fournisseurs, OCR |
+| RH / Pre-paie | G | Variables paie, periodes, exports SILAE |
+| Flotte | H | Maintenance, couts, sinistres |
+| Reporting | I | Dashboards KPI, exports CSV |
+
+Le frontend masque les sections de la sidebar selon `tenant.modules_enabled` et `dashboard_config.sidebar_sections`.
+
+### Flux d'authentification multi-tenant
+
+```
+POST /v1/auth/login
+{
+  "email": "user@company.fr",
+  "password": "...",
+  "tenant_id": "uuid-du-tenant"    <-- le tenant est explicite au login
+}
+
+        |
+        v
+
+Backend :
+  1. Verifie email + password + tenant_id
+  2. Genere JWT avec { sub: user_id, tid: tenant_id, role: role_name }
+  3. Charge tenant info (name, siren, modules_enabled)
+  4. Charge agency info
+  5. Charge permissions du role
+  6. Calcule sidebar_sections (SIDEBAR_BY_ROLE[role])
+  7. Calcule kpi_keys (KPI_KEYS_BY_ROLE[role])
+
+        |
+        v
+
+Frontend stocke en localStorage :
+  - saf_token (JWT)
+  - saf_user (id, email, role)
+  - saf_tenant_info (id, name, modules_enabled)
+  - saf_permissions (liste des permissions)
+  - saf_dashboard (sidebar_sections, kpi_keys)
+
+        |
+        v
+
+Chaque requete API inclut :
+  - Authorization: Bearer <JWT>
+  - X-Tenant-ID: <tenant_id>
+```
+
+---
+
 ## Deploiement production
 
 L'architecture cible utilise AWS :

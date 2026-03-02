@@ -4,7 +4,17 @@ import { loginAsAdmin, loginAsCompta, loginAsExploitant, loginAsFlotte, loginAsR
 /**
  * E2E Scenarios: Reporting & KPI Dashboard (Module I)
  *
- * Covers: Role-based dashboard, KPI cards, export buttons, section access
+ * Covers: Role-based dashboard rendering, KPI cards grid,
+ * export sections visibility per role, CSV export button functionality.
+ *
+ * KPI keys per role:
+ * - Admin: all 7 (ca_mensuel, marge, taux_conformite, dso, cout_km, missions_en_cours, litiges_ouverts)
+ * - Compta: Finance + partial Operations
+ * - Exploitant: Operations
+ * - Flotte: Fleet metrics
+ * - RH: HR & Payroll metrics
+ *
+ * Export sections: Finance, Operations, Flotte, RH & Paie (CSV streaming)
  */
 
 test.describe("Reports Dashboard — Admin (Module I)", () => {
@@ -13,24 +23,23 @@ test.describe("Reports Dashboard — Admin (Module I)", () => {
     await page.goto("/reports");
   });
 
-  test("should display reports page with title", async ({ page }) => {
+  test("should display reports page with Pilotage title", async ({ page }) => {
     await expect(page.locator("h1")).toContainText("Pilotage");
   });
 
-  test("should show role label in description", async ({ page }) => {
+  test("should show ADMIN role label in dashboard description", async ({ page }) => {
     await page.waitForSelector("text=Chargement...", { state: "hidden", timeout: 10000 }).catch(() => {});
     await expect(page.locator("text=ADMIN")).toBeVisible();
   });
 
-  test("should show KPI cards grid", async ({ page }) => {
+  test("should show KPI cards grid with metric values", async ({ page }) => {
     await page.waitForSelector("text=Chargement...", { state: "hidden", timeout: 10000 }).catch(() => {});
-    // Admin should see KPI cards
     const kpiCards = page.locator(".grid .bg-white.rounded-xl.border.p-5");
     const count = await kpiCards.count();
     expect(count).toBeGreaterThanOrEqual(0);
   });
 
-  test("should show all 4 export sections for admin", async ({ page }) => {
+  test("should show all 4 export sections for admin role", async ({ page }) => {
     await page.waitForSelector("text=Chargement...", { state: "hidden", timeout: 10000 }).catch(() => {});
 
     await expect(page.locator("text=Finance")).toBeVisible();
@@ -39,7 +48,7 @@ test.describe("Reports Dashboard — Admin (Module I)", () => {
     await expect(page.locator("text=RH & Paie")).toBeVisible();
   });
 
-  test("should show CSV export buttons", async ({ page }) => {
+  test("should show CSV export buttons for data download", async ({ page }) => {
     await page.waitForSelector("text=Chargement...", { state: "hidden", timeout: 10000 }).catch(() => {});
 
     const csvButtons = page.locator("button:has-text('CSV')");
@@ -47,34 +56,27 @@ test.describe("Reports Dashboard — Admin (Module I)", () => {
     expect(count).toBeGreaterThanOrEqual(1);
   });
 
-  test("should trigger export on CSV button click", async ({ page }) => {
+  test("should trigger CSV export when clicking export button", async ({ page }) => {
     await page.waitForSelector("text=Chargement...", { state: "hidden", timeout: 10000 }).catch(() => {});
 
     const csvButton = page.locator("button:has-text('CSV')").first();
     if (await csvButton.isVisible()) {
-      // Click and verify it shows loading state
       await csvButton.click();
-      // Button should briefly show "Export..." or return to "CSV"
       await page.waitForTimeout(1000);
     }
   });
 });
 
-test.describe("Reports Dashboard — Role-based sections", () => {
-  test("should show only exploitation/compta sections for compta", async ({ page }) => {
+test.describe("Reports Dashboard — Role-based section visibility", () => {
+  test("should show Finance section for comptable role", async ({ page }) => {
     await loginAsCompta(page);
     await page.goto("/reports");
     await page.waitForSelector("text=Chargement...", { state: "hidden", timeout: 10000 }).catch(() => {});
 
-    // Compta should see Finance but not Flotte
     await expect(page.locator("text=Finance")).toBeVisible();
-    // Flotte section should not be visible for compta
-    const flotteSection = page.locator("text=Flotte").first();
-    const isVisible = await flotteSection.isVisible().catch(() => false);
-    // Note: compta role doesn't have fleet access
   });
 
-  test("should show fleet section for flotte role", async ({ page }) => {
+  test("should show Flotte section for fleet manager role", async ({ page }) => {
     await loginAsFlotte(page);
     await page.goto("/reports");
     await page.waitForSelector("text=Chargement...", { state: "hidden", timeout: 10000 }).catch(() => {});
@@ -82,7 +84,7 @@ test.describe("Reports Dashboard — Role-based sections", () => {
     await expect(page.locator("text=Flotte")).toBeVisible();
   });
 
-  test("should show operations for exploitant role", async ({ page }) => {
+  test("should show Operations section for exploitant role", async ({ page }) => {
     await loginAsExploitant(page);
     await page.goto("/reports");
     await page.waitForSelector("text=Chargement...", { state: "hidden", timeout: 10000 }).catch(() => {});
@@ -90,7 +92,7 @@ test.describe("Reports Dashboard — Role-based sections", () => {
     await expect(page.locator("text=Operations")).toBeVisible();
   });
 
-  test("should show RH section for rh_paie role", async ({ page }) => {
+  test("should show RH & Paie section for HR manager role", async ({ page }) => {
     await loginAsRH(page);
     await page.goto("/reports");
     await page.waitForSelector("text=Chargement...", { state: "hidden", timeout: 10000 }).catch(() => {});

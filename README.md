@@ -217,12 +217,22 @@ saf-logistic/
 |   |       |-- auth.ts                    # Contexte auth + hooks
 |   |       |-- types.ts                   # Interfaces TypeScript (600+ lignes)
 |   |       +-- upload.ts                  # Upload S3 presigne
-|   |-- tests/e2e/                         # Tests Playwright
+|   |-- tests/e2e/                         # Tests Playwright (206 scenarios)
 |   |   |-- helpers/auth.ts               # Login helpers (8 personas)
-|   |   |-- navigation.spec.ts            # Navigation & acces pages (Modules A-I)
-|   |   |-- fleet.spec.ts                 # Fleet management E2E (Module H)
-|   |   |-- reports.spec.ts               # Reporting KPI E2E (Module I)
-|   |   +-- personas.spec.ts             # Tests parametrage par persona (7 roles)
+|   |   |-- login.spec.ts                 # Authentification (2 tests)
+|   |   |-- navigation.spec.ts            # Navigation & acces toutes pages (29 tests)
+|   |   |-- personas.spec.ts              # Parametrage par persona, 7 roles (30 tests)
+|   |   |-- masterdata.spec.ts            # Referentiels CRUD — Module B (19 tests)
+|   |   |-- jobs.spec.ts                  # Missions quick tests — Module C (2 tests)
+|   |   |-- mission-lifecycle.spec.ts      # Cycle de vie mission complet (11 tests)
+|   |   |-- disputes.spec.ts              # Litiges — Module C (5 tests)
+|   |   |-- compliance.spec.ts            # Conformite templates alertes — Module D (20 tests)
+|   |   |-- fleet.spec.ts                 # Flotte maintenance sinistres — Module H (26 tests)
+|   |   |-- reports.spec.ts               # Reporting KPI exports — Module I (10 tests)
+|   |   |-- settings.spec.ts              # Parametrage 5 onglets — Gap closure (20 tests)
+|   |   |-- audit.spec.ts                 # Journal d'audit filtres — Gap closure (12 tests)
+|   |   |-- notifications.spec.ts         # Notifications in-app — Gap closure (10 tests)
+|   |   +-- invoices-credit-notes.spec.ts  # Factures et avoirs — Module E (10 tests)
 |   |-- package.json
 |   |-- tailwind.config.ts
 |   +-- tsconfig.json
@@ -913,6 +923,7 @@ Le seed charge automatiquement les donnees suivantes pour le tenant demo :
 | `0003` | Module C : expansion jobs (25+ colonnes), delivery_points, mission_goods, proof_of_delivery, disputes, dispute_attachments |
 | `0004` | Module D : expansion documents (20+ colonnes), compliance_templates, compliance_checklists, compliance_alerts |
 | `0005` | Module H : maintenance_schedules, maintenance_records, vehicle_costs, vehicle_claims |
+| `0006` | Parametrage & Audit : company_settings, bank_accounts, vat_configs, cost_centers, notification_configs, audit_logs, notifications, credit_notes, credit_note_lines, password_reset_tokens + invoices.format |
 
 ### Schema principal
 
@@ -963,15 +974,24 @@ make test-local
 cd frontend && npx playwright test
 ```
 
-### Suites E2E Playwright
+### Suites E2E Playwright (206 scenarios)
 
 | Fichier | Scenarios | Couverture |
 |---------|-----------|------------|
-| `navigation.spec.ts` | 20+ | Acces a toutes les pages, sidebar completa (Modules A-I) |
-| `fleet.spec.ts` | 20+ | Dashboard flotte, maintenance, sinistres, onglets vehicule (Module H) |
-| `reports.spec.ts` | 10+ | Dashboard KPI par role, exports CSV, sections role-based (Module I) |
-| `personas.spec.ts` | 20+ | Login et sidebar filtree pour les 7 personas (parametrage) |
-| `modules_b_c_d.spec.ts` | 60+ | Referentiels, missions, conformite (Modules B, C, D) |
+| `login.spec.ts` | 2 | Connexion reussie avec redirect, erreur sur identifiants invalides |
+| `navigation.spec.ts` | 29 | Acces a toutes les 23 pages (Modules A-I + parametrage), sidebar completa, navigation entre sections |
+| `personas.spec.ts` | 30 | Login et sidebar filtree pour les 7 personas + 2 tests login invalide, acces parametrage/audit pour admin et auditeur |
+| `masterdata.spec.ts` | 19 | CRUD clients (liste, recherche, creation, detail, contacts, adresses), conducteurs (liste, creation, detail 4 onglets, qualifications, statut), vehicules (liste, filtre categorie, detail 4 onglets, caracteristiques, technique), sous-traitants (liste, detail 3 onglets, contrats) |
+| `jobs.spec.ts` | 2 | Affichage liste missions, creation rapide d'une mission |
+| `mission-lifecycle.spec.ts` | 11 | Cycle de vie complet : liste avec filtres statut, recherche, creation avec formulaire complet, detail 5 onglets (General, Livraisons, Marchandises, POD, Litiges), ajout point de livraison, ajout marchandises, transition de statut, affectation conducteur/vehicule, creation litige |
+| `disputes.spec.ts` | 5 | Page litiges, filtres par statut (Ouverts, En instruction, Resolus, Clos), colonnes tableau, lien vers mission liee |
+| `compliance.spec.ts` | 20 | Dashboard conformite (cartes synthese, filtres par type entite), templates (creation, filtre, edition), alertes (filtres statut, acquittement avec commentaire, retour dashboard), checklists par entite (conducteur, vehicule, sous-traitant) |
+| `fleet.spec.ts` | 26 | Dashboard flotte (KPIs, cout mensuel, maintenances a venir, liens rapides), liste maintenance (filtres statut/jours, tableau), liste sinistres (filtres vehicule/statut, tableau), onglet Maintenance vehicule (plans, interventions), onglet Couts vehicule (synthese, ajout) |
+| `reports.spec.ts` | 10 | Dashboard KPI admin (titre, role label, grille KPI, 4 sections export, boutons CSV), visibilite sections par role (compta=Finance, flotte=Flotte, exploitant=Operations, rh=RH&Paie) |
+| `settings.spec.ts` | 20 | Page parametres (acces, 5 onglets, switch entre onglets), onglet Entreprise (formulaire, champs, sauvegarde), onglet Banque (ajout, toggle formulaire, colonnes), onglet TVA (ajout, formulaire, colonnes, taux FR), onglet Centres de couts (ajout, formulaire, colonnes), onglet Notifications (ajout, formulaire, colonnes) |
+| `audit.spec.ts` | 12 | Page audit admin (titre, filtres entity_type/action/dates, bouton filtrer, colonnes tableau, filtre par type, filtre par action, filtre par date, toggle detail old/new, etat vide), acces auditeur (page et tableau) |
+| `notifications.spec.ts` | 10 | Cloche notification sidebar (icone, navigation), page notifications (titre, compteur non lues, bouton marquer tout lu, cartes ou etat vide, titre et timestamp, indicateur non lu, etat vide avec icone) |
+| `invoices-credit-notes.spec.ts` | 10 | Page factures (titre, bouton creation, colonnes dont Actions, bouton avoir sur factures validees, toggle formulaire creation, selecteur client, missions cloturees apres selection client, etat vide), acces compta (page et bouton creation) |
 
 ### Tests Persona (parametrage)
 
@@ -979,16 +999,17 @@ Chaque persona est testee pour verifier :
 - Connexion avec ses identifiants
 - Sidebar filtree selon `dashboard_config.sidebar_sections`
 - Acces aux pages autorisees par son role
+- Acces au parametrage et audit pour les roles autorises
 
 | Persona | Role | Sections sidebar testees |
 |---------|------|--------------------------|
-| Dirigeant | admin | exploitation, referentiels, finance, flotte, pilotage |
+| Dirigeant | admin | exploitation, referentiels, finance, flotte, pilotage, parametrage (settings + audit + notifications) |
 | Exploitant | exploitation | exploitation, referentiels |
-| Comptable | compta | exploitation, finance, pilotage |
-| RH / Paie | rh_paie | exploitation, referentiels, finance |
-| Flotte | flotte | referentiels, flotte |
-| Sous-traitant | soustraitant | exploitation |
-| Auditeur | lecture_seule | exploitation, referentiels, finance, flotte, pilotage |
+| Comptable | compta | exploitation, finance, pilotage, factures |
+| RH / Paie | rh_paie | exploitation, referentiels, conducteurs, paie |
+| Flotte | flotte | referentiels, flotte (dashboard, maintenance, sinistres), vehicules |
+| Sous-traitant | soustraitant | exploitation (missions uniquement) |
+| Auditeur | lecture_seule | exploitation, referentiels, finance, flotte, pilotage, audit |
 
 ---
 

@@ -2,9 +2,12 @@ import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "./helpers/auth";
 
 /**
- * E2E Scenario: Disputes Management
+ * E2E Scenarios: Disputes Management (Module C)
  *
- * Flow: Navigate to disputes → Filter by status → View dispute details via mission link
+ * Covers: Disputes list page, status filter tabs (Ouverts, En instruction,
+ * Resolus, Clos), table columns display, and navigation to linked mission.
+ * Disputes follow a lifecycle: OUVERT -> EN_INSTRUCTION -> RESOLU -> CLOS
+ * and are numbered LIT-YYYY-NNNNN.
  */
 test.describe("Disputes (Module C)", () => {
   test.beforeEach(async ({ page }) => {
@@ -12,11 +15,11 @@ test.describe("Disputes (Module C)", () => {
     await page.goto("/disputes");
   });
 
-  test("should display disputes page with title", async ({ page }) => {
+  test("should display disputes page with Litiges title", async ({ page }) => {
     await expect(page.locator("h1")).toContainText("Litiges");
   });
 
-  test("should show status filter tabs", async ({ page }) => {
+  test("should show all status filter tabs for dispute lifecycle", async ({ page }) => {
     await expect(page.locator("text=Tous")).toBeVisible();
     await expect(page.locator("text=Ouverts")).toBeVisible();
     await expect(page.locator("text=En instruction")).toBeVisible();
@@ -24,7 +27,7 @@ test.describe("Disputes (Module C)", () => {
     await expect(page.locator("text=Clos")).toBeVisible();
   });
 
-  test("should filter disputes by status", async ({ page }) => {
+  test("should filter disputes by clicking Ouverts status tab", async ({ page }) => {
     await page.click("text=Ouverts");
     // The table should update (filtered by OUVERT status)
     await page.waitForTimeout(500);
@@ -38,7 +41,7 @@ test.describe("Disputes (Module C)", () => {
     await expect(headers.nth(3)).toContainText("Responsabilité");
   });
 
-  test("should link to mission from dispute", async ({ page }) => {
+  test("should navigate to linked mission from dispute row", async ({ page }) => {
     const missionLink = page.locator("table tbody a[href*='/jobs/']").first();
     if (await missionLink.isVisible()) {
       await missionLink.click();

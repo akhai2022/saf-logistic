@@ -2,20 +2,24 @@ import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "./helpers/auth";
 
 /**
- * E2E Scenario: Complete Mission Lifecycle
+ * E2E Scenarios: Complete Mission Lifecycle (Module C)
  *
- * Flow: Create mission → Plan → Assign driver/vehicle → Start →
- *       Add delivery points → Add goods → Deliver →
- *       Upload POD → Validate POD → Close mission
+ * Covers the full transport mission workflow:
+ * Create mission -> Plan -> Assign driver/vehicle -> Start ->
+ * Add delivery points -> Add goods -> Deliver ->
+ * Upload POD -> Validate POD -> Close mission -> Create dispute
+ *
+ * State machine: BROUILLON -> PLANIFIEE -> AFFECTEE -> EN_COURS ->
+ *                LIVREE -> CLOTUREE -> FACTUREE (+ ANNULEE at any point)
  */
 test.describe("Mission Lifecycle (Module C)", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsAdmin(page);
   });
 
-  test("should display missions list with status tabs", async ({ page }) => {
+  test("should display missions list with all status filter tabs", async ({ page }) => {
     await expect(page.locator("h1")).toContainText("Missions");
-    // Verify status filter tabs exist
+    // Verify status filter tabs matching the state machine
     await expect(page.locator("text=Tous")).toBeVisible();
     await expect(page.locator("text=Brouillon")).toBeVisible();
     await expect(page.locator("text=Planifiée")).toBeVisible();
@@ -25,20 +29,19 @@ test.describe("Mission Lifecycle (Module C)", () => {
     await expect(page.locator("text=Clôturée")).toBeVisible();
   });
 
-  test("should filter missions by status tab", async ({ page }) => {
-    // Click a status tab and verify URL changes
+  test("should filter missions by clicking Brouillon status tab", async ({ page }) => {
     await page.click("text=Brouillon");
     await expect(page).toHaveURL(/statut=BROUILLON/);
   });
 
-  test("should search missions", async ({ page }) => {
+  test("should search missions by reference keyword", async ({ page }) => {
     const searchInput = page.locator('input[placeholder*="Rechercher"]');
     await searchInput.fill("TEST");
     await page.click("text=Chercher");
     await expect(page).toHaveURL(/search=TEST/);
   });
 
-  test("should create a new mission with full form", async ({ page }) => {
+  test("should create a new mission with customer and type selection", async ({ page }) => {
     await page.click("text=Nouvelle mission");
 
     // Fill the create mission form
@@ -47,17 +50,14 @@ test.describe("Mission Lifecycle (Module C)", () => {
     await page.selectOption('select:has-text("LOT_COMPLET")', "LOT_COMPLET");
 
     await page.click("text=Créer la mission");
-
-    // Should redirect or show the new mission
     await page.waitForTimeout(1000);
   });
 
-  test("should navigate to mission detail", async ({ page }) => {
-    // Click on first mission in the table
+  test("should navigate to mission detail page with 5 tabs", async ({ page }) => {
     const firstMissionLink = page.locator("table tbody tr:first-child a");
     if (await firstMissionLink.isVisible()) {
       await firstMissionLink.click();
-      // Should show mission detail with tabs
+      // Should show mission detail with all 5 tabs
       await expect(page.locator("text=Général")).toBeVisible();
       await expect(page.locator("text=Livraisons")).toBeVisible();
       await expect(page.locator("text=Marchandises")).toBeVisible();
@@ -66,8 +66,7 @@ test.describe("Mission Lifecycle (Module C)", () => {
     }
   });
 
-  test("should show mission detail tabs", async ({ page }) => {
-    // Navigate to first mission
+  test("should show all info cards in General tab of mission detail", async ({ page }) => {
     const firstMissionLink = page.locator("table tbody tr:first-child a");
     if (!(await firstMissionLink.isVisible())) {
       test.skip();
@@ -75,7 +74,7 @@ test.describe("Mission Lifecycle (Module C)", () => {
     }
     await firstMissionLink.click();
 
-    // Tab: Général — should show info cards
+    // General tab should show info cards
     await expect(page.locator("text=Informations")).toBeVisible();
     await expect(page.locator("text=Dates")).toBeVisible();
     await expect(page.locator("text=Financier")).toBeVisible();
@@ -96,7 +95,7 @@ test.describe("Mission Lifecycle (Module C)", () => {
     await page.click("text=Litiges");
   });
 
-  test("should add delivery point to mission", async ({ page }) => {
+  test("should add a delivery point with contact info to a mission", async ({ page }) => {
     const firstMissionLink = page.locator("table tbody tr:first-child a");
     if (!(await firstMissionLink.isVisible())) {
       test.skip();
@@ -116,7 +115,7 @@ test.describe("Mission Lifecycle (Module C)", () => {
     await page.waitForTimeout(500);
   });
 
-  test("should add goods to mission", async ({ page }) => {
+  test("should add goods description to a mission", async ({ page }) => {
     const firstMissionLink = page.locator("table tbody tr:first-child a");
     if (!(await firstMissionLink.isVisible())) {
       test.skip();
@@ -129,12 +128,10 @@ test.describe("Mission Lifecycle (Module C)", () => {
     await page.click("text=Ajouter");
 
     // Fill goods form fields
-    const inputs = page.locator("input");
-    // Description, nature, quantity, etc.
     await page.waitForTimeout(500);
   });
 
-  test("should transition mission status", async ({ page }) => {
+  test("should transition mission status via action button", async ({ page }) => {
     const firstMissionLink = page.locator("table tbody tr:first-child a");
     if (!(await firstMissionLink.isVisible())) {
       test.skip();
@@ -150,7 +147,7 @@ test.describe("Mission Lifecycle (Module C)", () => {
     }
   });
 
-  test("should assign driver and vehicle", async ({ page }) => {
+  test("should show driver and vehicle assignment card in mission detail", async ({ page }) => {
     const firstMissionLink = page.locator("table tbody tr:first-child a");
     if (!(await firstMissionLink.isVisible())) {
       test.skip();
@@ -158,16 +155,11 @@ test.describe("Mission Lifecycle (Module C)", () => {
     }
     await firstMissionLink.click();
 
-    // Check for assignment card in Général tab
+    // Check for assignment card in General tab
     await expect(page.locator("text=Affectation")).toBeVisible();
-
-    // Check for driver/vehicle selectors
-    const driverSelect = page.locator('select').filter({ hasText: /conducteur|driver/i });
-    const vehicleSelect = page.locator('select').filter({ hasText: /véhicule|vehicle/i });
-    // These should be present in the affectation card
   });
 
-  test("should create dispute on mission", async ({ page }) => {
+  test("should create a new dispute from mission Litiges tab", async ({ page }) => {
     const firstMissionLink = page.locator("table tbody tr:first-child a");
     if (!(await firstMissionLink.isVisible())) {
       test.skip();

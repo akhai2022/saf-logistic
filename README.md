@@ -413,9 +413,341 @@ Alertes progressives : J-60 -> J-30 -> J-15 -> J-7 -> J0 (expire)
 | `COMPTA` | Comptable | Facturation, achats, rapprochement |
 | `RH_PAIE` | Responsable RH | Conducteurs, absences, pre-paie |
 | `FLOTTE` | Responsable flotte | Vehicules, maintenance, conformite vehicules |
-| `FLOTTE` | Responsable flotte | Vehicules, maintenance, conformite vehicules |
 | `READONLY` | Consultation seule | Lecture toutes les donnees de l'agence |
 | `SOUSTRAITANT` | Portail sous-traitant | Ses missions, upload POD |
+
+---
+
+## Configuration & Parametrage (step by step)
+
+Cette section decrit comment configurer une nouvelle instance SAF-Logistic de A a Z, et comment fonctionne le systeme de parametrage dynamique.
+
+### Etape 1 : Installation et demarrage
+
+```bash
+# 1. Cloner le depot
+git clone git@github.com:akhai2022/saf-logistic.git
+cd saf-logistic
+
+# 2. Copier le fichier d'environnement
+cp backend/.env.example backend/.env
+# Editer backend/.env avec vos valeurs (voir "Variables d'environnement" plus bas)
+
+# 3. Demarrer l'infrastructure (PostgreSQL, Redis, MinIO, API, Workers)
+docker compose up -d
+
+# 4. Appliquer les migrations de base de donnees (5 migrations)
+docker compose exec api alembic upgrade head
+
+# 5. Charger les donnees initiales (tenant demo, roles, utilisateurs, referentiels)
+docker compose exec api python -m app.core.seed
+
+# 6. Installer et demarrer le frontend
+cd frontend
+npm install
+npm run dev
+```
+
+### Etape 2 : Verification de l'installation
+
+```bash
+# Verifier que l'API repond
+curl http://localhost:8001/docs
+
+# Tester la connexion admin
+curl -X POST http://localhost:8001/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@saf.local","password":"admin","tenant_id":"00000000-0000-0000-0000-000000000001"}'
+```
+
+L'API doit retourner un JSON avec `access_token`, `tenant`, `permissions`, `dashboard_config`.
+
+### Etape 3 : Comprendre le Parametrage (Login Response)
+
+Le systeme de parametrage est base sur la reponse de login. Chaque connexion retourne un objet enrichi qui pilote l'ensemble du frontend :
+
+```json
+{
+  "access_token": "eyJ...",
+  "token_type": "bearer",
+  "user_id": "uuid",
+  "role": "admin",
+  "tenant": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "SAF Transport Demo",
+    "siren": "123456789",
+    "modules_enabled": ["A","B","C","D","E","F","G","H","I"]
+  },
+  "agency": {
+    "id": "00000000-0000-0000-0000-000000000010",
+    "name": "Agence Paris",
+    "code": "PAR"
+  },
+  "permissions": {
+    "role_name": "admin",
+    "permissions": ["*"]
+  },
+  "dashboard_config": {
+    "kpi_keys": ["ca_mensuel","marge","taux_conformite","dso","cout_km","missions_en_cours","litiges_ouverts"],
+    "sidebar_sections": ["exploitation","referentiels","finance","flotte","pilotage"]
+  }
+}
+```
+
+#### Detail des champs de parametrage
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `tenant.id` | UUID | Identifiant unique du tenant (entreprise) |
+| `tenant.name` | string | Nom commercial du tenant |
+| `tenant.siren` | string | Numero SIREN de l'entreprise |
+| `tenant.modules_enabled` | string[] | Liste des modules actifs (A-I) |
+| `agency.id` | UUID | Identifiant de l'agence de l'utilisateur |
+| `agency.name` | string | Nom de l'agence |
+| `agency.code` | string | Code court de l'agence (3 lettres) |
+| `permissions.role_name` | string | Nom du role attribue |
+| `permissions.permissions` | string[] | Liste des permissions granulaires (ou `["*"]` pour admin) |
+| `dashboard_config.kpi_keys` | string[] | KPIs affiches dans le tableau de bord du role |
+| `dashboard_config.sidebar_sections` | string[] | Sections visibles dans la navigation laterale |
+
+### Etape 4 : Configuration des roles et permissions
+
+Chaque role dispose d'un ensemble de permissions granulaires. Le seed cree les roles suivants :
+
+| Role | Permissions | Description |
+|------|-------------|-------------|
+| `admin` | `["*"]` | Acces total a toutes les fonctionnalites |
+| `exploitation` | `jobs.*`, `masterdata.*`, `documents.read/create`, `tasks.*` | Gestion des missions et affectations |
+| `compta` | `billing.*`, `ocr.*`, `jobs.read`, `masterdata.read`, `tasks.*` | Facturation, achats, OCR |
+| `rh_paie` | `payroll.*`, `documents.*`, `masterdata.driver.*`, `tasks.*` | Pre-paie et gestion RH |
+| `flotte` | `fleet.*`, `masterdata.vehicle.*`, `documents.*`, `tasks.*` | Maintenance et couts vehicules |
+| `lecture_seule` | `*.read` (jobs, masterdata, documents, billing, payroll, fleet, reports) | Consultation seule |
+| `soustraitant` | `jobs.read`, `documents.read/create` | Portail sous-traitant limite |
+
+#### Ajouter un nouveau role
+
+```sql
+-- Via PostgreSQL (make psql)
+INSERT INTO roles (id, tenant_id, name, permissions)
+VALUES (
+  gen_random_uuid(),
+  '00000000-0000-0000-0000-000000000001',
+  'mon_nouveau_role',
+  '["jobs.read", "jobs.create", "masterdata.read"]'::jsonb
+);
+```
+
+Ou via le seed en ajoutant une entree dans la liste `ROLES` de `backend/app/core/seed.py`.
+
+### Etape 5 : Configuration de la navigation par role (Sidebar)
+
+Le frontend filtre dynamiquement les sections de la sidebar selon `dashboard_config.sidebar_sections` retourne au login.
+
+#### Mapping role -> sections sidebar
+
+| Role | Sections visibles |
+|------|-------------------|
+| `admin` | exploitation, referentiels, finance, flotte, pilotage |
+| `exploitation` | exploitation, referentiels |
+| `compta` | exploitation, finance, pilotage |
+| `rh_paie` | exploitation, referentiels, finance |
+| `flotte` | referentiels, flotte |
+| `lecture_seule` | exploitation, referentiels, finance, flotte, pilotage |
+| `soustraitant` | exploitation |
+
+#### Sections et leurs pages
+
+| Section key | Label | Pages |
+|-------------|-------|-------|
+| `exploitation` | Exploitation | Missions, Litiges, Taches |
+| `referentiels` | Referentiels | Clients, Conducteurs, Vehicules, Sous-traitants |
+| `finance` | Finance | Facturation, Factures fournisseurs, Tarification, OCR, Pre-paie |
+| `flotte` | Flotte | Tableau de bord flotte, Maintenance, Sinistres |
+| `pilotage` | Pilotage | Tableau de bord KPI |
+
+#### Personnaliser les sections d'un role
+
+Modifier le dictionnaire `SIDEBAR_BY_ROLE` dans `backend/app/modules/auth/router.py` :
+
+```python
+SIDEBAR_BY_ROLE = {
+    "admin": ["exploitation", "referentiels", "finance", "flotte", "pilotage"],
+    "exploitation": ["exploitation", "referentiels"],
+    "compta": ["exploitation", "finance", "pilotage"],
+    "rh_paie": ["exploitation", "referentiels", "finance"],
+    "flotte": ["referentiels", "flotte"],
+    "lecture_seule": ["exploitation", "referentiels", "finance", "flotte", "pilotage"],
+    "soustraitant": ["exploitation"],
+}
+```
+
+### Etape 6 : Configuration des KPIs par role
+
+Chaque role voit un ensemble de KPIs specifiques sur le tableau de bord Pilotage.
+
+#### Mapping role -> KPIs
+
+| Role | KPIs affiches |
+|------|---------------|
+| `admin` | CA mensuel, Marge, Taux conformite, DSO, Cout/km, Missions en cours, Litiges ouverts |
+| `exploitation` | Missions en cours, Delai POD, Taux cloture J+1, Litiges ouverts |
+| `compta` | DSO, Balance agee, Factures impayees, Ecarts sous-traitants |
+| `rh_paie` | Delai pre-paie, Anomalies, Taux correction, Conformite conducteurs |
+| `flotte` | Taux conformite vehicules, Cout/km, Pannes non planifiees, Maintenances a venir |
+
+#### Personnaliser les KPIs d'un role
+
+Modifier le dictionnaire `KPI_KEYS_BY_ROLE` dans `backend/app/modules/auth/router.py` :
+
+```python
+KPI_KEYS_BY_ROLE = {
+    "admin": ["ca_mensuel", "marge", "taux_conformite", "dso", "cout_km", "missions_en_cours", "litiges_ouverts"],
+    "exploitation": ["missions_en_cours", "pod_delai", "taux_cloture_j1", "litiges_ouverts"],
+    "compta": ["dso", "balance_agee", "nb_factures_impayees", "ecarts_soustraitants"],
+    "rh_paie": ["delai_prepaie", "anomalies", "taux_correction", "conformite_conducteurs"],
+    "flotte": ["taux_conformite_vehicules", "cout_km", "pannes_non_planifiees", "maintenances_a_venir"],
+}
+```
+
+### Etape 7 : Gestion des utilisateurs
+
+#### Creer un nouvel utilisateur
+
+```bash
+# Via l'API (necessite un token admin)
+TOKEN="eyJ..."
+
+curl -X POST http://localhost:8001/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Tenant-ID: 00000000-0000-0000-0000-000000000001" \
+  -d '{
+    "email": "nouveau@saf.local",
+    "password": "motdepasse2026",
+    "full_name": "Prenom NOM",
+    "role_id": "UUID_DU_ROLE"
+  }'
+```
+
+#### Comptes de demo pre-configures
+
+Le seed cree automatiquement les comptes suivants (tenant demo) :
+
+| Persona | Email | Mot de passe | Role |
+|---------|-------|-------------|------|
+| Admin | admin@saf.local | admin | admin |
+| Dirigeant | dirigeant@saf.local | dirigeant2026 | admin |
+| Exploitant | exploitant@saf.local | exploit2026 | exploitation |
+| Comptable | compta@saf.local | compta2026 | compta |
+| RH / Paie | rh@saf.local | rh2026 | rh_paie |
+| Flotte | flotte@saf.local | flotte2026 | flotte |
+| Sous-traitant | soustraitant@saf.local | soustraitant2026 | soustraitant |
+| Auditeur | auditeur@saf.local | audit2026 | lecture_seule |
+
+### Etape 8 : Configuration du stockage S3
+
+```bash
+# Dans backend/.env ou docker-compose.yml
+
+# Dev local (MinIO)
+S3_ENDPOINT_URL=http://minio:9000
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+S3_BUCKET=saf-documents
+S3_REGION=us-east-1
+
+# Production (AWS S3)
+S3_ENDPOINT_URL=            # Laisser vide pour AWS natif
+S3_ACCESS_KEY=AKIA...
+S3_SECRET_KEY=...
+S3_BUCKET=saf-logistic-prod
+S3_REGION=eu-west-3
+```
+
+### Etape 9 : Configuration OCR
+
+```bash
+# Mode demo (pas d'extraction reelle)
+OCR_PROVIDER=MOCK
+
+# PaddleOCR open source (gratuit, local)
+OCR_PROVIDER=OPEN_SOURCE
+
+# AWS Textract (payant, haute precision)
+OCR_PROVIDER=AWS_TEXTRACT
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_DEFAULT_REGION=eu-west-3
+```
+
+### Etape 10 : Donnees de referentiel initiales
+
+Le seed charge automatiquement les donnees suivantes pour le tenant demo :
+
+| Donnee | Quantite | Description |
+|--------|----------|-------------|
+| Tenant | 1 | SAF Transport Demo (SIREN 123456789) |
+| Agence | 1 | Agence Paris (code PAR) |
+| Roles | 7 | admin, exploitation, compta, rh_paie, flotte, lecture_seule, soustraitant |
+| Utilisateurs | 8 | 1 admin + 7 personas |
+| Types documents | 11 | 7 conducteur (permis, FIMO, FCO...) + 4 vehicule (carte grise, CT...) |
+| Types variables paie | 12 | Heures, primes, frais, absences |
+| Mappings SILAE | 12 | Codes paie vers SILAE |
+| Clients | 3 | Carrefour, Auchan, Lidl (demo) |
+| Conducteurs | 3 | Jean DUPONT, Marie MARTIN, Pierre BERNARD |
+| Vehicules | 3 | PL 44T, PL 12T, Semi-remorque frigo |
+| Sous-traitants | 1 | Transports MARTIN SARL (+ 1 contrat) |
+
+### Flux de parametrage (resume)
+
+```
+                         POST /v1/auth/login
+                               |
+                    +----------v----------+
+                    |  Backend verifie :  |
+                    |  1. email/password  |
+                    |  2. tenant_id       |
+                    +----------+----------+
+                               |
+              +----------------v-----------------+
+              |  Construit la reponse enrichie : |
+              |                                  |
+              |  1. Genere le JWT (sub, tid, role)|
+              |  2. Charge tenant (name, siren,  |
+              |     modules_enabled)             |
+              |  3. Charge agency (name, code)   |
+              |  4. Charge permissions du role   |
+              |  5. Calcule sidebar_sections     |
+              |     (SIDEBAR_BY_ROLE[role])       |
+              |  6. Calcule kpi_keys             |
+              |     (KPI_KEYS_BY_ROLE[role])      |
+              +----------------+-----------------+
+                               |
+                    +----------v----------+
+                    |  Frontend stocke :  |
+                    |  localStorage:      |
+                    |  - saf_token        |
+                    |  - saf_user         |
+                    |  - saf_dashboard    |
+                    |  - saf_permissions  |
+                    |  - saf_tenant_info  |
+                    +----------+----------+
+                               |
+              +----------------v-----------------+
+              |  Nav.tsx lit dashboard_config :   |
+              |  - Filtre ALL_SECTIONS par       |
+              |    sidebar_sections              |
+              |  - N'affiche que les sections    |
+              |    autorisees pour le role       |
+              +----------------+-----------------+
+                               |
+              +----------------v-----------------+
+              |  Reports page lit kpi_keys :     |
+              |  - Appelle /v1/reports/dashboard |
+              |  - API filtre les KPIs par role  |
+              |  - Affiche les cartes KPI        |
+              +----------------------------------+
+```
 
 ---
 

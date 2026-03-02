@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { apiGet } from "./api";
+import { apiGet, ApiError } from "./api";
 
 export function usePolling<T>(
   path: string | null,
@@ -21,7 +21,12 @@ export function usePolling<T>(
         setData(result);
         setError(null);
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "Unknown error");
+        const msg = e instanceof Error ? e.message : "Unknown error";
+        setError(msg);
+        // Stop polling on 404/410 (resource deleted/gone)
+        if (e instanceof ApiError && (e.status === 404 || e.status === 410)) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+        }
       } finally {
         setLoading(false);
       }

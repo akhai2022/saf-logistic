@@ -609,3 +609,180 @@ export interface ComplianceItem {
   expiry_date?: string;
   document_id?: string;
 }
+
+// ── Module H — Fleet & Maintenance ──────────────────────────────
+
+export interface MaintenanceSchedule {
+  id: string;
+  vehicle_id: string;
+  type_maintenance: string;
+  libelle: string;
+  description?: string;
+  frequence_jours?: number;
+  frequence_km?: number;
+  derniere_date_realisation?: string;
+  dernier_km_realisation?: number;
+  prochaine_date_prevue?: string;
+  prochain_km_prevu?: number;
+  prestataire_par_defaut?: string;
+  cout_estime?: number;
+  alerte_jours_avant?: number;
+  alerte_km_avant?: number;
+  is_active: boolean;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  vehicle_id: string;
+  schedule_id?: string;
+  type_maintenance: string;
+  libelle: string;
+  description?: string;
+  date_debut: string;
+  date_fin?: string;
+  km_vehicule?: number;
+  prestataire?: string;
+  lieu?: string;
+  cout_pieces_ht?: number;
+  cout_main_oeuvre_ht?: number;
+  cout_total_ht?: number;
+  cout_tva?: number;
+  cout_total_ttc?: number;
+  facture_ref?: string;
+  is_planifie: boolean;
+  statut: string;
+  resultat?: string;
+  notes?: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface VehicleCost {
+  id: string;
+  vehicle_id: string;
+  maintenance_record_id?: string;
+  categorie: string;
+  sous_categorie?: string;
+  libelle: string;
+  date_cout: string;
+  montant_ht: number;
+  montant_tva?: number;
+  montant_ttc?: number;
+  km_vehicule?: number;
+  quantite?: number;
+  unite?: string;
+  fournisseur?: string;
+  facture_ref?: string;
+  notes?: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface VehicleClaim {
+  id: string;
+  vehicle_id: string;
+  numero: string;
+  date_sinistre: string;
+  heure_sinistre?: string;
+  lieu?: string;
+  type_sinistre: string;
+  description?: string;
+  driver_id?: string;
+  tiers_implique: boolean;
+  tiers_nom?: string;
+  tiers_immatriculation?: string;
+  tiers_assurance?: string;
+  tiers_police?: string;
+  constat_s3_key?: string;
+  assurance_ref?: string;
+  assurance_declaration_date?: string;
+  responsabilite?: string;
+  cout_reparation_ht?: number;
+  franchise?: number;
+  indemnisation_recue?: number;
+  cout_immobilisation_estime?: number;
+  jours_immobilisation?: number;
+  statut: string;
+  date_cloture?: string;
+  notes?: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CostSummary {
+  categorie: string;
+  total_ht: number;
+  total_ttc?: number;
+  count: number;
+}
+
+export interface FleetDashboardStats {
+  total_vehicles: number;
+  vehicles_actifs: number;
+  vehicles_en_maintenance: number;
+  vehicles_immobilises: number;
+  taux_disponibilite: number;
+  maintenances_a_venir_30j: number;
+  maintenances_en_retard: number;
+  sinistres_ouverts: number;
+  cout_total_mois_ht: number;
+  cout_moyen_km?: number;
+}
+
+// ── Module I — Reporting & KPI ──────────────────────────────────
+
+export interface KpiCard {
+  key: string;
+  label: string;
+  value: number;
+  unite?: string;
+  trend?: string;
+  variation_pourcent?: number;
+}
+
+export interface DashboardResponse {
+  role: string;
+  kpis: KpiCard[];
+}
+
+// ── Parametrage (expanded login response) ───────────────────────
+
+export interface TenantInfo {
+  id: string;
+  name: string;
+  siren?: string;
+  modules_enabled: string[];
+}
+
+export interface AgencyInfo {
+  id: string;
+  name: string;
+  code?: string;
+}
+
+export interface PermissionsInfo {
+  role_name: string;
+  permissions: string[];
+}
+
+export interface DashboardConfig {
+  kpi_keys: string[];
+  sidebar_sections: string[];
+}
+
+export interface LoginResponseFull {
+  access_token: string;
+  token_type: string;
+  user_id: string;
+  role: string;
+  tenant?: TenantInfo;
+  agency?: AgencyInfo;
+  permissions?: PermissionsInfo;
+  dashboard_config?: DashboardConfig;
+}

@@ -1,23 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { apiGet, apiPut, apiFetch } from "@/lib/api";
+import { apiGet, apiPut, apiPost, apiFetch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { VehicleDetail } from "@/lib/types";
+import type { VehicleDetail, MaintenanceSchedule, MaintenanceRecord, VehicleCost, CostSummary } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import Input from "@/components/Input";
 import StatusBadge from "@/components/StatusBadge";
 import ComplianceTab from "@/components/ComplianceTab";
 
-const TABS = ["Général", "Caractéristiques", "Technique", "Conformité"] as const;
+const TABS = ["Général", "Caractéristiques", "Technique", "Maintenance", "Coûts", "Conformité"] as const;
 const STATUTS = ["ACTIF", "INACTIF", "EN_MAINTENANCE", "IMMOBILISE", "VENDU", "RESTITUE"];
 const CATEGORIES = ["VL", "PL_3_5T_19T", "PL_PLUS_19T", "SPL", "REMORQUE", "SEMI_REMORQUE", "TRACTEUR"];
 const CARROSSERIES = ["BACHE", "FOURGON", "FRIGORIFIQUE", "PLATEAU", "CITERNE", "BENNE", "PORTE_CONTENEUR", "SAVOYARDE", "AUTRE"];
 const MOTORISATIONS = ["DIESEL", "GNL", "GNC", "ELECTRIQUE", "HYDROGENE", "HYBRIDE"];
 const NORMES_EURO = ["EURO_3", "EURO_4", "EURO_5", "EURO_6", "EURO_6D", "EURO_7"];
+const TYPES_MAINTENANCE = ["CT", "VIDANGE", "PNEUS", "FREINS", "REVISION", "TACHYGRAPHE", "ATP", "ASSURANCE", "OTHER"];
+const CATEGORIES_COUT = ["CARBURANT", "PEAGE", "ASSURANCE", "LOCATION", "ENTRETIEN", "REPARATION", "PNEUMATIQUES", "CONTROLE_TECHNIQUE", "AMENDE", "LAVAGE", "AUTRE"];
 
 export default function VehicleDetailPage() {
   const { user } = useAuth();
@@ -26,6 +28,18 @@ export default function VehicleDetailPage() {
   const [tab, setTab] = useState<typeof TABS[number]>("Général");
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
+
+  // Maintenance state
+  const [schedules, setSchedules] = useState<MaintenanceSchedule[]>([]);
+  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
+  const [showMaintForm, setShowMaintForm] = useState(false);
+  const [maintForm, setMaintForm] = useState({ type_maintenance: "REVISION", libelle: "", date_debut: "", prestataire: "", cout_total_ht: "" });
+
+  // Cost state
+  const [costs, setCosts] = useState<VehicleCost[]>([]);
+  const [costSummary, setCostSummary] = useState<CostSummary[]>([]);
+  const [showCostForm, setShowCostForm] = useState(false);
+  const [costForm, setCostForm] = useState({ categorie: "ENTRETIEN", libelle: "", date_cout: "", montant_ht: "", fournisseur: "" });
 
   useEffect(() => {
     if (id) {
@@ -66,6 +80,18 @@ export default function VehicleDetailPage() {
     }
   }, [id]);
 
+  const loadFleetData = useCallback(() => {
+    if (!id) return;
+    apiGet<MaintenanceSchedule[]>(`/v1/fleet/vehicles/${id}/schedules`).then(setSchedules).catch(() => {});
+    apiGet<MaintenanceRecord[]>(`/v1/fleet/vehicles/${id}/maintenance`).then(setMaintenanceRecords).catch(() => {});
+    apiGet<VehicleCost[]>(`/v1/fleet/vehicles/${id}/costs`).then(setCosts).catch(() => {});
+    apiGet<CostSummary[]>(`/v1/fleet/vehicles/${id}/costs/summary`).then(setCostSummary).catch(() => {});
+  }, [id]);
+
+  useEffect(() => {
+    if (tab === "Maintenance" || tab === "Coûts") loadFleetData();
+  }, [tab, loadFleetData]);
+
   const toIntOrNull = (v: string) => v ? parseInt(v) : null;
   const toFloatOrNull = (v: string) => v ? parseFloat(v) : null;
 
@@ -103,6 +129,28 @@ export default function VehicleDetailPage() {
     apiGet<VehicleDetail>(`/v1/masterdata/vehicles/${id}`).then(setVehicle);
   };
 
+  const handleCreateMaintenance = async () => {
+    if (!maintForm.libelle || !maintForm.date_debut) return;
+    await apiPost(`/v1/fleet/vehicles/${id}/maintenance`, {
+      ...maintForm,
+      cout_total_ht: maintForm.cout_total_ht ? parseFloat(maintForm.cout_total_ht) : null,
+    });
+    setShowMaintForm(false);
+    setMaintForm({ type_maintenance: "REVISION", libelle: "", date_debut: "", prestataire: "", cout_total_ht: "" });
+    loadFleetData();
+  };
+
+  const handleCreateCost = async () => {
+    if (!costForm.libelle || !costForm.date_cout || !costForm.montant_ht) return;
+    await apiPost(`/v1/fleet/vehicles/${id}/costs`, {
+      ...costForm,
+      montant_ht: parseFloat(costForm.montant_ht),
+    });
+    setShowCostForm(false);
+    setCostForm({ categorie: "ENTRETIEN", libelle: "", date_cout: "", montant_ht: "", fournisseur: "" });
+    loadFleetData();
+  };
+
   if (!vehicle) return <div className="text-center py-8 text-gray-400">Chargement...</div>;
 
   return (
@@ -122,10 +170,10 @@ export default function VehicleDetailPage() {
         <span className="text-sm text-gray-500">{vehicle.marque || vehicle.brand} {vehicle.modele || vehicle.model}</span>
       </div>
 
-      <div className="flex gap-1 border-b">
+      <div className="flex gap-1 border-b overflow-x-auto">
         {TABS.map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === t ? "border-primary text-primary" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${tab === t ? "border-primary text-primary" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
             {t}
           </button>
         ))}
@@ -231,6 +279,177 @@ export default function VehicleDetailPage() {
         </div>
       )}
 
+      {tab === "Maintenance" && (
+        <div className="space-y-6">
+          {/* Schedules */}
+          <Card title="Plans de maintenance" icon="event_repeat">
+            {schedules.length === 0 ? (
+              <p className="text-sm text-gray-500">Aucun plan de maintenance configure.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-gray-500">
+                      <th className="py-2 pr-4">Type</th>
+                      <th className="py-2 pr-4">Libelle</th>
+                      <th className="py-2 pr-4">Frequence</th>
+                      <th className="py-2 pr-4">Prochaine date</th>
+                      <th className="py-2 pr-4">Prestataire</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {schedules.map((s) => (
+                      <tr key={s.id} className="border-b last:border-0">
+                        <td className="py-2 pr-4 font-medium">{s.type_maintenance}</td>
+                        <td className="py-2 pr-4">{s.libelle}</td>
+                        <td className="py-2 pr-4 text-gray-500">
+                          {s.frequence_jours ? `${s.frequence_jours}j` : ""}
+                          {s.frequence_jours && s.frequence_km ? " / " : ""}
+                          {s.frequence_km ? `${s.frequence_km} km` : ""}
+                        </td>
+                        <td className="py-2 pr-4">{s.prochaine_date_prevue || "—"}</td>
+                        <td className="py-2 pr-4 text-gray-500">{s.prestataire_par_defaut || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {/* Maintenance records */}
+          <Card title="Interventions" icon="build"
+            actions={<Button size="sm" variant="secondary" icon="add" onClick={() => setShowMaintForm(!showMaintForm)}>Ajouter</Button>}>
+            {showMaintForm && (
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-600">Type</label>
+                    <select value={maintForm.type_maintenance} onChange={(e) => setMaintForm({ ...maintForm, type_maintenance: e.target.value })}
+                      className="border rounded px-2 py-1.5 text-sm">
+                      {TYPES_MAINTENANCE.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <Input label="Libelle" value={maintForm.libelle} onChange={(e) => setMaintForm({ ...maintForm, libelle: e.target.value })} />
+                  <Input label="Date debut" type="date" value={maintForm.date_debut} onChange={(e) => setMaintForm({ ...maintForm, date_debut: e.target.value })} />
+                  <Input label="Prestataire" value={maintForm.prestataire} onChange={(e) => setMaintForm({ ...maintForm, prestataire: e.target.value })} />
+                  <Input label="Cout HT" type="number" step="0.01" value={maintForm.cout_total_ht} onChange={(e) => setMaintForm({ ...maintForm, cout_total_ht: e.target.value })} />
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleCreateMaintenance} icon="save">Creer</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowMaintForm(false)}>Annuler</Button>
+                </div>
+              </div>
+            )}
+            {maintenanceRecords.length === 0 ? (
+              <p className="text-sm text-gray-500">Aucune intervention enregistree.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-gray-500">
+                      <th className="py-2 pr-4">Type</th>
+                      <th className="py-2 pr-4">Libelle</th>
+                      <th className="py-2 pr-4">Date</th>
+                      <th className="py-2 pr-4">Statut</th>
+                      <th className="py-2 pr-4">Prestataire</th>
+                      <th className="py-2 pr-4 text-right">Cout HT</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {maintenanceRecords.map((r) => (
+                      <tr key={r.id} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="py-2 pr-4 font-medium">{r.type_maintenance}</td>
+                        <td className="py-2 pr-4">{r.libelle}</td>
+                        <td className="py-2 pr-4">{r.date_debut}</td>
+                        <td className="py-2 pr-4"><StatusBadge statut={r.statut} /></td>
+                        <td className="py-2 pr-4 text-gray-500">{r.prestataire || "—"}</td>
+                        <td className="py-2 pr-4 text-right">
+                          {r.cout_total_ht != null ? `${Number(r.cout_total_ht).toFixed(2)} €` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {tab === "Coûts" && (
+        <div className="space-y-6">
+          {/* Cost summary cards */}
+          {costSummary.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {costSummary.map((s) => (
+                <div key={s.categorie} className="bg-white border rounded-lg p-3">
+                  <div className="text-xs text-gray-500 mb-1">{s.categorie}</div>
+                  <div className="text-lg font-bold">{Number(s.total_ht).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}</div>
+                  <div className="text-xs text-gray-400">{s.count} operation{s.count > 1 ? "s" : ""}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Cost list */}
+          <Card title="Details des couts" icon="payments"
+            actions={<Button size="sm" variant="secondary" icon="add" onClick={() => setShowCostForm(!showCostForm)}>Ajouter</Button>}>
+            {showCostForm && (
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-600">Categorie</label>
+                    <select value={costForm.categorie} onChange={(e) => setCostForm({ ...costForm, categorie: e.target.value })}
+                      className="border rounded px-2 py-1.5 text-sm">
+                      {CATEGORIES_COUT.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <Input label="Libelle" value={costForm.libelle} onChange={(e) => setCostForm({ ...costForm, libelle: e.target.value })} />
+                  <Input label="Date" type="date" value={costForm.date_cout} onChange={(e) => setCostForm({ ...costForm, date_cout: e.target.value })} />
+                  <Input label="Montant HT" type="number" step="0.01" value={costForm.montant_ht} onChange={(e) => setCostForm({ ...costForm, montant_ht: e.target.value })} />
+                  <Input label="Fournisseur" value={costForm.fournisseur} onChange={(e) => setCostForm({ ...costForm, fournisseur: e.target.value })} />
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleCreateCost} icon="save">Creer</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowCostForm(false)}>Annuler</Button>
+                </div>
+              </div>
+            )}
+            {costs.length === 0 ? (
+              <p className="text-sm text-gray-500">Aucun cout enregistre.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-gray-500">
+                      <th className="py-2 pr-4">Categorie</th>
+                      <th className="py-2 pr-4">Libelle</th>
+                      <th className="py-2 pr-4">Date</th>
+                      <th className="py-2 pr-4 text-right">Montant HT</th>
+                      <th className="py-2 pr-4">Fournisseur</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {costs.map((c) => (
+                      <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="py-2 pr-4 font-medium">{c.categorie}</td>
+                        <td className="py-2 pr-4">{c.libelle}</td>
+                        <td className="py-2 pr-4">{c.date_cout}</td>
+                        <td className="py-2 pr-4 text-right font-medium">
+                          {Number(c.montant_ht).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
+                        </td>
+                        <td className="py-2 pr-4 text-gray-500">{c.fournisseur || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
       {tab === "Conformité" && (
         <ComplianceTab entityType="VEHICLE" entityId={id} />
       )}
@@ -244,7 +463,9 @@ export default function VehicleDetailPage() {
         </div>
       </Card>
 
-      <Button onClick={handleSave} disabled={saving} icon="save">{saving ? "Enregistrement..." : "Enregistrer"}</Button>
+      {(tab === "Général" || tab === "Caractéristiques" || tab === "Technique") && (
+        <Button onClick={handleSave} disabled={saving} icon="save">{saving ? "Enregistrement..." : "Enregistrer"}</Button>
+      )}
     </div>
   );
 }

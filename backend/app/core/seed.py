@@ -12,6 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import async_session_factory
 from app.core.security import hash_password
 
+
+def _to_date(v: str | None) -> date | None:
+    """Convert a date string 'YYYY-MM-DD' to a date object for asyncpg."""
+    if v is None:
+        return None
+    return date.fromisoformat(v)
+
 TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 AGENCY_ID = uuid.UUID("00000000-0000-0000-0000-000000000010")
 ADMIN_ID = uuid.UUID("00000000-0000-0000-0000-000000000100")
@@ -85,11 +92,33 @@ ROLES = [
         "masterdata.driver.read", "masterdata.driver.update",
         "tasks.read", "tasks.update",
     ]),
+    ("flotte", [
+        "fleet.read", "fleet.create", "fleet.update",
+        "masterdata.vehicle.read", "masterdata.vehicle.update",
+        "documents.read", "documents.create",
+        "tasks.read", "tasks.update",
+    ]),
     ("lecture_seule", [
         "jobs.read", "masterdata.read", "documents.read",
         "billing.invoice.read", "billing.pricing.read",
-        "payroll.read", "tasks.read",
+        "payroll.read", "tasks.read", "fleet.read", "reports.read",
     ]),
+    ("soustraitant", [
+        "jobs.read", "documents.read", "documents.create",
+    ]),
+]
+
+# ── Persona users (email / password) ────────────────────────────
+# Each persona maps to a role for demo/testing purposes.
+PERSONA_USERS = [
+    # (email, password, full_name, role_key)
+    ("dirigeant@saf.local", "dirigeant2026", "Marc LEFEVRE", "admin"),
+    ("exploitant@saf.local", "exploit2026", "Sophie GIRARD", "exploitation"),
+    ("compta@saf.local", "compta2026", "Claire MOREAU", "compta"),
+    ("rh@saf.local", "rh2026", "Isabelle FOURNIER", "rh_paie"),
+    ("flotte@saf.local", "flotte2026", "Thomas ROUX", "flotte"),
+    ("soustraitant@saf.local", "soustraitant2026", "Pierre MARTIN", "soustraitant"),
+    ("auditeur@saf.local", "audit2026", "Laurent BLANC", "lecture_seule"),
 ]
 
 # ── Module B demo data ────────────────────────────────────────────
@@ -256,12 +285,14 @@ async def seed(db: AsyncSession) -> None:
     role_ids = {}
     for role_name, perms in ROLES:
         rid = uuid.uuid4()
-        role_ids[role_name] = rid
-        await db.execute(text("""
+        result = await db.execute(text("""
             INSERT INTO roles (id, tenant_id, name, permissions)
             VALUES (:id, :tid, :name, CAST(:perms AS jsonb))
             ON CONFLICT ON CONSTRAINT uq_roles_tenant_name DO UPDATE SET permissions = EXCLUDED.permissions
+            RETURNING id
         """), {"id": str(rid), "tid": str(TENANT_ID), "name": role_name, "perms": json.dumps(perms)})
+        actual_id = result.scalar()
+        role_ids[role_name] = actual_id
 
     # Admin user
     await db.execute(text("""
@@ -273,6 +304,20 @@ async def seed(db: AsyncSession) -> None:
         "email": "admin@saf.local", "pwd": hash_password("admin"),
         "name": "Admin SAF", "rid": str(role_ids["admin"]),
     })
+
+    # Persona users (one per role for demo)
+    for p_email, p_password, p_name, p_role_key in PERSONA_USERS:
+        p_uid = uuid.uuid4()
+        await db.execute(text("""
+            INSERT INTO users (id, tenant_id, agency_id, email, password_hash, full_name, role_id)
+            VALUES (:id, :tid, :aid, :email, :pwd, :name, :rid)
+            ON CONFLICT ON CONSTRAINT uq_users_tenant_email DO UPDATE
+                SET password_hash = EXCLUDED.password_hash, full_name = EXCLUDED.full_name, role_id = EXCLUDED.role_id
+        """), {
+            "id": str(p_uid), "tid": str(TENANT_ID), "aid": str(AGENCY_ID),
+            "email": p_email, "pwd": hash_password(p_password),
+            "name": p_name, "rid": str(role_ids[p_role_key]),
+        })
 
     # Document types
     for entity_type, code, label, validity, mandatory in FR_DOC_TYPES:
@@ -329,7 +374,7 @@ async def seed(db: AsyncSession) -> None:
                 :dpj, :mp, :cpt,
                 :plafond, :statut, :ddr,
                 :addr, CAST(:agency_ids AS jsonb)
-            ) ON CONFLICT (id) DO NOTHING
+            ) ON CONFLICT ON CONSTRAINT uq_customers_tenant_code DO NOTHING
         """), {
             "id": str(cid), "tid": str(TENANT_ID),
             "name": cust["raison_sociale"], "siren": cust.get("siren"),
@@ -346,7 +391,7 @@ async def seed(db: AsyncSession) -> None:
             "cpt": cust.get("condition_paiement_texte"),
             "plafond": cust.get("plafond_encours"),
             "statut": cust.get("statut", "ACTIF"),
-            "ddr": cust.get("date_debut_relation"),
+            "ddr": _to_date(cust.get("date_debut_relation")),
             "addr": cust.get("adresse_facturation_ligne1"),
             "agency_ids": json.dumps([str(AGENCY_ID)]),
         })
@@ -375,15 +420,15 @@ async def seed(db: AsyncSession) -> None:
         """), {
             "id": str(did), "tid": str(TENANT_ID), "aid": str(AGENCY_ID),
             "mat": drv["matricule"], "fn": drv["first_name"], "ln": drv["last_name"],
-            "hd": drv.get("hire_date"),
+            "hd": _to_date(drv.get("hire_date")),
             "civ": drv.get("civilite"), "nom": drv["nom"], "prenom": drv["prenom"],
-            "dob": drv.get("date_naissance"), "lieu": drv.get("lieu_naissance"),
+            "dob": _to_date(drv.get("date_naissance")), "lieu": drv.get("lieu_naissance"),
             "nat": drv.get("nationalite"), "nir": drv.get("nir"),
             "al1": drv.get("adresse_ligne1"), "cp": drv.get("code_postal"),
             "ville": drv.get("ville"), "pays": drv.get("pays", "FR"),
             "tm": drv.get("telephone_mobile"), "ph": drv.get("phone"), "em": drv.get("email"),
             "se": drv.get("statut_emploi", "SALARIE"), "tc": drv.get("type_contrat", "CDI"),
-            "de": drv.get("date_entree"), "poste": drv.get("poste"),
+            "de": _to_date(drv.get("date_entree")), "poste": drv.get("poste"),
             "cpermis": json.dumps(drv.get("categorie_permis", [])),
             "fimo": drv.get("qualification_fimo", False),
             "fco": drv.get("qualification_fco", False),
@@ -427,11 +472,11 @@ async def seed(db: AsyncSession) -> None:
             "brand": veh.get("brand"), "model": veh.get("model"),
             "vtype": veh.get("categorie"),
             "payload": veh.get("charge_utile_kg"),
-            "reg": veh.get("date_premiere_immatriculation"),
+            "reg": _to_date(veh.get("date_premiere_immatriculation")),
             "immat": veh["immatriculation"], "te": veh["type_entity"],
             "cat": veh["categorie"], "marque": veh["marque"], "modele": veh["modele"],
             "amc": veh.get("annee_mise_en_circulation"),
-            "dpi": veh.get("date_premiere_immatriculation"),
+            "dpi": _to_date(veh.get("date_premiere_immatriculation")),
             "carros": veh.get("carrosserie"),
             "ptac": veh.get("ptac_kg"), "cu": veh.get("charge_utile_kg"),
             "vol": veh.get("volume_m3"),
@@ -449,7 +494,7 @@ async def seed(db: AsyncSession) -> None:
     # ── Module B: Demo Subcontractors ─────────────────────────────
     for sub in DEMO_SUBCONTRACTORS:
         sid = uuid.uuid4()
-        await db.execute(text("""
+        result = await db.execute(text("""
             INSERT INTO subcontractors (
                 id, tenant_id, code, raison_sociale, siret, siren,
                 adresse_ligne1, code_postal, ville, pays,
@@ -468,7 +513,9 @@ async def seed(db: AsyncSession) -> None:
                 :dpj, :mp,
                 :statut, :conf, :nq,
                 CAST(:agency_ids AS jsonb)
-            ) ON CONFLICT ON CONSTRAINT uq_subcontractors_tenant_code DO NOTHING
+            ) ON CONFLICT ON CONSTRAINT uq_subcontractors_tenant_code
+              DO UPDATE SET raison_sociale = EXCLUDED.raison_sociale
+            RETURNING id
         """), {
             "id": str(sid), "tid": str(TENANT_ID),
             "code": sub["code"], "rs": sub["raison_sociale"],
@@ -488,6 +535,7 @@ async def seed(db: AsyncSession) -> None:
             "nq": sub.get("note_qualite"),
             "agency_ids": json.dumps([str(AGENCY_ID)]),
         })
+        actual_sid = result.scalar()
 
         # Add a demo contract for the subcontractor
         await db.execute(text("""
@@ -497,11 +545,11 @@ async def seed(db: AsyncSession) -> None:
             ) VALUES (
                 :id, :tid, :sid, :ref, :tp,
                 :dd, :df, :tr, :statut
-            )
+            ) ON CONFLICT DO NOTHING
         """), {
-            "id": str(uuid.uuid4()), "tid": str(TENANT_ID), "sid": str(sid),
+            "id": str(uuid.uuid4()), "tid": str(TENANT_ID), "sid": str(actual_sid),
             "ref": "CONTRAT-ST-2026-001", "tp": "LOT_COMPLET",
-            "dd": "2026-01-01", "df": "2026-12-31", "tr": True, "statut": "ACTIF",
+            "dd": date(2026, 1, 1), "df": date(2026, 12, 31), "tr": True, "statut": "ACTIF",
         })
 
     await db.commit()

@@ -33,7 +33,7 @@ SAF-Logistic centralise la gestion administrative, financiere, RH et documentair
      +--------v---------+    +---------v----------+
      |  PostgreSQL 16   |    |   Celery Workers   |
      |  RLS tenant_id   |    +----+----------+----+
-     |  4 migrations    |         |          |
+     |  5 migrations    |         |          |
      +------------------+    +----v---+ +----v--------+
                              |default | |  ocr        |
                              |queue   | |  queue      |
@@ -99,8 +99,8 @@ SAF-Logistic centralise la gestion administrative, financiere, RH et documentair
 | **E - Facturation** | Generation factures, PDF, validation, avoirs | Implemente |
 | **F - Achats** | Factures fournisseurs, rapprochement, OCR extraction | Implemente |
 | **G - RH / Pre-paie** | Variables paie, periodes, exports | Implemente |
-| **H - Flotte** | Echeances, couts, maintenance | Prevu |
-| **I - Reporting** | Dashboards, KPI, exports | Prevu |
+| **H - Flotte** | Maintenance, couts, sinistres, echeances vehicules | Implemente |
+| **I - Reporting** | Dashboards KPI, exports CSV, pilotage par role | Implemente |
 
 ---
 
@@ -142,7 +142,7 @@ saf-logistic/
 |   |   |   |-- s3.py                      # Operations S3
 |   |   |   +-- tasks.py                   # Taches async (compliance, OCR, rappels)
 |   |   +-- modules/
-|   |       |-- auth/router.py             # Authentification JWT
+|   |       |-- auth/router.py             # Authentification JWT + parametrage
 |   |       |-- masterdata/                # Clients, conducteurs, vehicules
 |   |       |-- jobs/                      # Missions, livraisons, POD, litiges
 |   |       |-- documents/                 # Gestion documentaire + conformite
@@ -150,12 +150,15 @@ saf-logistic/
 |   |       |-- ocr/                       # OCR multi-provider
 |   |       |-- payroll/                   # Pre-paie
 |   |       |-- onboarding/                # Onboarding entreprise
-|   |       +-- tasks/                     # Gestion des taches
+|   |       |-- tasks/                     # Gestion des taches
+|   |       |-- fleet/                     # Maintenance, couts, sinistres (Module H)
+|   |       +-- reports/                   # Reporting, KPI, exports CSV (Module I)
 |   |-- migrations/versions/
 |   |   |-- 0001_initial_schema.py         # Users, tenants, agences
 |   |   |-- 0002_module_b_referentiels.py  # Clients, conducteurs, vehicules
 |   |   |-- 0003_module_c_missions.py      # Missions, livraisons, POD, litiges
-|   |   +-- 0004_module_d_compliance.py    # Templates, checklists, alertes
+|   |   |-- 0004_module_d_compliance.py    # Templates, checklists, alertes
+|   |   +-- 0005_modules_h_i.py           # Maintenance, couts, sinistres (Module H)
 |   |-- Dockerfile.api
 |   |-- Dockerfile.ocr_worker
 |   |-- requirements.txt
@@ -177,6 +180,10 @@ saf-logistic/
 |   |       |-- subcontractors/page.tsx    # Sous-traitants
 |   |       |-- subcontractors/[id]/page.tsx
 |   |       |-- disputes/page.tsx          # Litiges
+|   |       |-- fleet/page.tsx             # Tableau de bord flotte (Module H)
+|   |       |-- fleet/maintenance/page.tsx # Liste maintenances
+|   |       |-- fleet/claims/page.tsx      # Liste sinistres
+|   |       |-- reports/page.tsx           # Dashboard KPI (Module I)
 |   |       |-- compliance/page.tsx        # Dashboard conformite
 |   |       |-- compliance/alerts/page.tsx # Alertes conformite
 |   |       |-- compliance/templates/page.tsx
@@ -354,6 +361,34 @@ Alertes progressives : J-60 -> J-30 -> J-15 -> J-7 -> J0 (expire)
 | PATCH | `/v1/compliance/alerts/{id}/acknowledge` | Acquitter une alerte |
 | GET/POST | `/v1/compliance/templates` | Templates de conformite |
 
+### Flotte & Maintenance (Module H)
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| GET/POST | `/v1/fleet/vehicles/{id}/schedules` | Plans de maintenance |
+| PUT | `/v1/fleet/vehicles/schedules/{id}` | Modifier un plan |
+| DELETE | `/v1/fleet/vehicles/schedules/{id}` | Desactiver un plan |
+| GET/POST | `/v1/fleet/vehicles/{id}/maintenance` | Interventions maintenance |
+| PUT | `/v1/fleet/maintenance/{id}` | Modifier une intervention |
+| PATCH | `/v1/fleet/maintenance/{id}/status` | Changer statut intervention |
+| GET | `/v1/fleet/maintenance/upcoming` | Maintenances a venir (cross-vehicule) |
+| GET/POST | `/v1/fleet/vehicles/{id}/costs` | Couts vehicule |
+| PUT/DELETE | `/v1/fleet/costs/{id}` | Modifier/supprimer un cout |
+| GET | `/v1/fleet/vehicles/{id}/costs/summary` | Synthese couts par categorie |
+| GET/POST | `/v1/fleet/vehicles/{id}/claims` | Sinistres vehicule |
+| PUT | `/v1/fleet/claims/{id}` | Modifier un sinistre |
+| PATCH | `/v1/fleet/claims/{id}/status` | Changer statut sinistre |
+| GET | `/v1/fleet/dashboard` | Tableau de bord flotte |
+
+### Reporting & KPI (Module I)
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/v1/reports/dashboard` | KPIs adaptes au role |
+| GET | `/v1/reports/financial` | Rapport financier (ADMIN, COMPTA) |
+| GET | `/v1/reports/operations` | Rapport operations (ADMIN, EXPLOITATION) |
+| GET | `/v1/reports/fleet` | Rapport flotte (ADMIN, FLOTTE) |
+| GET | `/v1/reports/hr` | Rapport RH (ADMIN, RH_PAIE) |
+| POST | `/v1/reports/export` | Export CSV par dataset |
+
 ### Facturation (Module E)
 | Methode | Endpoint | Description |
 |---------|----------|-------------|
@@ -378,8 +413,85 @@ Alertes progressives : J-60 -> J-30 -> J-15 -> J-7 -> J0 (expire)
 | `COMPTA` | Comptable | Facturation, achats, rapprochement |
 | `RH_PAIE` | Responsable RH | Conducteurs, absences, pre-paie |
 | `FLOTTE` | Responsable flotte | Vehicules, maintenance, conformite vehicules |
+| `FLOTTE` | Responsable flotte | Vehicules, maintenance, conformite vehicules |
 | `READONLY` | Consultation seule | Lecture toutes les donnees de l'agence |
 | `SOUSTRAITANT` | Portail sous-traitant | Ses missions, upload POD |
+
+---
+
+## Personas & Actions detaillees
+
+### 1. Dirigeant (Marc LEFEVRE)
+- **Role** : `SUPER_ADMIN` / `admin`
+- **Connexion** : `dirigeant@saf.local` / `dirigeant2026`
+- **Actions** :
+  - Consulter le tableau de bord global (CA, marge, DSO, conformite)
+  - Superviser toutes les agences et modules
+  - Configurer les roles, permissions et parametrage tenant
+  - Valider les decisions strategiques (tarifs, sous-traitants)
+- **KPIs** : ca_mensuel, marge, taux_conformite, dso, cout_km, missions_en_cours, litiges_ouverts
+
+### 2. Exploitant (Sophie GIRARD)
+- **Role** : `EXPLOITATION`
+- **Connexion** : `exploitant@saf.local` / `exploit2026`
+- **Actions** :
+  - Creer et planifier les missions de transport
+  - Affecter conducteurs et vehicules aux missions
+  - Suivre le statut des livraisons et valider les POD
+  - Gerer les litiges (ouverture, instruction, resolution)
+  - Suivre la conformite des conducteurs et vehicules affectes
+- **KPIs** : missions_en_cours, pod_delai, taux_cloture_j1, litiges_ouverts
+
+### 3. DAF / Comptable (Claire MOREAU)
+- **Role** : `COMPTA`
+- **Connexion** : `compta@saf.local` / `compta2026`
+- **Actions** :
+  - Generer et valider les factures clients
+  - Rapprocher les factures fournisseurs (sous-traitants)
+  - Extraire les donnees via OCR (factures, bons de livraison)
+  - Suivre les encours clients et les impayees
+  - Configurer les grilles tarifaires
+- **KPIs** : dso, balance_agee, nb_factures_impayees, ecarts_soustraitants
+
+### 4. Responsable RH / Paie (Isabelle FOURNIER)
+- **Role** : `RH_PAIE`
+- **Connexion** : `rh@saf.local` / `rh2026`
+- **Actions** :
+  - Gerer les fiches conducteurs (contrats, qualifications)
+  - Saisir et valider les variables de paie mensuelles
+  - Exporter les donnees vers SILAE (logiciel paie)
+  - Suivre la conformite documentaire des conducteurs
+  - Gerer les absences et primes
+- **KPIs** : delai_prepaie, anomalies, taux_correction, conformite_conducteurs
+
+### 5. Responsable Flotte (Thomas ROUX)
+- **Role** : `FLOTTE`
+- **Connexion** : `flotte@saf.local` / `flotte2026`
+- **Actions** :
+  - Planifier et suivre les maintenances vehicules
+  - Enregistrer les couts vehicules (carburant, peages, reparations)
+  - Declarer et suivre les sinistres
+  - Suivre la conformite documentaire vehicules (CT, assurance)
+  - Consulter le tableau de bord flotte (disponibilite, couts)
+- **KPIs** : taux_conformite_vehicules, cout_km, pannes_non_planifiees, maintenances_a_venir
+
+### 6. Sous-traitant (Pierre MARTIN)
+- **Role** : `SOUSTRAITANT`
+- **Connexion** : `soustraitant@saf.local` / `soustraitant2026`
+- **Actions** :
+  - Consulter les missions qui lui sont affectees
+  - Uploader les preuves de livraison (POD)
+  - Consulter ses documents contractuels
+- **KPIs** : missions_en_cours
+
+### 7. Auditeur / Lecture seule (Laurent BLANC)
+- **Role** : `READONLY` / `lecture_seule`
+- **Connexion** : `auditeur@saf.local` / `audit2026`
+- **Actions** :
+  - Consulter l'ensemble des donnees sans modification
+  - Exporter des rapports CSV pour audit
+  - Verifier la conformite documentaire
+- **KPIs** : ca_mensuel, missions_en_cours, taux_conformite
 
 ---
 
@@ -393,6 +505,7 @@ Alertes progressives : J-60 -> J-30 -> J-15 -> J-7 -> J0 (expire)
 | `0002` | Module B : clients, contacts, adresses, conducteurs, vehicules, sous-traitants, contrats |
 | `0003` | Module C : expansion jobs (25+ colonnes), delivery_points, mission_goods, proof_of_delivery, disputes, dispute_attachments |
 | `0004` | Module D : expansion documents (20+ colonnes), compliance_templates, compliance_checklists, compliance_alerts |
+| `0005` | Module H : maintenance_schedules, maintenance_records, vehicle_costs, vehicle_claims |
 
 ### Schema principal
 
@@ -418,6 +531,14 @@ documents ──< compliance_alerts
     ^
     |
 compliance_templates ──> compliance_checklists
+
+vehicles ──< maintenance_schedules
+    |
+    +──< maintenance_records ──> vehicle_costs
+    |
+    +──< vehicle_costs (unified cost ledger)
+    |
+    +──< vehicle_claims (sinistres)
 ```
 
 ---

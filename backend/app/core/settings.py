@@ -26,6 +26,9 @@ class Settings:
     S3_ENDPOINT_URL: str = field(
         default_factory=lambda: os.getenv("S3_ENDPOINT_URL", "http://localhost:9000")
     )
+    S3_PUBLIC_ENDPOINT_URL: str = field(
+        default_factory=lambda: os.getenv("S3_PUBLIC_ENDPOINT_URL", "")
+    )
     S3_ACCESS_KEY: str = field(default_factory=lambda: os.getenv("S3_ACCESS_KEY", "minio"))
     S3_SECRET_KEY: str = field(default_factory=lambda: os.getenv("S3_SECRET_KEY", "minio12345"))
     S3_BUCKET: str = field(default_factory=lambda: os.getenv("S3_BUCKET", "saf-docs"))

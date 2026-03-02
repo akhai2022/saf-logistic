@@ -2,11 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/lib/auth";
-import { useState } from "react";
+import { useAuth, getDashboardConfig } from "@/lib/auth";
+import { useState, useMemo } from "react";
 
-const NAV_SECTIONS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+}
+
+interface NavSection {
+  key: string;
+  label: string;
+  items: NavItem[];
+}
+
+const ALL_SECTIONS: NavSection[] = [
   {
+    key: "exploitation",
     label: "Exploitation",
     items: [
       { href: "/jobs", label: "Missions", icon: "local_shipping" },
@@ -16,6 +29,7 @@ const NAV_SECTIONS = [
     ],
   },
   {
+    key: "referentiels",
     label: "Référentiels",
     items: [
       { href: "/customers", label: "Clients", icon: "business" },
@@ -26,6 +40,7 @@ const NAV_SECTIONS = [
     ],
   },
   {
+    key: "finance",
     label: "Finance",
     items: [
       { href: "/invoices", label: "Factures", icon: "receipt_long" },
@@ -35,12 +50,36 @@ const NAV_SECTIONS = [
       { href: "/supplier-invoices", label: "Fact. Fournisseurs", icon: "inventory_2" },
     ],
   },
+  {
+    key: "flotte",
+    label: "Flotte",
+    items: [
+      { href: "/fleet", label: "Tableau de bord", icon: "dashboard" },
+      { href: "/fleet/maintenance", label: "Maintenance", icon: "build" },
+      { href: "/fleet/claims", label: "Sinistres", icon: "car_crash" },
+    ],
+  },
+  {
+    key: "pilotage",
+    label: "Pilotage",
+    items: [
+      { href: "/reports", label: "Tableau de bord", icon: "bar_chart" },
+    ],
+  },
 ];
 
 export default function Nav() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const visibleSections = useMemo(() => {
+    const config = getDashboardConfig();
+    if (!config || !config.sidebar_sections || config.sidebar_sections.length === 0) {
+      return ALL_SECTIONS;
+    }
+    return ALL_SECTIONS.filter((s) => config.sidebar_sections.includes(s.key));
+  }, []);
 
   const sidebarContent = (
     <>
@@ -57,14 +96,14 @@ export default function Nav() {
 
       {/* Nav sections */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        {NAV_SECTIONS.map((section) => (
-          <div key={section.label}>
+        {visibleSections.map((section) => (
+          <div key={section.key}>
             <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
               {section.label}
             </div>
             <div className="space-y-0.5">
               {section.items.map((item) => {
-                const active = pathname.startsWith(item.href);
+                const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
                 return (
                   <Link
                     key={item.href}
@@ -96,6 +135,9 @@ export default function Nav() {
             <div className="flex-1 min-w-0">
               <div className="text-sm text-white font-medium truncate">
                 {user.full_name || user.email}
+              </div>
+              <div className="text-[10px] text-slate-500 uppercase tracking-wide">
+                {user.role}
               </div>
             </div>
             <button

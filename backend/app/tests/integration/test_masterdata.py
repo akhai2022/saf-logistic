@@ -64,9 +64,9 @@ class TestSIRETValidator:
 class TestTVAIntracomValidator:
     def test_valid_tva(self):
         # Key = (12 + 3*(443061841 % 97)) % 97
-        # 443061841 % 97 = 443061841 mod 97 = 84
-        # (12 + 3*84) % 97 = (12 + 252) % 97 = 264 % 97 = 70
-        assert validate_tva_intracom("FR70443061841") is True
+        # 443061841 % 97 = 82
+        # (12 + 3*82) % 97 = (12 + 246) % 97 = 258 % 97 = 64
+        assert validate_tva_intracom("FR64443061841") is True
 
     def test_invalid_tva_bad_check(self):
         assert validate_tva_intracom("FR99443061841") is False
@@ -75,7 +75,7 @@ class TestTVAIntracomValidator:
         assert validate_tva_intracom("DE12345678901") is False
 
     def test_valid_tva_with_spaces(self):
-        assert validate_tva_intracom("FR 70 443061841") is True
+        assert validate_tva_intracom("FR 64 443061841") is True
 
 
 class TestNIRValidator:
@@ -396,7 +396,7 @@ async def test_client_validation_rejects_bad_siret(client: AsyncClient):
     """RG-B-002: Invalid SIRET is rejected at API level."""
     resp = await client.post("/v1/masterdata/clients", json={
         "raison_sociale": "Bad SIRET Test",
-        "siret": "00000000000000",
+        "siret": "12345678901234",
     })
     assert resp.status_code == 422
 
@@ -497,7 +497,7 @@ async def test_subcontractor_rejects_invalid_siret(client: AsyncClient):
     resp = await client.post("/v1/masterdata/subcontractors", json={
         "code": "BAD",
         "raison_sociale": "Bad",
-        "siret": "00000000000000",
+        "siret": "12345678901234",
         "adresse_ligne1": "1 Rue",
         "code_postal": "75001",
         "ville": "Paris",

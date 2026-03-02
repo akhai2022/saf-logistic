@@ -14,6 +14,8 @@ from app.modules.ocr.router import router as ocr_router
 from app.modules.onboarding.router import router as onboarding_router
 from app.modules.payroll.router import router as payroll_router
 from app.modules.tasks.router import router as tasks_router
+from app.modules.fleet.router import router as fleet_router
+from app.modules.reports.router import router as reports_router
 
 
 @asynccontextmanager
@@ -54,6 +56,8 @@ app.include_router(payroll_router)
 app.include_router(ocr_router)
 app.include_router(tasks_router)
 app.include_router(onboarding_router)
+app.include_router(fleet_router)
+app.include_router(reports_router)
 
 
 @app.get("/health")

@@ -61,6 +61,20 @@ const COLORS: Record<string, string> = {
   // Compliance item
   MANQUANT: "bg-red-100 text-red-700",
   EXPIRANT: "bg-yellow-100 text-yellow-700",
+  // Maintenance statuses
+  PLANIFIE: "bg-blue-100 text-blue-700",
+  TERMINE: "bg-green-100 text-green-700",
+  // Claim statuses
+  DECLARE: "bg-orange-100 text-orange-700",
+  EN_EXPERTISE: "bg-yellow-100 text-yellow-700",
+  EN_REPARATION: "bg-indigo-100 text-indigo-700",
+  CLOS: "bg-gray-200 text-gray-600",
+  REMBOURSE: "bg-emerald-100 text-emerald-700",
+  // Responsibility
+  RESPONSABLE: "bg-red-100 text-red-700",
+  NON_RESPONSABLE: "bg-green-100 text-green-700",
+  PARTAGE: "bg-yellow-100 text-yellow-700",
+  A_DETERMINER: "bg-gray-100 text-gray-600",
 };
 
 const LABELS: Record<string, string> = {
@@ -82,6 +96,11 @@ const LABELS: Record<string, string> = {
   CLOS_ACCEPTE: "Clos (accepté)", CLOS_REFUSE: "Clos (refusé)", CLOS_SANS_SUITE: "Clos sans suite",
   ENVOYEE: "Envoyée", ACQUITTEE: "Acquittée", ESCALADEE: "Escaladée",
   MANQUANT: "Manquant", EXPIRANT: "Expire bientôt",
+  PLANIFIE: "Planifié", TERMINE: "Terminé",
+  DECLARE: "Déclaré", EN_EXPERTISE: "En expertise",
+  EN_REPARATION: "En réparation", CLOS: "Clos", REMBOURSE: "Remboursé",
+  RESPONSABLE: "Responsable", NON_RESPONSABLE: "Non responsable",
+  PARTAGE: "Partagé", A_DETERMINER: "À déterminer",
 };
 
 const ICONS: Record<string, string> = {
@@ -101,6 +120,11 @@ const ICONS: Record<string, string> = {
   OUVERT: "report", EN_INSTRUCTION: "search", RESOLU: "check_circle",
   ENVOYEE: "notifications", ACQUITTEE: "done", ESCALADEE: "priority_high",
   MANQUANT: "help", EXPIRANT: "timer",
+  PLANIFIE: "event", TERMINE: "check_circle",
+  DECLARE: "report", EN_EXPERTISE: "search",
+  EN_REPARATION: "build", CLOS: "lock", REMBOURSE: "paid",
+  RESPONSABLE: "error", NON_RESPONSABLE: "check",
+  PARTAGE: "swap_horiz", A_DETERMINER: "help",
 };
 
 export default function StatusBadge({ statut, size = "sm" }: StatusBadgeProps) {

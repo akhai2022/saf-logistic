@@ -1377,6 +1377,198 @@ Chaque requete API inclut :
 
 ---
 
+## Rapport de verification — Implementation Modules A-I
+
+> Audit realise le 2 mars 2026 sur la base du code source (119 endpoints, 38 tables, 31 pages, 130+ scenarios E2E).
+
+### Synthese
+
+| Module | Statut | Endpoints | Tables | Pages UI | Tests E2E |
+|--------|--------|-----------|--------|----------|-----------|
+| **A — Parametrage** | Partiel | 4 | tenants, agencies, roles, users, number_sequences | login, onboarding | personas.spec.ts |
+| **B — Referentiels** | Implemente | 30+ | customers, client_contacts, client_addresses, drivers, vehicles, subcontractors, subcontractor_contracts, suppliers | 8 pages (liste+detail) | modules_b_c_d.spec.ts |
+| **C — Missions** | Implemente | 24+ | jobs (25+ cols), mission_delivery_points, mission_goods, proof_of_delivery, disputes, dispute_attachments | jobs, disputes, jobs/[id] | modules_b_c_d.spec.ts |
+| **D — Conformite** | Implemente | 13 | documents (20+ cols), compliance_templates, compliance_checklists, compliance_alerts | compliance, alerts, templates, entity detail | modules_b_c_d.spec.ts |
+| **E — Facturation** | Implemente | 7 | invoices, invoice_lines, pricing_rules | invoices, invoices/[id], pricing | — |
+| **F — Achats/OCR** | Implemente | 4 | supplier_invoices, ocr_jobs | ocr, supplier-invoices | — |
+| **G — RH/Pre-paie** | Implemente | 7 | payroll_periods, payroll_variables, payroll_variable_types, payroll_mappings | payroll | — |
+| **H — Flotte** | Implemente | 19 | maintenance_schedules, maintenance_records, vehicle_costs, vehicle_claims | fleet, fleet/maintenance, fleet/claims | fleet.spec.ts |
+| **I — Reporting** | Implemente | 6 | (calcule depuis les autres tables) | reports | reports.spec.ts |
+
+### Module A — Parametrage (partiel)
+
+| Feature spec | Impl. | Evidence | Ecart |
+|---|:---:|---|---|
+| Tenant (entreprise) | Oui | table `tenants` : id, name, siren | Manque : SIRET, TVA intracom, adresse, forme juridique |
+| Agences | Oui | table `agencies` : id, name, code, address | OK |
+| Roles RBAC | Oui | table `roles` : tenant-scoped, JSONB permissions | OK |
+| Users + auth JWT | Oui | table `users` + login JWT + `/auth/me` | Manque : reset mdp, verification email, MFA |
+| NumberingSequence | Oui | table `number_sequences` avec anti-decrement | Manque : UI de gestion, audit des changements |
+| Company (identite legale) | **Non** | Pas de table `company` ni d'endpoint | **GAP : validation SIREN/SIRET/TVA, comptes bancaires** |
+| BankAccount | **Non** | Pas de table ni d'endpoint | **GAP : RIB/IBAN, banque par defaut** |
+| VatConfig | **Non** | TVA en dur dans les factures (colonne tva_rate) | **GAP : taux TVA configurables, mentions legales** |
+| PdfTemplate | **Non** | pdf_service.py existe mais pas d'editeur de templates | **GAP : template JSONB + editeur UI + preview** |
+| NotificationConfig | **Non** | Pas de table ni de notification | **GAP : canaux, regles d'escalade, envoi email** |
+| PayrollConfig | Partiel | payroll_variable_types + payroll_mappings existent | Manque : config elargie (selection format SILAE/Sage, centres de cout UI) |
+| CostCenter | **Non** | Colonnes `centre_cout_id` existent mais pas de table `cost_centers` | **GAP : table + CRUD + UI** |
+| Audit log | **Non** | Pas de table audit_log ni de visualiseur | **GAP : journal d'actions immutable + UI** |
+| Onboarding wizard | Oui | `/v1/onboarding/status` + `/demo-setup` | OK (basique) |
+
+### Module B — Referentiels (implemente)
+
+| Feature spec | Impl. | Evidence | Ecart |
+|---|:---:|---|---|
+| Clients CRUD | Oui | 10+ endpoints, 30+ colonnes (raison_sociale, SIRET, TVA intracom, conditions de paiement) | OK |
+| Contacts clients | Oui | table `client_contacts` + POST/PUT | OK |
+| Adresses clients | Oui | table `client_addresses` avec geocodage, contraintes, horaires | OK |
+| Conditions de paiement (LME) | Partiel | `delai_paiement_jours`, `penalite_retard_pourcent`, `indemnite_recouvrement` | Manque : validation LME max 60j/45j fin de mois (RG-B-003) |
+| Encours plafond | Oui | colonne `plafond_encours` sur customers | Manque : blocage a la creation de facture |
+| Conducteurs CRUD | Oui | 35+ colonnes (matricule, NIR, qualifications, type contrat) | OK |
+| Validation NIR | Partiel | colonne `nir` + contrainte unique (tenant_id, nir) | Manque : validation format/cle NIR (RG-B-020/021) |
+| Auto-inactivation conducteur | **Non** | colonne `date_sortie` existe | **GAP : batch job quotidien (RG-B-026)** |
+| Vehicules CRUD | Oui | 30+ colonnes (immatriculation, VIN, PTAC, PTRA, equipements, norme_euro) | OK |
+| Validation VIN | Partiel | colonne `vin` (String(17)) | Manque : exclusion I/O/Q (RG-B-032) |
+| Blocage statut vehicule | Partiel | colonne `statut` (ACTIF, EN_MAINTENANCE, IMMOBILISE) | Manque : auto-blocage sur maintenance active (RG-B-035) |
+| Sous-traitants CRUD | Oui | 30+ colonnes (licence transport, zones geo, note qualite) | OK |
+| Contrats sous-traitants | Oui | table `subcontractor_contracts` | OK |
+| Lien conformite sous-traitant | Oui | colonne `conformite_statut` | OK |
+| Fournisseurs | Oui | table `suppliers` + 2 endpoints | OK (basique) |
+| Import CSV referentiels | **Non** | Pas d'endpoint d'import | **GAP : import bulk avec mapping UI (B-SCR-11)** |
+
+### Module C — Missions (implemente)
+
+| Feature spec | Impl. | Evidence | Ecart |
+|---|:---:|---|---|
+| Mission CRUD + cycle de vie | Oui | 25+ colonnes, transitions de statut, numerotation (MIS-YYYY-MM-NNNNN) | OK |
+| Machine a etats | Oui | BROUILLON->PLANIFIEE->AFFECTEE->EN_COURS->LIVREE->CLOTUREE->FACTUREE + ANNULEE | OK |
+| Affectation conducteur/vehicule | Oui | endpoints `/assign` + `/unassign` | Manque : controle de chevauchement (RG-C-013/014) |
+| Missions sous-traitees | Oui | `is_subcontracted`, `subcontractor_id` | OK |
+| Points de livraison multi-drop | Oui | table `mission_delivery_points`, ordonnees, statut par point | OK |
+| Description marchandises | Oui | table `mission_goods` avec ADR, temperature, volume, valeur | OK |
+| POD upload + validation | Oui | table `proof_of_delivery` avec geoloc, reserves, workflow validation | OK |
+| POD obligatoire pour cloture | Partiel | endpoint `/close` existe | A verifier : application stricte RG-C-024 |
+| Litiges | Oui | tables `disputes` + `dispute_attachments`, machine a etats, numerotation (LIT-YYYY-NNNNN) | OK |
+| Vue planning | Oui | `/planning/drivers` + `/planning/vehicles` | OK |
+| Calcul de marge | Oui | `montant_vente_ht`, `montant_achat_ht`, `marge_brute` | OK |
+| Escalade notifications POD (J+1/J+2/J+3) | **Non** | Pas de config de notification | **GAP** |
+| Generation CMR/lettre de voiture PDF | **Non** | Pas d'endpoint CMR | **GAP** |
+| Piste d'audit (transitions statut) | **Non** | Pas de table audit_log | **GAP** |
+
+### Module D — Conformite (implemente)
+
+| Feature spec | Impl. | Evidence | Ecart |
+|---|:---:|---|---|
+| Document CRUD + versioning | Oui | Auto-archive version precedente, colonne `version`, `remplace_document_id` | OK |
+| Cycle de vie document | Oui | BROUILLON->EN_ATTENTE_VALIDATION->VALIDE->EXPIRE/ARCHIVE | OK |
+| Un seul VALIDE par (entite,type) | Oui | Auto-archive a l'upload | A verifier : application stricte (RG-D-006) |
+| Templates de conformite | Oui | table `compliance_templates` : entity_type, obligatoire, bloquant, conditions | OK |
+| Checklists de conformite | Oui | Auto-recalculees, statut_global par entite | OK |
+| Dashboard conformite | Oui | Stats globales : total entites, conformes, bloquants, taux | OK |
+| Alertes progressives (J-60->J0) | Oui | table `compliance_alerts`, flags `alerte_j60/j30/j15/j7/j0_envoyee` sur documents | OK |
+| Acquittement alertes | Oui | PATCH `/alerts/{id}/acknowledge` | OK |
+| Job quotidien alertes | Partiel | Tache Celery existe (tasks.py) | A verifier : planification 06:00 UTC, idempotence |
+| Jours d'alerte configurables | Oui | colonne `alertes_jours` sur templates (defaut {60,30,15,7,0}) | OK |
+| Templates conditionnels | Oui | champ `condition_applicabilite` | OK |
+| Import bulk ZIP | **Non** | Pas d'endpoint d'import | **GAP : D.9.1** |
+| Scan antivirus documents | **Non** | Pas de scan | **GAP : durcissement production** |
+| Politique de retention/archivage | **Non** | Pas de config de retention | **GAP** |
+
+### Module E — Facturation (implemente)
+
+| Feature spec | Impl. | Evidence | Ecart |
+|---|:---:|---|---|
+| Creation facture depuis missions | Oui | Auto-calcul des lignes depuis regles tarifaires | OK |
+| Numerotation factures | Oui | `number_sequences` + `next_invoice_number()` | OK |
+| Validation + generation PDF | Oui | Tache Celery `invoice_generate_pdf` | OK |
+| Regles tarifaires (multi-tier) | Oui | Client-specifique + global, km/forfait/supplement | OK |
+| Calcul TVA | Oui | tva_rate, total_ht, total_tva, total_ttc | OK |
+| Balance agee (AR aging) | Oui | endpoint `/aging` avec days_overdue | OK |
+| Avoirs (notes de credit) | **Non** | Colonnes `avoir_id` existent sur jobs/disputes mais pas d'endpoint | **GAP** |
+| Facturation electronique (Factur-X/PDP) | **Non** | PDF uniquement | **GAP : obligation Sept 2026** |
+
+### Module F — Achats/OCR (implemente)
+
+| Feature spec | Impl. | Evidence | Ecart |
+|---|:---:|---|---|
+| Extraction OCR (async) | Oui | Tache Celery + provider PaddleOCR | OK |
+| Creation facture fournisseur depuis OCR | Oui | `/validate` cree un enregistrement supplier_invoice | OK |
+| Providers Mock/OpenSource/Textract | Oui | Configurable via `OCR_PROVIDER` env var | OK |
+| Rapprochement factures fournisseurs | Partiel | Liaison supplier_id | Manque : auto-matching, workflow de rapprochement |
+
+### Module G — RH/Pre-paie (implemente)
+
+| Feature spec | Impl. | Evidence | Ecart |
+|---|:---:|---|---|
+| Periodes de paie | Oui | Cycle de vie Draft->Submitted->Approved->Locked | OK |
+| Import CSV variables | Oui | Tolerant BOM, virgule decimale, upsert | OK |
+| Export SILAE | Oui | CSV streaming avec mappings | OK |
+| Catalogue types de variables | Oui | 12 types preconfigures (heures, primes, frais, absences) | OK |
+| Workflow soumission/approbation | Oui | `require_permission("payroll.submit")` | OK |
+
+### Module H — Flotte (implemente)
+
+| Feature spec | Impl. | Evidence | Ecart |
+|---|:---:|---|---|
+| Plans de maintenance | Oui | Frequence par jours/km, alertes, cout estime | OK |
+| Interventions maintenance | Oui | Cycle complet : PLANIFIE->EN_COURS->TERMINE->ANNULE | OK |
+| Auto-cout a la cloture | Oui | Cree une entree vehicle_cost quand statut=TERMINE | OK |
+| Grand livre des couts vehicule | Oui | 8 categories, synthese par categorie, filtres par date | OK |
+| Sinistres vehicules | Oui | Suivi assurance complet, tiers, numerotation (SIN-XXXX) | OK |
+| Dashboard flotte | Oui | KPIs : disponibilite, maintenances a venir, sinistres ouverts, cout mensuel | OK |
+
+### Module I — Reporting (implemente)
+
+| Feature spec | Impl. | Evidence | Ecart |
+|---|:---:|---|---|
+| Dashboard KPI par role | Oui | 7 jeux de KPIs par role | OK |
+| Rapport financier | Oui | CA, marge, DSO, impayees | OK |
+| Rapport operations | Oui | Missions, litiges, taux | OK |
+| Rapport flotte | Oui | Disponibilite, conformite, couts | OK |
+| Rapport RH | Oui | Conducteurs actifs, conformite | OK (basique — 2 KPIs) |
+| Export CSV | Oui | 4 datasets (fleet, operations, financial, hr) | OK |
+
+### Ecarts transverses (non-fonctionnel)
+
+| Domaine | Statut | Details |
+|---|---|---|
+| RLS au niveau base de donnees | **Non implemente** | Isolation tenant applicative (clauses WHERE), pas de `pg_policies` |
+| Reset mot de passe / MFA | **Non implemente** | Pas d'endpoint, pas de flux email |
+| Rate limiting | **Non implemente** | Pas de middleware |
+| Scan antivirus upload | **Non implemente** | Pas d'integration antivirus |
+| Journal d'audit (immutable) | **Non implemente** | Pas de table audit_log |
+| Systeme de notifications | **Non implemente** | Pas d'email ni notification in-app |
+| RGPD (export/suppression) | **Non implemente** | Pas de workflow d'export ou de suppression |
+| Facturation electronique (Sept 2026) | **Non implemente** | Pas de support Factur-X/PDP/PPF |
+
+### Plan d'action prioritaire
+
+#### P0 — Necessaire pour revendiquer "Modules A-D complets"
+
+1. **Module A complet** : ajouter tables `company` (identite legale), `bank_accounts`, `vat_config`, `cost_centers` + CRUD + UI
+2. **Module A** : systeme de notification (`notification_config` + email/in-app + escalade)
+3. **Module A** : journal d'audit (piste d'audit immutable + visualiseur UI)
+4. **Module B** : validation LME sur delais de paiement, validation format NIR, exclusion VIN I/O/Q
+5. **Module B** : batch job quotidien pour auto-inactivation conducteurs
+6. **Module C** : controle chevauchement conducteur/vehicule a l'affectation
+7. **Module C** : verifier POD obligatoire pour cloture mission (RG-C-024)
+8. **Module D** : verifier job quotidien alertes 06:00 UTC et idempotence
+
+#### P1 — Necessaire pour mise sur le marche France 2026
+
+9. **Module E** : reception de factures electroniques (integration PDP/PPF) — **obligatoire Sept 2026**
+10. **Module E** : avoirs (notes de credit) — CRUD + PDF
+11. **Securite** : reset mot de passe, verification email, rate limiting
+12. **Audit** : journal immutable des actions financieres (facturation, validation)
+
+#### P2 — Maturite SaaS
+
+13. Politiques RLS au niveau base de donnees pour defense en profondeur
+14. RGPD : export des donnees + droit a l'effacement
+15. Observabilite : IDs de correlation, metriques, monitoring erreurs
+16. Automatisation provisionnement tenant + facturation (Stripe)
+
+---
+
 ## Deploiement production
 
 L'architecture cible utilise AWS :

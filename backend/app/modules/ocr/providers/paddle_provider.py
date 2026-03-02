@@ -49,7 +49,23 @@ def _parse_french_number(s: str | None) -> float | None:
 class PaddleOcrProvider:
     def __init__(self):
         from paddleocr import PaddleOCR
-        self._ocr = PaddleOCR(use_angle_cls=True, lang="fr", show_log=False)
+        from pathlib import Path
+
+        base = Path.home() / ".paddleocr" / "whl"
+        det_dir = base / "det" / "en" / "en_PP-OCRv3_det_infer"
+        rec_dir = base / "rec" / "french" / "latin_PP-OCRv3_rec_infer"
+        cls_dir = base / "cls" / "ch_ppocr_mobile_v2.0_cls_infer"
+
+        kwargs = {"use_angle_cls": True, "lang": "fr", "show_log": False}
+        # Use pre-downloaded models if available (avoids runtime downloads)
+        if det_dir.exists():
+            kwargs["det_model_dir"] = str(det_dir)
+        if rec_dir.exists():
+            kwargs["rec_model_dir"] = str(rec_dir)
+        if cls_dir.exists():
+            kwargs["cls_model_dir"] = str(cls_dir)
+
+        self._ocr = PaddleOCR(**kwargs)
 
     def _pdf_to_images(self, pdf_path: str) -> list[str]:
         import fitz  # pymupdf

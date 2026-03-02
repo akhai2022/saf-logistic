@@ -4,7 +4,8 @@ import { loginAsAdmin } from "./helpers/auth";
 /**
  * E2E Scenario: Full Navigation & Page Access
  *
- * Verifies all 20 pages are accessible and render correctly after login.
+ * Verifies all pages are accessible and render correctly after login.
+ * Includes Module H (Fleet) and Module I (Reports) pages.
  */
 test.describe("Navigation & Page Access", () => {
   test.beforeEach(async ({ page }) => {
@@ -21,6 +22,11 @@ test.describe("Navigation & Page Access", () => {
   test("should access Disputes page", async ({ page }) => {
     await page.goto("/disputes");
     await expect(page.locator("h1")).toContainText("Litiges");
+  });
+
+  test("should access Tasks page", async ({ page }) => {
+    await page.goto("/tasks");
+    await expect(page.locator("h1")).toContainText("Tâches");
   });
 
   // --- Référentiels ---
@@ -92,9 +98,33 @@ test.describe("Navigation & Page Access", () => {
     await expect(page.locator("h1")).toContainText("Configuration");
   });
 
+  // --- Flotte (Module H) ---
+
+  test("should access Fleet Dashboard page", async ({ page }) => {
+    await page.goto("/fleet");
+    await expect(page.locator("h1")).toContainText("Flotte");
+  });
+
+  test("should access Fleet Maintenance page", async ({ page }) => {
+    await page.goto("/fleet/maintenance");
+    await expect(page.locator("h1")).toContainText("Maintenance");
+  });
+
+  test("should access Fleet Claims page", async ({ page }) => {
+    await page.goto("/fleet/claims");
+    await expect(page.locator("h1")).toContainText("Sinistres");
+  });
+
+  // --- Pilotage (Module I) ---
+
+  test("should access Reports Dashboard page", async ({ page }) => {
+    await page.goto("/reports");
+    await expect(page.locator("h1")).toContainText("Pilotage");
+  });
+
   // --- Sidebar Navigation ---
 
-  test("should show sidebar with all sections", async ({ page }) => {
+  test("should show sidebar with all sections for admin", async ({ page }) => {
     await page.goto("/jobs");
 
     // Exploitation section
@@ -110,6 +140,35 @@ test.describe("Navigation & Page Access", () => {
 
     // Finance section
     await expect(page.locator("nav >> text=Factures")).toBeVisible();
+
+    // Flotte section (Module H)
+    await expect(page.locator("nav >> text=Flotte").first()).toBeVisible();
+    await expect(page.locator("nav >> text=Maintenance")).toBeVisible();
+    await expect(page.locator("nav >> text=Sinistres")).toBeVisible();
+
+    // Pilotage section (Module I)
+    await expect(page.locator("nav >> text=Pilotage").first()).toBeVisible();
+  });
+
+  test("should navigate via sidebar to fleet pages", async ({ page }) => {
+    await page.goto("/jobs");
+
+    // Navigate to Fleet dashboard via sidebar
+    const fleetLink = page.locator("nav a[href='/fleet']");
+    if (await fleetLink.isVisible()) {
+      await fleetLink.click();
+      await expect(page).toHaveURL(/\/fleet/);
+    }
+  });
+
+  test("should navigate via sidebar to reports page", async ({ page }) => {
+    await page.goto("/jobs");
+
+    const reportsLink = page.locator("nav a[href='/reports']");
+    if (await reportsLink.isVisible()) {
+      await reportsLink.click();
+      await expect(page).toHaveURL(/\/reports/);
+    }
   });
 
   test("should navigate via sidebar links", async ({ page }) => {

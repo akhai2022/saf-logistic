@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-# OpenCV + GL system deps + CA certificates for model downloads
+# OpenCV + GL system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libgl1 libglib2.0-0 libgomp1 ca-certificates \
     && update-ca-certificates \
@@ -9,6 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY requirements.txt requirements-ocr.txt ./
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-ocr.txt
+
+# Copy pre-downloaded PaddleOCR models (avoids runtime downloads / SSL issues)
+COPY ocr_models/ /root/.paddleocr/whl/
 
 COPY . .
 

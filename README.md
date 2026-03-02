@@ -159,6 +159,7 @@ saf-logistic/
 |   |   |-- 0003_module_c_missions.py      # Missions, livraisons, POD, litiges
 |   |   |-- 0004_module_d_compliance.py    # Templates, checklists, alertes
 |   |   +-- 0005_modules_h_i.py           # Maintenance, couts, sinistres (Module H)
+|   |-- ocr_models/                       # Modeles PaddleOCR pre-telecharges (offline)
 |   |-- Dockerfile.api
 |   |-- Dockerfile.ocr_worker
 |   |-- requirements.txt
@@ -209,6 +210,11 @@ saf-logistic/
 |   |       |-- types.ts                   # Interfaces TypeScript (600+ lignes)
 |   |       +-- upload.ts                  # Upload S3 presigne
 |   |-- tests/e2e/                         # Tests Playwright
+|   |   |-- helpers/auth.ts               # Login helpers (8 personas)
+|   |   |-- navigation.spec.ts            # Navigation & acces pages (Modules A-I)
+|   |   |-- fleet.spec.ts                 # Fleet management E2E (Module H)
+|   |   |-- reports.spec.ts               # Reporting KPI E2E (Module I)
+|   |   +-- personas.spec.ts             # Tests parametrage par persona (7 roles)
 |   |-- package.json
 |   |-- tailwind.config.ts
 |   +-- tsconfig.json
@@ -680,6 +686,19 @@ AWS_SECRET_ACCESS_KEY=...
 AWS_DEFAULT_REGION=eu-west-3
 ```
 
+#### Modeles PaddleOCR pre-telecharges (mode offline)
+
+Les modeles PaddleOCR sont inclus dans `backend/ocr_models/` et copies dans l'image Docker a la construction. Cela evite les telechargements au demarrage et les erreurs SSL en environnements restreints.
+
+```
+backend/ocr_models/
+|-- det/en/en_PP-OCRv3_det_infer/       # Modele de detection de texte
+|-- rec/french/latin_PP-OCRv3_rec_infer/ # Modele de reconnaissance (francais)
++-- cls/ch_ppocr_mobile_v2.0_cls_infer/  # Modele de classification d'angle
+```
+
+Le provider `PaddleOcrProvider` detecte automatiquement les modeles locaux et les utilise sans tentative de telechargement.
+
 ### Etape 10 : Donnees de referentiel initiales
 
 Le seed charge automatiquement les donnees suivantes pour le tenant demo :
@@ -887,6 +906,33 @@ make test-local
 # Tests E2E frontend (Playwright)
 cd frontend && npx playwright test
 ```
+
+### Suites E2E Playwright
+
+| Fichier | Scenarios | Couverture |
+|---------|-----------|------------|
+| `navigation.spec.ts` | 20+ | Acces a toutes les pages, sidebar completa (Modules A-I) |
+| `fleet.spec.ts` | 20+ | Dashboard flotte, maintenance, sinistres, onglets vehicule (Module H) |
+| `reports.spec.ts` | 10+ | Dashboard KPI par role, exports CSV, sections role-based (Module I) |
+| `personas.spec.ts` | 20+ | Login et sidebar filtree pour les 7 personas (parametrage) |
+| `modules_b_c_d.spec.ts` | 60+ | Referentiels, missions, conformite (Modules B, C, D) |
+
+### Tests Persona (parametrage)
+
+Chaque persona est testee pour verifier :
+- Connexion avec ses identifiants
+- Sidebar filtree selon `dashboard_config.sidebar_sections`
+- Acces aux pages autorisees par son role
+
+| Persona | Role | Sections sidebar testees |
+|---------|------|--------------------------|
+| Dirigeant | admin | exploitation, referentiels, finance, flotte, pilotage |
+| Exploitant | exploitation | exploitation, referentiels |
+| Comptable | compta | exploitation, finance, pilotage |
+| RH / Paie | rh_paie | exploitation, referentiels, finance |
+| Flotte | flotte | referentiels, flotte |
+| Sous-traitant | soustraitant | exploitation |
+| Auditeur | lecture_seule | exploitation, referentiels, finance, flotte, pilotage |
 
 ---
 

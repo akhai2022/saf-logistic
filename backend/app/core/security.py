@@ -25,7 +25,12 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
-def create_access_token(user_id: uuid.UUID, tenant_id: uuid.UUID, role: str) -> str:
+def create_access_token(
+    user_id: uuid.UUID,
+    tenant_id: uuid.UUID,
+    role: str,
+    is_super_admin: bool = False,
+) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
     payload: dict[str, Any] = {
         "sub": str(user_id),
@@ -33,6 +38,8 @@ def create_access_token(user_id: uuid.UUID, tenant_id: uuid.UUID, role: str) -> 
         "role": role,
         "exp": expire,
     }
+    if is_super_admin:
+        payload["sa"] = True
     return jwt.encode(payload, settings.APP_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
@@ -58,7 +65,28 @@ async def get_current_user(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
     user["role"] = payload.get("role", "")
     user["tenant_id"] = uuid.UUID(payload["tid"])
+    user["is_super_admin"] = payload.get("sa", False)
     return user
+
+
+async def require_super_admin(
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Dependency that requires the user to be a super admin."""
+    if not current_user.get("is_super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Super admin access required")
+    return current_user
+
+
+async def require_admin(
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Dependency that requires role == 'admin' or super admin."""
+    if current_user.get("is_super_admin"):
+        return current_user
+    if current_user.get("role") != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
+    return current_user
 
 
 def require_permission(*perms: str):

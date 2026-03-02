@@ -22,6 +22,7 @@ def _to_date(v: str | None) -> date | None:
 TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 AGENCY_ID = uuid.UUID("00000000-0000-0000-0000-000000000010")
 ADMIN_ID = uuid.UUID("00000000-0000-0000-0000-000000000100")
+SUPER_ADMIN_ID = uuid.UUID("00000000-0000-0000-0000-000000000200")
 
 # FR document types for drivers and vehicles
 FR_DOC_TYPES = [
@@ -319,15 +320,28 @@ async def seed(db: AsyncSession) -> None:
         actual_id = result.scalar()
         role_ids[role_name] = actual_id
 
-    # Admin user
+    # Admin user (also super admin)
     await db.execute(text("""
-        INSERT INTO users (id, tenant_id, agency_id, email, password_hash, full_name, role_id)
-        VALUES (:id, :tid, :aid, :email, :pwd, :name, :rid)
-        ON CONFLICT ON CONSTRAINT uq_users_tenant_email DO UPDATE SET password_hash = EXCLUDED.password_hash
+        INSERT INTO users (id, tenant_id, agency_id, email, password_hash, full_name, role_id, is_super_admin)
+        VALUES (:id, :tid, :aid, :email, :pwd, :name, :rid, true)
+        ON CONFLICT ON CONSTRAINT uq_users_tenant_email DO UPDATE
+            SET password_hash = EXCLUDED.password_hash, is_super_admin = true
     """), {
         "id": str(ADMIN_ID), "tid": str(TENANT_ID), "aid": str(AGENCY_ID),
         "email": "admin@saf.local", "pwd": hash_password("admin"),
         "name": "Admin SAF", "rid": str(role_ids["admin"]),
+    })
+
+    # Dedicated super admin user
+    await db.execute(text("""
+        INSERT INTO users (id, tenant_id, agency_id, email, password_hash, full_name, role_id, is_super_admin)
+        VALUES (:id, :tid, :aid, :email, :pwd, :name, :rid, true)
+        ON CONFLICT ON CONSTRAINT uq_users_tenant_email DO UPDATE
+            SET password_hash = EXCLUDED.password_hash, is_super_admin = true
+    """), {
+        "id": str(SUPER_ADMIN_ID), "tid": str(TENANT_ID), "aid": str(AGENCY_ID),
+        "email": "superadmin@saf.local", "pwd": hash_password("superadmin"),
+        "name": "Super Admin", "rid": str(role_ids["admin"]),
     })
 
     # Persona users (one per role for demo)

@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAF Logistic — Demo Walkthrough</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .hero {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
+      color: white;
+      padding: 60px 40px;
+      text-align: center;
+    }
+    .hero h1 { font-size: 2.8rem; font-weight: 800; margin-bottom: 12px; }
+    .hero p { font-size: 1.2rem; opacity: 0.9; max-width: 700px; margin: 0 auto; }
+    .hero .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.9rem;
+      margin-top: 16px;
+    }
+
+    /* TOC */
+    .toc {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+    .toc h2 { font-size: 1.5rem; margin-bottom: 16px; color: #1e40af; }
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .toc-item {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: #1e293b;
+      transition: all 0.2s;
+    }
+    .toc-item:hover { border-color: #3b82f6; box-shadow: 0 2px 8px rgba(59,130,246,0.15); }
+    .toc-num {
+      background: #1e40af;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .toc-label { font-weight: 500; font-size: 0.95rem; }
+    .toc-time { font-size: 0.8rem; color: #64748b; }
+
+    /* Scene sections */
+    .scene {
+      max-width: 1100px;
+      margin: 48px auto;
+      padding: 0 24px;
+    }
+    .scene-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 3px solid #1e40af;
+    }
+    .scene-num {
+      background: #1e40af;
+      color: white;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .scene-title { font-size: 1.6rem; font-weight: 700; }
+    .scene-duration {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-left: auto;
+    }
+
+    .narration {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      border-radius: 0 8px 8px 0;
+      font-style: italic;
+      color: #1e40af;
+    }
+
+    .steps {
+      margin-bottom: 24px;
+    }
+    .steps ol {
+      padding-left: 24px;
+    }
+    .steps li {
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+    .steps li strong {
+      color: #1e40af;
+    }
+
+    .key-points {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+    .key-points h4 {
+      color: #166534;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+    .key-points ul {
+      padding-left: 20px;
+      font-size: 0.9rem;
+      color: #15803d;
+    }
+    .key-points li { margin-bottom: 4px; }
+
+    .screenshot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 20px;
+      margin-bottom: 16px;
+    }
+    .screenshot-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .screenshot-card img {
+      width: 100%;
+      display: block;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .screenshot-caption {
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      color: #475569;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .screenshot-full {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+    .screenshot-full img {
+      width: 100%;
+      display: block;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .screenshot-full .screenshot-caption {
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      color: #475569;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    /* Accounts table */
+    .accounts-table {
+      max-width: 1100px;
+      margin: 48px auto;
+      padding: 0 24px;
+    }
+    .accounts-table h2 {
+      font-size: 1.5rem;
+      margin-bottom: 16px;
+      color: #1e40af;
+    }
+    table.demo-accounts {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    table.demo-accounts th {
+      background: #1e40af;
+      color: white;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    table.demo-accounts td {
+      padding: 10px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.9rem;
+    }
+    table.demo-accounts tr:nth-child(even) { background: #f8fafc; }
+    table.demo-accounts code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    /* Tech specs */
+    .tech-specs {
+      max-width: 1100px;
+      margin: 48px auto;
+      padding: 0 24px 60px;
+    }
+    .tech-specs h2 { font-size: 1.5rem; margin-bottom: 16px; color: #1e40af; }
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .tech-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+    .tech-card .tech-name { font-weight: 700; color: #1e40af; margin-bottom: 4px; }
+    .tech-card .tech-value { font-size: 0.9rem; color: #64748b; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 1.8rem; }
+      .screenshot-grid { grid-template-columns: 1fr; }
+      .scene-header { flex-wrap: wrap; }
+      .scene-duration { margin-left: 0; margin-top: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════ HERO ═══════════════════════ -->
+  <div class="hero">
+    <h1>SAF Logistic</h1>
+    <p>Plateforme SaaS B2B de gestion de transport routier — Demo Walkthrough</p>
+    <span class="badge">Duree estimee : 15-20 minutes</span>
+  </div>
+
+  <!-- ═══════════════════════ TOC ═══════════════════════ -->
+  <div class="toc">
+    <h2>Sommaire</h2>
+    <div class="toc-grid">
+      <a href="#scene1" class="toc-item"><span class="toc-num">1</span><div><div class="toc-label">Connexion</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene2" class="toc-item"><span class="toc-num">2</span><div><div class="toc-label">Navigation & Sidebar</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene3" class="toc-item"><span class="toc-num">3</span><div><div class="toc-label">Referentiels : Clients</div><div class="toc-time">2 min</div></div></a>
+      <a href="#scene4" class="toc-item"><span class="toc-num">4</span><div><div class="toc-label">Conducteurs & Vehicules</div><div class="toc-time">2 min</div></div></a>
+      <a href="#scene5" class="toc-item"><span class="toc-num">5</span><div><div class="toc-label">Conformite documentaire</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene6" class="toc-item"><span class="toc-num">6</span><div><div class="toc-label">Missions de transport</div><div class="toc-time">3 min</div></div></a>
+      <a href="#scene7" class="toc-item"><span class="toc-num">7</span><div><div class="toc-label">Litiges</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene8" class="toc-item"><span class="toc-num">8</span><div><div class="toc-label">Flotte : Dashboard</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene9" class="toc-item"><span class="toc-num">9</span><div><div class="toc-label">Flotte : Maintenance</div><div class="toc-time">2 min</div></div></a>
+      <a href="#scene10" class="toc-item"><span class="toc-num">10</span><div><div class="toc-label">Flotte : Sinistres</div><div class="toc-time">2 min</div></div></a>
+      <a href="#scene11" class="toc-item"><span class="toc-num">11</span><div><div class="toc-label">Facturation</div><div class="toc-time">2 min</div></div></a>
+      <a href="#scene12" class="toc-item"><span class="toc-num">12</span><div><div class="toc-label">OCR & Extraction</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene13" class="toc-item"><span class="toc-num">13</span><div><div class="toc-label">Paie</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene14" class="toc-item"><span class="toc-num">14</span><div><div class="toc-label">Taches & Alertes</div><div class="toc-time">30 sec</div></div></a>
+      <a href="#scene15" class="toc-item"><span class="toc-num">15</span><div><div class="toc-label">Reporting & KPI</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene16" class="toc-item"><span class="toc-num">16</span><div><div class="toc-label">Parametrage</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene17" class="toc-item"><span class="toc-num">17</span><div><div class="toc-label">Notifications</div><div class="toc-time">30 sec</div></div></a>
+      <a href="#scene18" class="toc-item"><span class="toc-num">18</span><div><div class="toc-label">Multi-roles</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene19" class="toc-item"><span class="toc-num">19</span><div><div class="toc-label">Configuration initiale</div><div class="toc-time">30 sec</div></div></a>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 1 — Connexion ═══════════════ -->
+  <div class="scene" id="scene1">
+    <div class="scene-header">
+      <span class="scene-num">1</span>
+      <span class="scene-title">Connexion</span>
+      <span class="scene-duration">1 min</span>
+    </div>
+    <div class="narration">
+      "Bienvenue dans SAF Logistic, la plateforme SaaS de gestion de transport routier."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Ouvrir <strong>http://localhost:3000</strong></li>
+        <li>Page de connexion avec branding SAF Logistic</li>
+        <li>Champs : Email, Mot de passe, Tenant ID (multi-tenant)</li>
+        <li>Se connecter avec <code>admin@saf.local</code> / <code>admin</code></li>
+        <li>Redirection vers la page <strong>Missions</strong></li>
+      </ol>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/01a-login-page.png" alt="Page de connexion">
+        <div class="screenshot-caption">Page de connexion</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/01b-login-filled.png" alt="Formulaire rempli">
+        <div class="screenshot-caption">Identifiants saisis</div>
+      </div>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/01c-missions-after-login.png" alt="Page Missions apres connexion">
+      <div class="screenshot-caption">Redirection vers la page Missions apres connexion</div>
+    </div>
+    <div class="key-points">
+      <h4>Points cles</h4>
+      <ul>
+        <li>Authentification JWT securisee</li>
+        <li>Architecture multi-tenant (chaque entreprise a ses donnees isolees)</li>
+        <li>Roles et permissions (admin, exploitation, compta, flotte, rh_paie, lecture_seule, soustraitant)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 2 — Sidebar ═══════════════ -->
+  <div class="scene" id="scene2">
+    <div class="scene-header">
+      <span class="scene-num">2</span>
+      <span class="scene-title">Navigation & Sidebar</span>
+      <span class="scene-duration">1 min</span>
+    </div>
+    <div class="narration">
+      "La sidebar organise les fonctionnalites en 6 sections metiers."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Sidebar avec 6 sections : <strong>Exploitation</strong>, <strong>Referentiels</strong>, <strong>Finance</strong>, <strong>Flotte</strong>, <strong>Pilotage</strong>, <strong>Parametrage</strong></li>
+        <li>Icone de notification avec badge compteur</li>
+        <li>Infos utilisateur en bas (nom, email, role)</li>
+        <li>Bouton Deconnexion</li>
+      </ol>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/02a-sidebar-navigation.png" alt="Sidebar navigation">
+      <div class="screenshot-caption">Sidebar avec les 6 sections metiers et infos utilisateur</div>
+    </div>
+    <div class="key-points">
+      <h4>Points cles</h4>
+      <ul>
+        <li>Navigation contextuelle par role (chaque role voit ses sections)</li>
+        <li>Notifications en temps reel avec badge compteur</li>
+        <li>Interface responsive (mobile/desktop)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 3 — Clients ═══════════════ -->
+  <div class="scene" id="scene3">
+    <div class="scene-header">
+      <span class="scene-num">3</span>
+      <span class="scene-title">Referentiels : Clients</span>
+      <span class="scene-duration">2 min</span>
+    </div>
+    <div class="narration">
+      "Les referentiels sont la base de donnees metier. Commencons par les clients."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Aller dans <strong>Referentiels > Clients</strong></li>
+        <li>Vue liste avec recherche et filtre statut (ACTIF, INACTIF, PROSPECT, BLOQUE)</li>
+        <li>Cliquer "Nouveau client" — Formulaire : Code, Raison sociale, SIREN, SIRET, TVA Intracom, Adresse, Contact, Delai de paiement</li>
+        <li>Cliquer sur un client existant → Page detail avec onglets : <strong>General</strong>, <strong>Contacts</strong>, <strong>Adresses</strong></li>
+      </ol>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/03a-clients-list.png" alt="Liste des clients">
+      <div class="screenshot-caption">Liste des clients avec recherche et filtres</div>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/03b-new-client-form.png" alt="Formulaire nouveau client">
+        <div class="screenshot-caption">Formulaire de creation client</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/03c-client-detail.png" alt="Detail client">
+        <div class="screenshot-caption">Page detail d'un client</div>
+      </div>
+    </div>
+    <div class="key-points">
+      <h4>Validation metier</h4>
+      <ul>
+        <li>Verification format SIREN/SIRET</li>
+        <li>Validation TVA Intracommunautaire</li>
+        <li>Controle LME (delai max 60 jours net / 45 jours fin de mois)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 4 — Conducteurs & Vehicules ═══════════════ -->
+  <div class="scene" id="scene4">
+    <div class="scene-header">
+      <span class="scene-num">4</span>
+      <span class="scene-title">Referentiels : Conducteurs & Vehicules</span>
+      <span class="scene-duration">2 min</span>
+    </div>
+    <div class="narration">
+      "Les conducteurs et vehicules sont les ressources operationnelles."
+    </div>
+    <div class="steps">
+      <ol>
+        <li><strong>Conducteurs</strong> : liste avec filtres, 4 onglets (Identite, Contrat, Qualifications, Conformite)</li>
+        <li><strong>Vehicules</strong> : filtres statut + categorie, 6 onglets (General, Caracteristiques, Technique, Maintenance, Couts, Conformite)</li>
+      </ol>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/04a-conducteurs-list.png" alt="Liste des conducteurs">
+        <div class="screenshot-caption">Liste des conducteurs</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/04b-conducteur-detail.png" alt="Detail conducteur">
+        <div class="screenshot-caption">Detail d'un conducteur (onglets)</div>
+      </div>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/04c-vehicules-list.png" alt="Liste des vehicules">
+        <div class="screenshot-caption">Liste des vehicules</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/04d-vehicule-detail.png" alt="Detail vehicule">
+        <div class="screenshot-caption">Detail d'un vehicule (6 onglets)</div>
+      </div>
+    </div>
+    <div class="key-points">
+      <h4>Points cles</h4>
+      <ul>
+        <li>Validation NIR (Numero de Securite Sociale)</li>
+        <li>Validation VIN (17 caracteres)</li>
+        <li>Suivi de conformite automatise</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 5 — Conformite ═══════════════ -->
+  <div class="scene" id="scene5">
+    <div class="scene-header">
+      <span class="scene-num">5</span>
+      <span class="scene-title">Conformite documentaire</span>
+      <span class="scene-duration">1 min</span>
+    </div>
+    <div class="narration">
+      "Le module de conformite verifie automatiquement les documents obligatoires."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Dashboard : Total entites, Conformes, A regulariser, Bloquants</li>
+        <li>Onglets par type : Tous, Conducteurs, Vehicules, Sous-traitants</li>
+        <li>Barre de progression du taux de conformite global</li>
+        <li>Checklist de conformite par entite + Alertes d'expiration</li>
+      </ol>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/05a-conformite-dashboard.png" alt="Dashboard conformite">
+        <div class="screenshot-caption">Dashboard de conformite</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/05b-conformite-alerts.png" alt="Alertes conformite">
+        <div class="screenshot-caption">Alertes d'expiration</div>
+      </div>
+    </div>
+    <div class="key-points">
+      <h4>Points cles</h4>
+      <ul>
+        <li>Calcul automatique du taux de conformite</li>
+        <li>Alertes avant expiration (30 jours par defaut)</li>
+        <li>Documents bloquants vs. informatifs</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 6 — Missions ═══════════════ -->
+  <div class="scene" id="scene6">
+    <div class="scene-header">
+      <span class="scene-num">6</span>
+      <span class="scene-title">Missions de transport</span>
+      <span class="scene-duration">3 min</span>
+    </div>
+    <div class="narration">
+      "Le coeur de l'application : la gestion des missions de transport."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Onglets de statut : Brouillon, Planifiee, Affectee, En cours, Livree, Cloturee</li>
+        <li>Recherche par numero ou client</li>
+        <li>Formulaire : Client, Reference, Type, Priorite, Dates, Distance, Montant</li>
+        <li>Page detail avec 5 onglets : <strong>General</strong>, <strong>Livraisons</strong>, <strong>Marchandises</strong>, <strong>POD</strong>, <strong>Litiges</strong></li>
+        <li>Workflow : Brouillon → Planifiee → Affectee → En cours → Livree → Cloturee</li>
+      </ol>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/06a-missions-list.png" alt="Liste des missions">
+      <div class="screenshot-caption">Liste des missions avec onglets de statut</div>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/06b-new-mission-form.png" alt="Formulaire nouvelle mission">
+      <div class="screenshot-caption">Formulaire de creation de mission</div>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/06c-mission-detail.png" alt="Detail mission — General">
+      <div class="screenshot-caption">Detail mission — Onglet General (affectation conducteur/vehicule)</div>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/06d-mission-livraisons.png" alt="Mission — Livraisons">
+        <div class="screenshot-caption">Onglet Livraisons</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/06e-mission-marchandises.png" alt="Mission — Marchandises">
+        <div class="screenshot-caption">Onglet Marchandises</div>
+      </div>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/06f-mission-pod.png" alt="Mission — POD">
+        <div class="screenshot-caption">Onglet POD (Preuve de livraison)</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/06g-mission-litiges.png" alt="Mission — Litiges">
+        <div class="screenshot-caption">Onglet Litiges</div>
+      </div>
+    </div>
+    <div class="key-points">
+      <h4>Points cles</h4>
+      <ul>
+        <li>Lifecycle complet de la mission</li>
+        <li>Controle de chevauchement vehicule/conducteur</li>
+        <li>Preuve de livraison numerique</li>
+        <li>Declenchement automatique de la facturation apres cloture</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 7 — Litiges ═══════════════ -->
+  <div class="scene" id="scene7">
+    <div class="scene-header">
+      <span class="scene-num">7</span>
+      <span class="scene-title">Litiges</span>
+      <span class="scene-duration">1 min</span>
+    </div>
+    <div class="narration">
+      "Le suivi des litiges transport depuis la declaration jusqu'a la cloture."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Onglets : Tous, Ouverts, En instruction, Resolus, Clos</li>
+        <li>Tableau avec colonnes : Numero, Mission, Type, Responsabilite, Montants, Statut, Actions</li>
+        <li><strong>Transitions de statut</strong> : Instruire / Resoudre / Clore</li>
+        <li>Details expandables + Lien vers la mission d'origine</li>
+      </ol>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/07a-litiges-list.png" alt="Liste des litiges">
+        <div class="screenshot-caption">Liste des litiges</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/07b-litiges-ouverts.png" alt="Litiges — Onglet Ouverts">
+        <div class="screenshot-caption">Filtre par statut Ouverts</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 8 — Fleet Dashboard ═══════════════ -->
+  <div class="scene" id="scene8">
+    <div class="scene-header">
+      <span class="scene-num">8</span>
+      <span class="scene-title">Flotte : Dashboard</span>
+      <span class="scene-duration">1 min</span>
+    </div>
+    <div class="narration">
+      "Le module Flotte centralise la gestion du parc vehicules."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>8 KPI : Total vehicules, Actifs, En maintenance, Immobilises, Disponibilite %, Maintenances a venir, En retard, Sinistres ouverts</li>
+        <li>Cout total du mois</li>
+        <li>Table des maintenances a venir (30 jours)</li>
+        <li>Liens rapides vers Maintenance, Sinistres, Vehicules</li>
+      </ol>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/08a-fleet-dashboard.png" alt="Fleet dashboard">
+      <div class="screenshot-caption">Tableau de bord Flotte avec KPI et liens rapides</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 9 — Maintenance ═══════════════ -->
+  <div class="scene" id="scene9">
+    <div class="scene-header">
+      <span class="scene-num">9</span>
+      <span class="scene-title">Flotte : Maintenance</span>
+      <span class="scene-duration">2 min</span>
+    </div>
+    <div class="narration">
+      "La gestion de maintenance avec creation et suivi du lifecycle."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Filtres : Statut (PLANIFIE, EN_COURS, TERMINE, ANNULE) + Periode (30j a 1 an)</li>
+        <li>Cliquer <strong>"Nouvelle intervention"</strong> — Formulaire : Vehicule, Type, Libelle, Dates, Prestataire, Lieu, Cout, Notes</li>
+        <li>Transitions : <strong>Demarrer</strong> (PLANIFIE → EN_COURS), <strong>Terminer</strong> (→ TERMINE), <strong>Annuler</strong></li>
+      </ol>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/09a-maintenance-list.png" alt="Liste maintenance">
+        <div class="screenshot-caption">Liste des interventions de maintenance</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/09b-new-maintenance-form.png" alt="Formulaire maintenance">
+        <div class="screenshot-caption">Formulaire de creation d'intervention</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 10 — Sinistres ═══════════════ -->
+  <div class="scene" id="scene10">
+    <div class="scene-header">
+      <span class="scene-num">10</span>
+      <span class="scene-title">Flotte : Sinistres</span>
+      <span class="scene-duration">2 min</span>
+    </div>
+    <div class="narration">
+      "La declaration et le suivi des sinistres vehicules."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Cliquer <strong>"Declarer un sinistre"</strong> — Formulaire complet :
+          Vehicule, Date, Heure, Type, Conducteur, Responsabilite, Lieu, Description, Cout reparation, Tiers implique (toggle)</li>
+        <li>Liste avec filtres vehicule/statut</li>
+        <li>Transitions : DECLARE → EN_EXPERTISE → EN_REPARATION → CLOS → REMBOURSE</li>
+        <li>Details expandables (lieu, heure, franchise, indemnisation, tiers)</li>
+      </ol>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/10a-sinistres-list.png" alt="Liste sinistres">
+        <div class="screenshot-caption">Liste des sinistres</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/10b-declarer-sinistre-form.png" alt="Formulaire sinistre">
+        <div class="screenshot-caption">Formulaire de declaration de sinistre</div>
+      </div>
+    </div>
+    <div class="key-points">
+      <h4>Points cles</h4>
+      <ul>
+        <li>Formulaire complet avec section tiers optionnelle</li>
+        <li>Lifecycle de sinistre en 5 etapes</li>
+        <li>Suivi des couts et indemnisations</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 11 — Facturation ═══════════════ -->
+  <div class="scene" id="scene11">
+    <div class="scene-header">
+      <span class="scene-num">11</span>
+      <span class="scene-title">Facturation</span>
+      <span class="scene-duration">2 min</span>
+    </div>
+    <div class="narration">
+      "De la mission a la facture : un processus automatise."
+    </div>
+    <div class="steps">
+      <ol>
+        <li><strong>Tarifs</strong> : Creer/Modifier/Supprimer des regles (Au km, Forfait, Supplement), association client ou globale</li>
+        <li><strong>Factures</strong> : Selectionner missions cloturees, creer, valider (FAC-YYYYMM-NNNN), telecharger PDF</li>
+        <li><strong>Factures Fournisseurs</strong> : Liste read-only (creees apres validation OCR)</li>
+      </ol>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/11a-tarifs-list.png" alt="Tarifs">
+        <div class="screenshot-caption">Liste des tarifs</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/11b-new-tarif-form.png" alt="Nouveau tarif">
+        <div class="screenshot-caption">Formulaire de creation tarif</div>
+      </div>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/11c-factures-list.png" alt="Factures">
+        <div class="screenshot-caption">Liste des factures</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/11d-facture-detail.png" alt="Detail facture">
+        <div class="screenshot-caption">Detail d'une facture</div>
+      </div>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/11e-factures-fournisseurs.png" alt="Factures fournisseurs">
+      <div class="screenshot-caption">Factures fournisseurs (read-only)</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 12 — OCR ═══════════════ -->
+  <div class="scene" id="scene12">
+    <div class="scene-header">
+      <span class="scene-num">12</span>
+      <span class="scene-title">OCR & Extraction</span>
+      <span class="scene-duration">1 min</span>
+    </div>
+    <div class="narration">
+      "L'OCR automatise la saisie des documents fournisseurs."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Uploader un document (facture, RIB, KBIS...)</li>
+        <li>Traitement automatique : pending → processing → validated/needs_review</li>
+        <li>Classification automatique du type de document</li>
+        <li>Extraction des champs avec score de confiance</li>
+      </ol>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/12a-ocr-page.png" alt="OCR page">
+      <div class="screenshot-caption">Module OCR — Upload et extraction automatique</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 13 — Paie ═══════════════ -->
+  <div class="scene" id="scene13">
+    <div class="scene-header">
+      <span class="scene-num">13</span>
+      <span class="scene-title">Paie</span>
+      <span class="scene-duration">1 min</span>
+    </div>
+    <div class="narration">
+      "Le module Paie permet de preparer les variables de paie avant export."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Creer une periode (Annee/Mois)</li>
+        <li>Importer CSV de variables de paie</li>
+        <li>Workflow : Brouillon → Soumis → Approuve → Verrouille</li>
+        <li>Export au format SILAE</li>
+      </ol>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/13a-paie-page.png" alt="Paie page">
+      <div class="screenshot-caption">Module Paie — Periodes et variables</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 14 — Taches ═══════════════ -->
+  <div class="scene" id="scene14">
+    <div class="scene-header">
+      <span class="scene-num">14</span>
+      <span class="scene-title">Taches & Centre d'alertes</span>
+      <span class="scene-duration">30 sec</span>
+    </div>
+    <div class="narration">
+      "Le centre de taches centralise les actions a mener."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Filtres : Ouvertes, En cours, Resolues, Ignorees</li>
+        <li>Categories : Conformite, Relance facturation, Verification OCR, Paie</li>
+        <li>Actions : Resoudre ou Ignorer une tache</li>
+      </ol>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/14a-taches-page.png" alt="Taches page">
+      <div class="screenshot-caption">Centre de taches et alertes</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 15 — Reporting ═══════════════ -->
+  <div class="scene" id="scene15">
+    <div class="scene-header">
+      <span class="scene-num">15</span>
+      <span class="scene-title">Reporting & KPI</span>
+      <span class="scene-duration">1 min</span>
+    </div>
+    <div class="narration">
+      "Le pilotage avec des KPI adaptes a chaque role."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>KPI adaptes au role : CA mensuel, Marge, Taux conformite, DSO, Cout/km, etc.</li>
+        <li>Admin voit tout, Compta voit Finance, Exploitation voit Operations, Flotte voit Vehicules</li>
+        <li>Export CSV par section (Finance, Operations, Flotte, RH & Paie)</li>
+      </ol>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/15a-reporting-dashboard.png" alt="Reporting dashboard">
+      <div class="screenshot-caption">Tableau de bord KPI — Vue admin</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 16 — Parametrage ═══════════════ -->
+  <div class="scene" id="scene16">
+    <div class="scene-header">
+      <span class="scene-num">16</span>
+      <span class="scene-title">Parametrage</span>
+      <span class="scene-duration">1 min</span>
+    </div>
+    <div class="narration">
+      "Le parametrage centralise la configuration de l'entreprise."
+    </div>
+    <div class="steps">
+      <ol>
+        <li><strong>Parametres</strong> — 5 onglets : Entreprise, Banque, TVA, Centres de couts, Notifications</li>
+        <li><strong>Journal d'audit</strong> — Filtres : Type entite, Action, Date debut/fin</li>
+        <li>Historique complet des modifications (ancien/nouveau JSON)</li>
+      </ol>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/16a-settings-entreprise.png" alt="Settings Entreprise">
+        <div class="screenshot-caption">Parametres — Onglet Entreprise</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/16b-settings-banque.png" alt="Settings Banque">
+        <div class="screenshot-caption">Parametres — Onglet Banque</div>
+      </div>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/16c-settings-tva.png" alt="Settings TVA">
+        <div class="screenshot-caption">Parametres — Onglet TVA</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/16d-audit-log.png" alt="Audit log">
+        <div class="screenshot-caption">Journal d'audit</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 17 — Notifications ═══════════════ -->
+  <div class="scene" id="scene17">
+    <div class="scene-header">
+      <span class="scene-num">17</span>
+      <span class="scene-title">Notifications</span>
+      <span class="scene-duration">30 sec</span>
+    </div>
+    <div class="narration">
+      "Le systeme de notifications informe en temps reel."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Liste des notifications avec statut lu/non-lu</li>
+        <li>Marquer comme lu (individuel ou tout)</li>
+        <li>Badge compteur dans la sidebar</li>
+      </ol>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/17a-notifications-page.png" alt="Notifications">
+      <div class="screenshot-caption">Centre de notifications</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 18 — Multi-roles ═══════════════ -->
+  <div class="scene" id="scene18">
+    <div class="scene-header">
+      <span class="scene-num">18</span>
+      <span class="scene-title">Multi-roles</span>
+      <span class="scene-duration">1 min</span>
+    </div>
+    <div class="narration">
+      "Chaque role a une vue adaptee de la plateforme."
+    </div>
+    <div class="steps">
+      <ol>
+        <li><strong>Exploitant</strong> : Exploitation + Referentiels</li>
+        <li><strong>Compta</strong> : Finance + Pilotage</li>
+        <li><strong>Flotte</strong> : Referentiels + Flotte</li>
+        <li><strong>Auditeur</strong> : Tout en lecture seule + Parametrage</li>
+      </ol>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/18a-exploitant-sidebar.png" alt="Exploitant sidebar">
+        <div class="screenshot-caption">Vue Exploitant</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/18b-compta-sidebar.png" alt="Compta sidebar">
+        <div class="screenshot-caption">Vue Comptabilite</div>
+      </div>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/18c-flotte-sidebar.png" alt="Flotte sidebar">
+        <div class="screenshot-caption">Vue Flotte</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/18d-auditeur-sidebar.png" alt="Auditeur sidebar">
+        <div class="screenshot-caption">Vue Auditeur (lecture seule)</div>
+      </div>
+    </div>
+    <div class="key-points">
+      <h4>Points cles</h4>
+      <ul>
+        <li>RBAC (Role-Based Access Control)</li>
+        <li>Sidebar dynamique par role</li>
+        <li>KPI adaptes au metier</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCENE 19 — Onboarding ═══════════════ -->
+  <div class="scene" id="scene19">
+    <div class="scene-header">
+      <span class="scene-num">19</span>
+      <span class="scene-title">Configuration initiale</span>
+      <span class="scene-duration">30 sec</span>
+    </div>
+    <div class="narration">
+      "L'onboarding guide la configuration initiale."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Checklist : Clients, Conducteurs, Vehicules, Types de documents, Tarifs, Variables paie</li>
+        <li>Liens vers chaque page de configuration</li>
+        <li>Option "Installer les donnees demo" pour un environnement de test</li>
+      </ol>
+    </div>
+    <div class="screenshot-full">
+      <img src="demo-screenshots/19a-onboarding-page.png" alt="Onboarding page">
+      <div class="screenshot-caption">Page d'onboarding / Configuration initiale</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ BONUS — Sous-traitants ═══════════════ -->
+  <div class="scene" id="bonus">
+    <div class="scene-header">
+      <span class="scene-num">+</span>
+      <span class="scene-title">Sous-traitants</span>
+      <span class="scene-duration">Bonus</span>
+    </div>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="demo-screenshots/B1-soustraitants-list.png" alt="Sous-traitants list">
+        <div class="screenshot-caption">Liste des sous-traitants</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="demo-screenshots/B2-soustraitant-detail.png" alt="Sous-traitant detail">
+        <div class="screenshot-caption">Detail d'un sous-traitant</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ COMPTES DEMO ═══════════════ -->
+  <div class="accounts-table">
+    <h2>Comptes de demo</h2>
+    <table class="demo-accounts">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Mot de passe</th>
+          <th>Role</th>
+          <th>Sections visibles</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>admin@saf.local</code></td><td><code>admin</code></td><td>admin</td><td>Toutes</td></tr>
+        <tr><td><code>exploitant@saf.local</code></td><td><code>exploit2026</code></td><td>exploitation</td><td>Exploitation, Referentiels</td></tr>
+        <tr><td><code>compta@saf.local</code></td><td><code>compta2026</code></td><td>compta</td><td>Exploitation, Finance, Pilotage</td></tr>
+        <tr><td><code>flotte@saf.local</code></td><td><code>flotte2026</code></td><td>flotte</td><td>Referentiels, Flotte</td></tr>
+        <tr><td><code>rh@saf.local</code></td><td><code>rh2026</code></td><td>rh_paie</td><td>Exploitation, Referentiels, Finance</td></tr>
+        <tr><td><code>auditeur@saf.local</code></td><td><code>audit2026</code></td><td>lecture_seule</td><td>Toutes (lecture seule)</td></tr>
+        <tr><td><code>soustraitant@saf.local</code></td><td><code>soustraitant2026</code></td><td>soustraitant</td><td>Exploitation</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════ SPECS TECHNIQUES ═══════════════ -->
+  <div class="tech-specs">
+    <h2>Specifications techniques</h2>
+    <div class="tech-grid">
+      <div class="tech-card"><div class="tech-name">Frontend</div><div class="tech-value">Next.js 14, TypeScript, Tailwind CSS</div></div>
+      <div class="tech-card"><div class="tech-name">Backend</div><div class="tech-value">FastAPI, SQLAlchemy, asyncpg</div></div>
+      <div class="tech-card"><div class="tech-name">Base de donnees</div><div class="tech-value">PostgreSQL 16</div></div>
+      <div class="tech-card"><div class="tech-name">Cache / Broker</div><div class="tech-value">Redis 7</div></div>
+      <div class="tech-card"><div class="tech-name">Stockage S3</div><div class="tech-value">MinIO</div></div>
+      <div class="tech-card"><div class="tech-name">Workers</div><div class="tech-value">Celery</div></div>
+      <div class="tech-card"><div class="tech-name">PDF</div><div class="tech-value">WeasyPrint</div></div>
+      <div class="tech-card"><div class="tech-name">OCR</div><div class="tech-value">Tesseract / Mock</div></div>
+      <div class="tech-card"><div class="tech-name">Auth</div><div class="tech-value">JWT (HS256)</div></div>
+      <div class="tech-card"><div class="tech-name">Tests E2E</div><div class="tech-value">Playwright (250+ scenarios)</div></div>
+    </div>
+  </div>
+
+  <!-- Conclusion -->
+  <div class="hero" style="padding: 40px;">
+    <h1 style="font-size: 1.8rem;">Conclusion</h1>
+    <p>SAF Logistic couvre l'ensemble du cycle de gestion du transport routier :<br>
+    De la creation de mission a la facturation. De la gestion de flotte aux sinistres.<br>
+    De la conformite au reporting. Le tout dans une interface moderne, securisee et multi-tenant.</p>
+  </div>
+
+</body>
+</html>

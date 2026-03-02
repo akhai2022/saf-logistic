@@ -82,6 +82,14 @@ const ALL_SECTIONS: NavSection[] = [
       { href: "/audit", label: "Journal d'audit", icon: "history" },
     ],
   },
+  {
+    key: "administration",
+    label: "Administration",
+    icon: "admin_panel_settings",
+    items: [
+      { href: "/admin/tenants", label: "Entreprises", icon: "domain" },
+    ],
+  },
 ];
 
 export default function Nav() {

@@ -2,23 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPut, apiPost, apiDelete } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import type {
   CompanySettings,
   BankAccount,
   VatConfig,
   CostCenter,
   NotificationConfig,
+  AdminUser,
+  RoleOption,
+  AgencyOption,
+  CreateUserPayload,
 } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
 
-type Tab = "company" | "bank" | "vat" | "cost-centers" | "notifications";
+type Tab = "company" | "bank" | "vat" | "cost-centers" | "notifications" | "users";
 
 export default function SettingsPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.is_super_admin;
   const [tab, setTab] = useState<Tab>("company");
 
-  const tabs: { key: Tab; label: string; icon: string }[] = [
+  const baseTabs: { key: Tab; label: string; icon: string }[] = [
     { key: "company", label: "Entreprise", icon: "business" },
     { key: "bank", label: "Banque", icon: "account_balance" },
     { key: "vat", label: "TVA", icon: "percent" },
@@ -26,11 +33,15 @@ export default function SettingsPage() {
     { key: "notifications", label: "Notifications", icon: "notifications" },
   ];
 
+  const tabs = isAdmin
+    ? [...baseTabs, { key: "users" as Tab, label: "Utilisateurs", icon: "group" }]
+    : baseTabs;
+
   return (
     <div className="space-y-6">
       <PageHeader icon="settings" title="Paramètres" description="Configuration de la plateforme" />
 
-      <div className="flex gap-2 border-b border-gray-200 pb-1">
+      <div className="flex gap-2 border-b border-gray-200 pb-1 flex-wrap">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -52,6 +63,7 @@ export default function SettingsPage() {
       {tab === "vat" && <VatTab />}
       {tab === "cost-centers" && <CostCenterTab />}
       {tab === "notifications" && <NotificationsTab />}
+      {tab === "users" && isAdmin && <UsersTab />}
     </div>
   );
 }
@@ -323,6 +335,305 @@ function NotificationsTab() {
           ))}
         </tbody>
       </table>
+    </Card>
+  );
+}
+
+function UsersTab() {
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [roles, setRoles] = useState<RoleOption[]>([]);
+  const [agencies, setAgencies] = useState<AgencyOption[]>([]);
+  const [search, setSearch] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [resetId, setResetId] = useState<string | null>(null);
+  const [resetPwd, setResetPwd] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [createForm, setCreateForm] = useState<CreateUserPayload>({
+    email: "", password: "", full_name: "", role_id: "", agency_id: "",
+  });
+  const [editForm, setEditForm] = useState({
+    email: "", full_name: "", role_id: "", agency_id: "",
+  });
+
+  const loadUsers = (q = "") => {
+    const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+    apiGet<AdminUser[]>(`/v1/admin/users${qs}`).then(setUsers).catch(() => {});
+  };
+
+  useEffect(() => {
+    loadUsers();
+    apiGet<RoleOption[]>("/v1/admin/roles").then(setRoles).catch(() => {});
+    apiGet<AgencyOption[]>("/v1/admin/agencies").then(setAgencies).catch(() => {});
+  }, []);
+
+  const handleSearch = () => loadUsers(search);
+
+  const createUser = async () => {
+    setSaving(true);
+    try {
+      await apiPost("/v1/admin/users", createForm);
+      setShowCreateForm(false);
+      setCreateForm({ email: "", password: "", full_name: "", role_id: "", agency_id: "" });
+      loadUsers(search);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startEdit = (u: AdminUser) => {
+    setEditingId(u.id);
+    setEditForm({
+      email: u.email,
+      full_name: u.full_name || "",
+      role_id: u.role_id || "",
+      agency_id: u.agency_id || "",
+    });
+  };
+
+  const saveEdit = async (userId: string) => {
+    setSaving(true);
+    try {
+      await apiPut(`/v1/admin/users/${userId}`, editForm);
+      setEditingId(null);
+      loadUsers(search);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleActive = async (u: AdminUser) => {
+    await apiPut(`/v1/admin/users/${u.id}`, { is_active: !u.is_active });
+    loadUsers(search);
+  };
+
+  const resetPassword = async (userId: string) => {
+    if (resetPwd.length < 8) return;
+    setSaving(true);
+    try {
+      await apiPost(`/v1/admin/users/${userId}/reset-password`, { new_password: resetPwd });
+      setResetId(null);
+      setResetPwd("");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card title="Gestion des utilisateurs" icon="group">
+      {/* Search + Create */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+          <input
+            placeholder="Rechercher par nom ou email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            className="border rounded px-3 py-2 text-sm flex-1"
+          />
+          <Button onClick={handleSearch} icon="search">Rechercher</Button>
+        </div>
+        <Button onClick={() => setShowCreateForm(!showCreateForm)} icon={showCreateForm ? "close" : "person_add"}>
+          {showCreateForm ? "Annuler" : "Nouvel utilisateur"}
+        </Button>
+      </div>
+
+      {/* Create form */}
+      {showCreateForm && (
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h4 className="font-medium text-gray-900 mb-3">Nouvel utilisateur</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Nom complet</label>
+              <input
+                value={createForm.full_name}
+                onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })}
+                className="border rounded px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Email</label>
+              <input
+                type="email"
+                value={createForm.email}
+                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                className="border rounded px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Mot de passe</label>
+              <input
+                type="password"
+                value={createForm.password}
+                onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                className="border rounded px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Role</label>
+              <select
+                value={createForm.role_id}
+                onChange={(e) => setCreateForm({ ...createForm, role_id: e.target.value })}
+                className="border rounded px-3 py-2 text-sm"
+              >
+                <option value="">-- Choisir --</option>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700">Agence</label>
+              <select
+                value={createForm.agency_id}
+                onChange={(e) => setCreateForm({ ...createForm, agency_id: e.target.value })}
+                className="border rounded px-3 py-2 text-sm"
+              >
+                <option value="">-- Choisir --</option>
+                {agencies.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button onClick={createUser} icon="check" disabled={saving}>
+              {saving ? "Creation..." : "Creer"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Users table */}
+      <table className="w-full text-sm">
+        <thead className="table-header">
+          <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Agence</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody className="table-body">
+          {users.map((u) => (
+            <tr key={u.id}>
+              {editingId === u.id ? (
+                <>
+                  <td>
+                    <input
+                      value={editForm.full_name}
+                      onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                      className="border rounded px-2 py-1 text-sm w-full"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className="border rounded px-2 py-1 text-sm w-full"
+                    />
+                  </td>
+                  <td>
+                    <select
+                      value={editForm.role_id}
+                      onChange={(e) => setEditForm({ ...editForm, role_id: e.target.value })}
+                      className="border rounded px-2 py-1 text-sm"
+                    >
+                      {roles.map((r) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      value={editForm.agency_id}
+                      onChange={(e) => setEditForm({ ...editForm, agency_id: e.target.value })}
+                      className="border rounded px-2 py-1 text-sm"
+                    >
+                      {agencies.map((a) => (
+                        <option key={a.id} value={a.id}>{a.name}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${u.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                      {u.is_active ? "ACTIF" : "INACTIF"}
+                    </span>
+                  </td>
+                  <td className="flex items-center gap-1">
+                    <button onClick={() => saveEdit(u.id)} className="text-green-600 hover:text-green-800" title="Enregistrer">
+                      <span className="material-symbols-outlined icon-sm">check</span>
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600" title="Annuler">
+                      <span className="material-symbols-outlined icon-sm">close</span>
+                    </button>
+                  </td>
+                </>
+              ) : (
+                <>
+                  <td className="font-medium">{u.full_name || "-"}</td>
+                  <td>{u.email}</td>
+                  <td>
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
+                      {u.role_name || "-"}
+                    </span>
+                  </td>
+                  <td>{u.agency_name || "-"}</td>
+                  <td>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${u.is_active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                      {u.is_active ? "ACTIF" : "INACTIF"}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => startEdit(u)} className="text-blue-500 hover:text-blue-700" title="Modifier">
+                        <span className="material-symbols-outlined icon-sm">edit</span>
+                      </button>
+                      <button onClick={() => toggleActive(u)} className={`${u.is_active ? "text-orange-500 hover:text-orange-700" : "text-green-500 hover:text-green-700"}`} title={u.is_active ? "Desactiver" : "Activer"}>
+                        <span className="material-symbols-outlined icon-sm">{u.is_active ? "person_off" : "person"}</span>
+                      </button>
+                      <button onClick={() => { setResetId(u.id); setResetPwd(""); }} className="text-gray-500 hover:text-gray-700" title="Reinitialiser le mot de passe">
+                        <span className="material-symbols-outlined icon-sm">lock_reset</span>
+                      </button>
+                    </div>
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+          {users.length === 0 && (
+            <tr>
+              <td colSpan={6} className="text-center text-gray-400 py-8">
+                Aucun utilisateur
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      {/* Reset password modal */}
+      {resetId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <h4 className="font-medium text-gray-900 mb-3">Reinitialiser le mot de passe</h4>
+            <input
+              type="password"
+              placeholder="Nouveau mot de passe (min. 8 caracteres)"
+              value={resetPwd}
+              onChange={(e) => setResetPwd(e.target.value)}
+              className="border rounded px-3 py-2 text-sm w-full mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <Button onClick={() => setResetId(null)} icon="close">Annuler</Button>
+              <Button onClick={() => resetPassword(resetId)} icon="check" disabled={saving || resetPwd.length < 8}>
+                {saving ? "..." : "Confirmer"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

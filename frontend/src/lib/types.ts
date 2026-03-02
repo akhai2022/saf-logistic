@@ -4,6 +4,77 @@ export interface User {
   full_name: string | null;
   role: string;
   tenant_id: string;
+  is_super_admin?: boolean;
+}
+
+// ── Admin types ─────────────────────────────────────────────────
+
+export interface TenantListItem {
+  id: string;
+  name: string;
+  siren?: string;
+  address?: string;
+  user_count: number;
+  created_at?: string;
+}
+
+export interface TenantDetail {
+  id: string;
+  name: string;
+  siren?: string;
+  address?: string;
+  created_at?: string;
+  agencies: AgencyOption[];
+}
+
+export interface CreateTenantPayload {
+  name: string;
+  siren?: string;
+  address?: string;
+  admin_email: string;
+  admin_password: string;
+  admin_full_name: string;
+  agency_name?: string;
+  agency_code?: string;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  is_active: boolean;
+  role_name: string | null;
+  role_id?: string | null;
+  agency_name: string | null;
+  agency_id?: string | null;
+  created_at?: string;
+}
+
+export interface CreateUserPayload {
+  email: string;
+  password: string;
+  full_name: string;
+  role_id: string;
+  agency_id: string;
+}
+
+export interface UpdateUserPayload {
+  email?: string;
+  full_name?: string;
+  role_id?: string;
+  agency_id?: string;
+  is_active?: boolean;
+}
+
+export interface RoleOption {
+  id: string;
+  name: string;
+}
+
+export interface AgencyOption {
+  id: string;
+  name: string;
+  code?: string;
 }
 
 // ── Client (expanded Module B) ───────────────────────────────────

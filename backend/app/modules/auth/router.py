@@ -91,6 +91,7 @@ class MeResponse(BaseModel):
     full_name: str | None
     role: str
     tenant_id: str
+    is_super_admin: bool = False
 
 
 # ── Helpers ───────────────────────────────────────────────────────
@@ -99,7 +100,7 @@ async def _get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> dict | None:
     result = await db.execute(
         text("""
             SELECT u.id, u.email, u.full_name, u.tenant_id, u.password_hash, u.is_active,
-                   r.name AS role_name
+                   u.is_super_admin, r.name AS role_name
             FROM users u
             LEFT JOIN roles r ON u.role_id = r.id
             WHERE u.id = :uid
@@ -116,6 +117,7 @@ async def _get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> dict | None:
         "tenant_id": str(row.tenant_id),
         "password_hash": row.password_hash,
         "is_active": row.is_active,
+        "is_super_admin": row.is_super_admin,
         "role": row.role_name or "",
     }
 
@@ -127,7 +129,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         text("""
             SELECT u.id, u.email, u.password_hash, u.is_active, u.tenant_id,
-                   u.agency_id, r.name AS role_name, r.permissions AS role_permissions
+                   u.agency_id, u.is_super_admin, r.name AS role_name, r.permissions AS role_permissions
             FROM users u
             LEFT JOIN roles r ON u.role_id = r.id
             WHERE u.email = :email AND u.tenant_id = :tid
@@ -141,7 +143,8 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Account disabled")
 
     role_name = row.role_name or ""
-    token = create_access_token(row.id, row.tenant_id, role_name)
+    is_sa = bool(row.is_super_admin)
+    token = create_access_token(row.id, row.tenant_id, role_name, is_super_admin=is_sa)
 
     # Fetch tenant info
     tenant_info = None
@@ -179,7 +182,9 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
 
     # Dashboard config
     kpi_keys = KPI_KEYS_BY_ROLE.get(role_name, [])
-    sidebar = SIDEBAR_BY_ROLE.get(role_name, ["exploitation", "referentiels"])
+    sidebar = list(SIDEBAR_BY_ROLE.get(role_name, ["exploitation", "referentiels"]))
+    if is_sa and "administration" not in sidebar:
+        sidebar.append("administration")
     dashboard_config = DashboardConfig(kpi_keys=kpi_keys, sidebar_sections=sidebar)
 
     return LoginResponse(
@@ -201,6 +206,7 @@ async def me(current_user: dict = Depends(get_current_user)):
         full_name=current_user.get("full_name"),
         role=current_user.get("role", ""),
         tenant_id=str(current_user["tenant_id"]),
+        is_super_admin=current_user.get("is_super_admin", False),
     )
 
 

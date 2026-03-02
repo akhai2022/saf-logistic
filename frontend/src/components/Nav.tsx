@@ -15,6 +15,7 @@ interface NavItem {
 interface NavSection {
   key: string;
   label: string;
+  icon: string;
   items: NavItem[];
 }
 
@@ -22,6 +23,7 @@ const ALL_SECTIONS: NavSection[] = [
   {
     key: "exploitation",
     label: "Exploitation",
+    icon: "route",
     items: [
       { href: "/jobs", label: "Missions", icon: "local_shipping" },
       { href: "/disputes", label: "Litiges", icon: "gavel" },
@@ -32,6 +34,7 @@ const ALL_SECTIONS: NavSection[] = [
   {
     key: "referentiels",
     label: "Référentiels",
+    icon: "database",
     items: [
       { href: "/customers", label: "Clients", icon: "business" },
       { href: "/subcontractors", label: "Sous-traitants", icon: "handshake" },
@@ -43,6 +46,7 @@ const ALL_SECTIONS: NavSection[] = [
   {
     key: "finance",
     label: "Finance",
+    icon: "account_balance",
     items: [
       { href: "/invoices", label: "Factures", icon: "receipt_long" },
       { href: "/pricing", label: "Tarifs", icon: "sell" },
@@ -54,6 +58,7 @@ const ALL_SECTIONS: NavSection[] = [
   {
     key: "flotte",
     label: "Flotte",
+    icon: "garage",
     items: [
       { href: "/fleet", label: "Tableau de bord", icon: "dashboard" },
       { href: "/fleet/maintenance", label: "Maintenance", icon: "build" },
@@ -63,6 +68,7 @@ const ALL_SECTIONS: NavSection[] = [
   {
     key: "pilotage",
     label: "Pilotage",
+    icon: "monitoring",
     items: [
       { href: "/reports", label: "Tableau de bord", icon: "bar_chart" },
     ],
@@ -70,6 +76,7 @@ const ALL_SECTIONS: NavSection[] = [
   {
     key: "parametrage",
     label: "Paramétrage",
+    icon: "tune",
     items: [
       { href: "/settings", label: "Paramètres", icon: "settings" },
       { href: "/audit", label: "Journal d'audit", icon: "history" },
@@ -105,7 +112,7 @@ export default function Nav() {
 
   const sidebarContent = (
     <>
-      {/* Brand */}
+      {/* Brand + Notification bell */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
         <span className="material-symbols-outlined text-primary-400" style={{ fontSize: 32 }}>
           local_shipping
@@ -130,11 +137,16 @@ export default function Nav() {
       </div>
 
       {/* Nav sections */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
         {visibleSections.map((section) => (
           <div key={section.key}>
-            <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-              {section.label}
+            <div className="flex items-center gap-2 px-3 mb-2">
+              <span className="material-symbols-outlined text-slate-500" style={{ fontSize: 14 }}>
+                {section.icon}
+              </span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                {section.label}
+              </span>
             </div>
             <div className="space-y-0.5">
               {section.items.map((item) => {
@@ -160,27 +172,41 @@ export default function Nav() {
         ))}
       </nav>
 
-      {/* User section */}
+      {/* Authenticated user section */}
       <div className="border-t border-white/10 px-4 py-4">
         {user && (
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary/30 text-primary-300 flex items-center justify-center text-sm font-semibold">
-              {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm text-white font-medium truncate">
-                {user.full_name || user.email}
+          <div className="space-y-3">
+            {/* User info */}
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-primary/30 text-primary-300 flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                {(user.full_name || user.email || "U").charAt(0).toUpperCase()}
               </div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wide">
+              <div className="flex-1 min-w-0">
+                <div className="text-sm text-white font-medium truncate">
+                  {user.full_name || user.email}
+                </div>
+                <div className="text-[10px] text-slate-500 truncate">
+                  {user.email}
+                </div>
+              </div>
+            </div>
+            {/* Role badge */}
+            <div className="flex items-center gap-2 px-1">
+              <span className="material-symbols-outlined text-slate-500" style={{ fontSize: 14 }}>
+                shield_person
+              </span>
+              <span className="text-[10px] text-slate-400 uppercase tracking-wide font-medium">
                 {user.role}
-              </div>
+              </span>
             </div>
+            {/* Disconnect button */}
             <button
               onClick={logout}
-              className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-red-500/20 transition-colors border border-white/10 hover:border-red-500/30"
               title="Déconnexion"
             >
               <span className="material-symbols-outlined icon-sm">logout</span>
+              <span>Déconnexion</span>
             </button>
           </div>
         )}
@@ -199,6 +225,19 @@ export default function Nav() {
           <span className="material-symbols-outlined">{mobileOpen ? "close" : "menu"}</span>
         </button>
         <span className="ml-3 text-white font-bold">SAF Logistic</span>
+        {/* Mobile notification bell */}
+        <Link
+          href="/notifications"
+          className="relative ml-auto text-slate-400 hover:text-white transition-colors p-2"
+          title="Notifications"
+        >
+          <span className="material-symbols-outlined">notifications</span>
+          {unreadCount > 0 && (
+            <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Link>
       </div>
 
       {/* Mobile overlay */}

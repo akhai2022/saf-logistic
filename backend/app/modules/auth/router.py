@@ -28,7 +28,7 @@ SIDEBAR_BY_ROLE: dict[str, list[str]] = {
     "compta": ["exploitation", "finance", "pilotage"],
     "flotte": ["referentiels", "flotte"],
     "rh_paie": ["exploitation", "referentiels", "finance"],
-    "lecture_seule": ["exploitation", "referentiels", "finance", "flotte", "pilotage"],
+    "lecture_seule": ["exploitation", "referentiels", "finance", "flotte", "pilotage", "parametrage"],
     "soustraitant": ["exploitation"],
 }
 

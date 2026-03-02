@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiGet, apiFetch } from "@/lib/api";
+import { apiGet, apiPatch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { ComplianceAlert } from "@/lib/types";
 import Card from "@/components/Card";
@@ -43,10 +43,7 @@ export default function ComplianceAlertsPage() {
 
   const handleAcknowledge = async (alertId: string) => {
     const notes = prompt("Notes (optionnel):");
-    await apiFetch(`/v1/compliance/alerts/${alertId}/acknowledge`, {
-      method: "PATCH",
-      body: JSON.stringify({ notes: notes || undefined }),
-    });
+    await apiPatch(`/v1/compliance/alerts/${alertId}/acknowledge`, { notes: notes || undefined });
     reload();
   };
 

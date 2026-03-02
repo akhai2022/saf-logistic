@@ -396,7 +396,7 @@ async def download_document(
     s3_key = row.fichier_s3_key or row.s3_key
     if not s3_key:
         raise HTTPException(404, "No file associated")
-    return {"s3_key": s3_key, "download_url": f"/v1/files/presign-download?key={s3_key}"}
+    return {"s3_key": s3_key, "download_url": f"/v1/files/presign-download?s3_key={s3_key}"}
 
 
 @router.patch("/v1/documents/{doc_id}/validate", response_model=DocumentOut)

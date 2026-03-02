@@ -316,7 +316,7 @@ class DisputeAttachmentOut(BaseModel):
 
 class MissionCreate(BaseModel):
     reference_client: str | None = None
-    client_id: str
+    client_id: str | None = None
     type_mission: str = "LOT_COMPLET"
     priorite: str = "NORMALE"
     date_chargement_prevue: str | None = None
@@ -332,6 +332,7 @@ class MissionCreate(BaseModel):
     notes_internes: str | None = None
     # Legacy compat
     reference: str | None = None
+    customer_id: str | None = None
     pickup_address: str | None = None
     delivery_address: str | None = None
     pickup_date: str | None = None
@@ -340,6 +341,12 @@ class MissionCreate(BaseModel):
     weight_kg: float | None = None
     goods_description: str | None = None
     notes: str | None = None
+
+    @model_validator(mode="after")
+    def resolve_client_id(self) -> "MissionCreate":
+        if not self.client_id and self.customer_id:
+            self.client_id = self.customer_id
+        return self
 
     @field_validator("type_mission")
     @classmethod

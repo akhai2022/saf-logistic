@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.core.security import get_current_user
 from app.core.tenant import TenantContext, get_tenant
+from app.core.validators import validate_nir, validate_vin
 from app.modules.masterdata.schemas import (
     ClientAddressCreate,
     ClientAddressOut,
@@ -190,6 +191,13 @@ async def create_client(
     if existing:
         raise HTTPException(409, "Ce code client existe deja.")
 
+    # LME validation: max 60 days net, max 45 days fin de mois
+    if body.delai_paiement_jours and body.delai_paiement_jours > 60:
+        raise HTTPException(422, "Delai de paiement LME: maximum 60 jours nets date de facture")
+    if body.mode_paiement and "FIN_DE_MOIS" in (body.mode_paiement or "").upper():
+        if body.delai_paiement_jours and body.delai_paiement_jours > 45:
+            raise HTTPException(422, "Delai de paiement LME: maximum 45 jours fin de mois")
+
     siren = body.siret[:9] if body.siret and len(body.siret) >= 9 else None
 
     await db.execute(text("""
@@ -261,6 +269,13 @@ async def update_client(
     )).first()
     if not existing:
         raise HTTPException(404, "Client not found")
+
+    # LME validation: max 60 days net, max 45 days fin de mois
+    if body.delai_paiement_jours and body.delai_paiement_jours > 60:
+        raise HTTPException(422, "Delai de paiement LME: maximum 60 jours nets date de facture")
+    if body.mode_paiement and "FIN_DE_MOIS" in (body.mode_paiement or "").upper():
+        if body.delai_paiement_jours and body.delai_paiement_jours > 45:
+            raise HTTPException(422, "Delai de paiement LME: maximum 45 jours fin de mois")
 
     siren = body.siret[:9] if body.siret and len(body.siret) >= 9 else None
 
@@ -930,6 +945,8 @@ async def create_driver(
 
     # Check NIR uniqueness (RG-B: two drivers can't share same NIR)
     if body.nir:
+        if not validate_nir(body.nir):
+            raise HTTPException(422, "NIR (numero de securite sociale) invalide")
         existing_nir = (await db.execute(
             text("SELECT id FROM drivers WHERE tenant_id = :tid AND nir = :nir"),
             {"tid": str(tenant.tenant_id), "nir": body.nir},
@@ -1006,6 +1023,10 @@ async def update_driver(
     )).first()
     if not existing:
         raise HTTPException(404, "Driver not found")
+
+    # Validate NIR if provided
+    if body.nir and not validate_nir(body.nir):
+        raise HTTPException(422, "NIR (numero de securite sociale) invalide")
 
     await db.execute(text("""
         UPDATE drivers SET
@@ -1204,6 +1225,10 @@ async def create_vehicle(
     if existing:
         raise HTTPException(409, "Cette immatriculation existe deja.")
 
+    # Validate VIN if provided
+    if body.vin and not validate_vin(body.vin):
+        raise HTTPException(422, "VIN (numero d'identification du vehicule) invalide")
+
     await db.execute(text("""
         INSERT INTO vehicles (
             id, tenant_id, agency_id, plate_number, vin, brand, model, vehicle_type,
@@ -1280,6 +1305,10 @@ async def update_vehicle(
     )).first()
     if not existing:
         raise HTTPException(404, "Vehicle not found")
+
+    # Validate VIN if provided
+    if body.vin and not validate_vin(body.vin):
+        raise HTTPException(422, "VIN (numero d'identification du vehicule) invalide")
 
     plate = body.immatriculation or body.plate_number
 

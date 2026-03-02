@@ -468,6 +468,37 @@ async def assign_mission(
             if veh_statut and veh_statut != "ACTIF":
                 raise HTTPException(400, "Ce vehicule ne peut pas etre affecte.")
 
+    # RG-C: Check driver/vehicle overlap — non-blocking warnings
+    warnings = []
+    if did:
+        overlap_drv = (await db.execute(text("""
+            SELECT id, reference FROM jobs
+            WHERE tenant_id = :tid AND driver_id = :did AND id != :jid
+              AND status IN ('assigned','in_progress')
+              AND (date_chargement_prevue, COALESCE(date_livraison_prevue, date_chargement_prevue))
+                  OVERLAPS
+                  (
+                    (SELECT date_chargement_prevue FROM jobs WHERE id = :jid),
+                    (SELECT COALESCE(date_livraison_prevue, date_chargement_prevue) FROM jobs WHERE id = :jid)
+                  )
+        """), {"tid": tid, "did": did, "jid": job_id})).fetchall()
+        for ov in overlap_drv:
+            warnings.append(f"Conducteur deja affecte sur mission {ov.reference or str(ov.id)[:8]}")
+    if vid:
+        overlap_veh = (await db.execute(text("""
+            SELECT id, reference FROM jobs
+            WHERE tenant_id = :tid AND vehicle_id = :vid AND id != :jid
+              AND status IN ('assigned','in_progress')
+              AND (date_chargement_prevue, COALESCE(date_livraison_prevue, date_chargement_prevue))
+                  OVERLAPS
+                  (
+                    (SELECT date_chargement_prevue FROM jobs WHERE id = :jid),
+                    (SELECT COALESCE(date_livraison_prevue, date_chargement_prevue) FROM jobs WHERE id = :jid)
+                  )
+        """), {"tid": tid, "vid": vid, "jid": job_id})).fetchall()
+        for ov in overlap_veh:
+            warnings.append(f"Vehicule deja affecte sur mission {ov.reference or str(ov.id)[:8]}")
+
     # Calculate margin if we have both amounts
     vente = float(mission.montant_vente_ht) if mission.montant_vente_ht else None
     marge = None
@@ -492,7 +523,10 @@ async def assign_mission(
         "is_sub": is_sub, "mah": montant_achat, "marge": marge,
     })
     await db.commit()
-    return {"status": "assigned", "statut": "AFFECTEE"}
+    result = {"status": "assigned", "statut": "AFFECTEE"}
+    if warnings:
+        result["warnings"] = warnings
+    return result
 
 
 @router.delete("/{job_id}/assign")
@@ -569,6 +603,21 @@ async def transition_mission(
     await db.execute(text(f"""
         UPDATE jobs SET status = :s, updated_at = NOW(){extra_sql} WHERE id = :id
     """), {"id": job_id, "s": target})
+
+    # Audit trail for status transitions
+    from app.core.audit import log_audit
+    import uuid as _uuid
+    await log_audit(
+        db, tenant_id=_uuid.UUID(tid),
+        user_id=_uuid.UUID(user["id"]) if user.get("id") else None,
+        user_email=user.get("email"),
+        action="mission_transition",
+        entity_type="mission",
+        entity_id=job_id,
+        old_value={"status": current},
+        new_value={"status": target},
+    )
+
     await db.commit()
 
     legacy_map = {"draft": "BROUILLON", "planned": "PLANIFIEE", "assigned": "AFFECTEE",
@@ -903,6 +952,28 @@ async def create_dispute(
     await db.commit()
     row = (await db.execute(text("SELECT * FROM disputes WHERE id = :id"), {"id": str(did)})).first()
     return _dispute_from_row(row)
+
+
+# Cross-mission disputes listing
+@router.get("/disputes", response_model=list[DisputeOut])
+async def list_all_disputes(
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    statut: str | None = Query(None),
+    limit: int = Query(100, le=500),
+    offset: int = Query(0),
+):
+    q = "SELECT * FROM disputes WHERE tenant_id = :tid"
+    params: dict = {"tid": str(tenant.tenant_id)}
+    if statut:
+        q += " AND statut = :statut"
+        params["statut"] = statut
+    q += " ORDER BY created_at DESC LIMIT :lim OFFSET :off"
+    params["lim"] = limit
+    params["off"] = offset
+    rows = await db.execute(text(q), params)
+    return [_dispute_from_row(r) for r in rows.fetchall()]
 
 
 # Standalone dispute endpoints

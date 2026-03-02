@@ -79,33 +79,58 @@ ROLES = [
         "masterdata.read", "masterdata.update",
         "documents.read", "documents.create",
         "tasks.read", "tasks.update",
+        "settings.read",
     ]),
     ("compta", [
         "billing.invoice.create", "billing.invoice.read", "billing.invoice.validate",
+        "billing.credit_note.create", "billing.credit_note.read", "billing.credit_note.validate",
         "billing.pricing.read", "billing.pricing.update",
         "ocr.read", "ocr.create", "ocr.validate",
         "jobs.read", "masterdata.read", "tasks.read", "tasks.update",
+        "settings.read",
     ]),
     ("rh_paie", [
-        "payroll.read", "payroll.import", "payroll.export", "payroll.submit", "payroll.approve",
+        "payroll.read", "payroll.import", "payroll.export", "payroll.submit", "payroll.approve", "payroll.lock",
         "documents.read", "documents.create",
         "masterdata.driver.read", "masterdata.driver.update",
         "tasks.read", "tasks.update",
+        "settings.read",
     ]),
     ("flotte", [
         "fleet.read", "fleet.create", "fleet.update",
         "masterdata.vehicle.read", "masterdata.vehicle.update",
         "documents.read", "documents.create",
         "tasks.read", "tasks.update",
+        "settings.read",
     ]),
     ("lecture_seule", [
         "jobs.read", "masterdata.read", "documents.read",
         "billing.invoice.read", "billing.pricing.read",
+        "billing.credit_note.read",
         "payroll.read", "tasks.read", "fleet.read", "reports.read",
+        "settings.read", "audit.read",
     ]),
     ("soustraitant", [
         "jobs.read", "documents.read", "documents.create",
     ]),
+]
+
+# FR VAT rates
+FR_VAT_RATES = [
+    (20.0, "TVA 20% (taux normal)", "TVA applicable au taux normal de 20% (art. 278 du CGI)", True),
+    (10.0, "TVA 10% (taux intermediaire)", "TVA applicable au taux intermediaire de 10% (art. 278 bis du CGI)", False),
+    (5.5, "TVA 5.5% (taux reduit)", "TVA applicable au taux reduit de 5,5% (art. 278-0 bis du CGI)", False),
+    (2.1, "TVA 2.1% (taux super-reduit)", "TVA applicable au taux super-reduit de 2,1% (art. 281 du CGI)", False),
+]
+
+# Default notification configs
+DEFAULT_NOTIFICATION_CONFIGS = [
+    ("document_expiring", ["IN_APP"], ["admin", "flotte", "rh_paie"]),
+    ("invoice_due_soon", ["IN_APP"], ["admin", "compta"]),
+    ("driver_inactivated", ["IN_APP"], ["admin", "exploitation", "rh_paie"]),
+    ("mission_status_changed", ["IN_APP"], ["admin", "exploitation"]),
+    ("credit_note_validated", ["IN_APP"], ["admin", "compta"]),
+    ("compliance_alert", ["IN_APP"], ["admin", "flotte", "rh_paie"]),
 ]
 
 # ── Persona users (email / password) ────────────────────────────
@@ -551,6 +576,41 @@ async def seed(db: AsyncSession) -> None:
             "ref": "CONTRAT-ST-2026-001", "tp": "LOT_COMPLET",
             "dd": date(2026, 1, 1), "df": date(2026, 12, 31), "tr": True, "statut": "ACTIF",
         })
+
+    # ── FR VAT rates ──────────────────────────────────────────────────
+    for rate, label, mention, is_default in FR_VAT_RATES:
+        await db.execute(text("""
+            INSERT INTO vat_configs (id, tenant_id, rate, label, mention_legale, is_default, is_active)
+            VALUES (:id, :tid, :rate, :label, :mention, :def, true)
+            ON CONFLICT DO NOTHING
+        """), {
+            "id": str(uuid.uuid4()), "tid": str(TENANT_ID),
+            "rate": rate, "label": label, "mention": mention, "def": is_default,
+        })
+
+    # ── Default notification configs ───────────────────────────────────
+    for event_type, channels, recipients in DEFAULT_NOTIFICATION_CONFIGS:
+        await db.execute(text("""
+            INSERT INTO notification_configs (id, tenant_id, event_type, channels, recipients, is_active)
+            VALUES (:id, :tid, :event, :channels, :recipients, true)
+            ON CONFLICT DO NOTHING
+        """), {
+            "id": str(uuid.uuid4()), "tid": str(TENANT_ID),
+            "event": event_type, "channels": channels, "recipients": recipients,
+        })
+
+    # ── Default company_settings ────────────────────────────────────────
+    await db.execute(text("""
+        INSERT INTO company_settings (id, tenant_id, siren, raison_sociale,
+            adresse_ligne1, code_postal, ville, pays, email)
+        VALUES (:id, :tid, :siren, :rs, :al1, :cp, :ville, :pays, :email)
+        ON CONFLICT ON CONSTRAINT uq_company_settings_tenant DO NOTHING
+    """), {
+        "id": str(uuid.uuid4()), "tid": str(TENANT_ID),
+        "siren": "123456789", "rs": "SAF Transport Demo",
+        "al1": "1 Rue de la Logistique", "cp": "75001", "ville": "Paris",
+        "pays": "FR", "email": "contact@saf-transport.test",
+    })
 
     await db.commit()
     print("Seed completed successfully.")

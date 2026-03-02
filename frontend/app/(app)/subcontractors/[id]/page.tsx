@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { apiGet, apiPut, apiPost, apiFetch } from "@/lib/api";
+import { apiGet, apiPut, apiPost, apiPatch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { SubcontractorDetail } from "@/lib/types";
 import Button from "@/components/Button";
@@ -64,7 +64,7 @@ export default function SubcontractorDetailPage() {
   };
 
   const handleStatusChange = async (newStatut: string) => {
-    await apiFetch(`/v1/masterdata/subcontractors/${id}/status`, { method: "PATCH", body: JSON.stringify({ statut: newStatut }) });
+    await apiPatch(`/v1/masterdata/subcontractors/${id}/status`, { statut: newStatut });
     apiGet<SubcontractorDetail>(`/v1/masterdata/subcontractors/${id}`).then(setSub);
   };
 

@@ -751,6 +751,112 @@ export interface DashboardResponse {
   kpis: KpiCard[];
 }
 
+// ── Settings & Configuration ────────────────────────────────────
+
+export interface CompanySettings {
+  id: string;
+  tenant_id: string;
+  siren?: string;
+  siret?: string;
+  tva_intracom?: string;
+  raison_sociale?: string;
+  adresse_ligne1?: string;
+  adresse_ligne2?: string;
+  code_postal?: string;
+  ville?: string;
+  pays?: string;
+  telephone?: string;
+  email?: string;
+  site_web?: string;
+  licence_transport?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BankAccount {
+  id: string;
+  label: string;
+  iban: string;
+  bic?: string;
+  bank_name?: string;
+  is_default: boolean;
+  created_at?: string;
+}
+
+export interface VatConfig {
+  id: string;
+  rate: number;
+  label: string;
+  mention_legale?: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface CostCenter {
+  id: string;
+  code: string;
+  label: string;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface NotificationConfig {
+  id: string;
+  event_type: string;
+  channels: string[];
+  recipients: string[];
+  delay_hours: number;
+  is_active: boolean;
+  created_at?: string;
+}
+
+// ── Audit ────────────────────────────────────────────────────────
+
+export interface AuditLog {
+  id: string;
+  user_id?: string;
+  user_email?: string;
+  action: string;
+  entity_type: string;
+  entity_id?: string;
+  old_value?: Record<string, unknown>;
+  new_value?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  ip_address?: string;
+  created_at?: string;
+}
+
+// ── Notifications ────────────────────────────────────────────────
+
+export interface Notification {
+  id: string;
+  title: string;
+  message?: string;
+  link?: string;
+  event_type?: string;
+  read: boolean;
+  created_at?: string;
+}
+
+// ── Credit Notes ─────────────────────────────────────────────────
+
+export interface CreditNote {
+  id: string;
+  credit_note_number?: string;
+  invoice_id?: string;
+  customer_id?: string;
+  status: string;
+  issue_date?: string;
+  total_ht: number;
+  tva_rate: number;
+  total_tva: number;
+  total_ttc: number;
+  pdf_s3_key?: string;
+  notes?: string;
+  created_at?: string;
+}
+
 // ── Parametrage (expanded login response) ───────────────────────
 
 export interface TenantInfo {

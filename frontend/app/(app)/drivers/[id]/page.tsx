@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { apiGet, apiPost, apiPut, apiFetch } from "@/lib/api";
+import { apiGet, apiPost, apiPut, apiPatch } from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
 import FilePicker from "@/components/FilePicker";
 import ComplianceTab from "@/components/ComplianceTab";
@@ -74,7 +74,7 @@ export default function DriverDetailPage() {
   };
 
   const handleStatusChange = async (newStatut: string) => {
-    await apiFetch(`/v1/masterdata/drivers/${id}/status`, { method: "PATCH", body: JSON.stringify({ statut: newStatut }) });
+    await apiPatch(`/v1/masterdata/drivers/${id}/status`, { statut: newStatut });
     apiGet<DriverDetail>(`/v1/masterdata/drivers/${id}`).then(setDriver);
   };
 

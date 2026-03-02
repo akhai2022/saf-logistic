@@ -27,5 +27,9 @@ celery_app.conf.update(
             "task": "app.infra.tasks.send_due_reminders_daily",
             "schedule": 86400.0,
         },
+        "driver-auto-inactivation": {
+            "task": "app.infra.tasks.driver_auto_inactivation",
+            "schedule": 86400.0,  # 24h
+        },
     },
 )

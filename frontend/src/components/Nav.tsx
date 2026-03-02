@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth, getDashboardConfig } from "@/lib/auth";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { apiGet } from "@/lib/api";
 
 interface NavItem {
   href: string;
@@ -66,12 +67,21 @@ const ALL_SECTIONS: NavSection[] = [
       { href: "/reports", label: "Tableau de bord", icon: "bar_chart" },
     ],
   },
+  {
+    key: "parametrage",
+    label: "Paramétrage",
+    items: [
+      { href: "/settings", label: "Paramètres", icon: "settings" },
+      { href: "/audit", label: "Journal d'audit", icon: "history" },
+    ],
+  },
 ];
 
 export default function Nav() {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const visibleSections = useMemo(() => {
     const config = getDashboardConfig();
@@ -81,6 +91,18 @@ export default function Nav() {
     return ALL_SECTIONS.filter((s) => config.sidebar_sections.includes(s.key));
   }, []);
 
+  // Poll notification count every 30s
+  useEffect(() => {
+    const fetchCount = () => {
+      apiGet<{ unread: number }>("/v1/notifications/count")
+        .then((data) => setUnreadCount(data.unread))
+        .catch(() => {});
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const sidebarContent = (
     <>
       {/* Brand */}
@@ -88,10 +110,23 @@ export default function Nav() {
         <span className="material-symbols-outlined text-primary-400" style={{ fontSize: 32 }}>
           local_shipping
         </span>
-        <div>
+        <div className="flex-1">
           <div className="font-bold text-lg text-white leading-tight">SAF Logistic</div>
           <div className="text-xs text-slate-400">Transport routier</div>
         </div>
+        {/* Notification bell */}
+        <Link
+          href="/notifications"
+          className="relative text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10"
+          title="Notifications"
+        >
+          <span className="material-symbols-outlined icon-sm">notifications</span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Link>
       </div>
 
       {/* Nav sections */}

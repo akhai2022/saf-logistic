@@ -24,7 +24,7 @@ export default function SupplierInvoicesPage() {
   const [invoices, setInvoices] = useState<SupplierInvoice[]>([]);
 
   useEffect(() => {
-    setInvoices([]);
+    apiGet<SupplierInvoice[]>("/v1/billing/supplier-invoices").then(setInvoices).catch(() => setInvoices([]));
   }, []);
 
   return (

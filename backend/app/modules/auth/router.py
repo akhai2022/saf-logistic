@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import secrets
 import uuid
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,7 +23,7 @@ router = APIRouter(prefix="/v1/auth", tags=["auth"])
 # ── Role → sidebar sections mapping ──────────────────────────────
 
 SIDEBAR_BY_ROLE: dict[str, list[str]] = {
-    "admin": ["exploitation", "referentiels", "finance", "flotte", "pilotage"],
+    "admin": ["exploitation", "referentiels", "finance", "flotte", "pilotage", "parametrage"],
     "exploitation": ["exploitation", "referentiels"],
     "compta": ["exploitation", "finance", "pilotage"],
     "flotte": ["referentiels", "flotte"],
@@ -200,3 +202,96 @@ async def me(current_user: dict = Depends(get_current_user)):
         role=current_user.get("role", ""),
         tenant_id=str(current_user["tenant_id"]),
     )
+
+
+# ── Password Reset ───────────────────────────────────────────────
+
+class PasswordResetRequest(BaseModel):
+    email: str
+    tenant_id: str
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+
+@router.post("/password-reset/request")
+async def request_password_reset(
+    body: PasswordResetRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Request a password reset. Always returns 200 to prevent enumeration."""
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # Look up user
+    result = await db.execute(
+        text("SELECT id, email FROM users WHERE email = :email AND tenant_id = :tid AND is_active = true"),
+        {"email": body.email, "tid": body.tenant_id},
+    )
+    user_row = result.first()
+
+    if user_row:
+        token = secrets.token_urlsafe(48)
+        expires = datetime.now(timezone.utc) + timedelta(hours=1)
+
+        await db.execute(text("""
+            INSERT INTO password_reset_tokens (id, user_id, token, expires_at)
+            VALUES (:id, :uid, :token, :exp)
+        """), {
+            "id": str(uuid.uuid4()),
+            "uid": str(user_row.id),
+            "token": token,
+            "exp": expires,
+        })
+        await db.commit()
+
+        # Log the reset link (no SMTP configured)
+        logger.info("Password reset link for %s: /reset?token=%s", user_row.email, token)
+
+    # Always return 200
+    return {"message": "Si un compte existe avec cet email, un lien de reinitialisation a ete envoye."}
+
+
+@router.post("/password-reset/confirm")
+async def confirm_password_reset(
+    body: PasswordResetConfirm,
+    db: AsyncSession = Depends(get_db),
+):
+    """Confirm password reset with token."""
+    now = datetime.now(timezone.utc)
+
+    result = await db.execute(
+        text("""
+            SELECT prt.id, prt.user_id, prt.expires_at, prt.used_at
+            FROM password_reset_tokens prt
+            WHERE prt.token = :token
+        """),
+        {"token": body.token},
+    )
+    token_row = result.first()
+
+    if not token_row:
+        raise HTTPException(400, "Token invalide ou expire")
+    if token_row.used_at:
+        raise HTTPException(400, "Ce token a deja ete utilise")
+    if token_row.expires_at.replace(tzinfo=timezone.utc) < now:
+        raise HTTPException(400, "Token invalide ou expire")
+
+    if len(body.new_password) < 8:
+        raise HTTPException(422, "Le mot de passe doit contenir au moins 8 caracteres")
+
+    new_hash = hash_password(body.new_password)
+    await db.execute(
+        text("UPDATE users SET password_hash = :pwd, updated_at = NOW() WHERE id = :uid"),
+        {"pwd": new_hash, "uid": str(token_row.user_id)},
+    )
+    await db.execute(
+        text("UPDATE password_reset_tokens SET used_at = :now WHERE id = :id"),
+        {"now": now, "id": str(token_row.id)},
+    )
+    await db.commit()
+
+    return {"message": "Mot de passe reinitialise avec succes."}

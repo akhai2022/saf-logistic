@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { apiGet, apiPut, apiPost, apiFetch } from "@/lib/api";
+import { apiGet, apiPut, apiPost, apiPatch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { ClientDetail, ClientContact, ClientAddress } from "@/lib/types";
 import Button from "@/components/Button";
@@ -77,7 +77,7 @@ export default function ClientDetailPage() {
   };
 
   const handleStatusChange = async (newStatut: string) => {
-    await apiFetch(`/v1/masterdata/clients/${id}/status`, { method: "PATCH", body: JSON.stringify({ statut: newStatut }) });
+    await apiPatch(`/v1/masterdata/clients/${id}/status`, { statut: newStatut });
     apiGet<ClientDetail>(`/v1/masterdata/clients/${id}`).then((c) => { setClient(c); setForm((f) => ({ ...f, statut: c.statut || "" })); });
   };
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { apiGet, apiPost, apiFetch } from "@/lib/api";
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { uploadFile, getDownloadUrl } from "@/lib/upload";
 import type { Mission, Driver, Vehicle, Subcontractor, DeliveryPoint, MissionGoods, ProofOfDelivery, Dispute } from "@/lib/types";
@@ -90,7 +90,7 @@ export default function JobDetailPage() {
   };
 
   const handleUnassign = async () => {
-    await apiFetch(`/v1/jobs/${id}/assign`, { method: "DELETE" });
+    await apiDelete(`/v1/jobs/${id}/assign`);
     reload();
   };
 
@@ -109,9 +109,7 @@ export default function JobDetailPage() {
   };
 
   const handleDpStatus = async (dpId: string, newStatut: string) => {
-    await apiFetch(`/v1/jobs/${id}/delivery-points/${dpId}/status`, {
-      method: "PATCH", body: JSON.stringify({ statut: newStatut }),
-    });
+    await apiPatch(`/v1/jobs/${id}/delivery-points/${dpId}/status`, { statut: newStatut });
     reload();
   };
 
@@ -146,10 +144,7 @@ export default function JobDetailPage() {
   };
 
   const handlePodValidation = async (podId: string, podStatut: string, motif?: string) => {
-    await apiFetch(`/v1/jobs/${id}/pods/${podId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ statut: podStatut, motif_rejet: motif }),
-    });
+    await apiPatch(`/v1/jobs/${id}/pods/${podId}`, { statut: podStatut, motif_rejet: motif });
     reload();
   };
 

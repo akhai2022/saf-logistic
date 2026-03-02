@@ -426,3 +426,137 @@ def invoice_generate_pdf(invoice_id: str) -> dict:
         db.commit()
 
     return {"pdf_key": key}
+
+
+# ---------------------------------------------------------------------------
+# Driver auto-inactivation — daily
+# ---------------------------------------------------------------------------
+@celery_app.task(name="app.infra.tasks.driver_auto_inactivation")
+def driver_auto_inactivation() -> dict:
+    """Daily: set drivers with date_sortie < today to INACTIF."""
+    today = date.today()
+    with _session() as db:
+        result = db.execute(
+            text("""
+                UPDATE drivers
+                SET statut = 'INACTIF', is_active = false, updated_at = NOW()
+                WHERE date_sortie IS NOT NULL
+                  AND date_sortie < :today
+                  AND statut = 'ACTIF'
+                RETURNING id, tenant_id
+            """),
+            {"today": today},
+        )
+        rows = result.fetchall()
+        db.commit()
+    return {"inactivated": len(rows)}
+
+
+# ---------------------------------------------------------------------------
+# Notification dispatch
+# ---------------------------------------------------------------------------
+@celery_app.task(name="app.infra.tasks.notification_dispatch")
+def notification_dispatch(
+    tenant_id: str,
+    event_type: str,
+    title: str,
+    message: str | None = None,
+    link: str | None = None,
+) -> dict:
+    """Look up notification_configs, find matching users by role, INSERT notifications."""
+    with _session() as db:
+        # Find active config for this event
+        configs = db.execute(
+            text("""
+                SELECT channels, recipients FROM notification_configs
+                WHERE tenant_id = :tid AND event_type = :evt AND is_active = true
+            """),
+            {"tid": tenant_id, "evt": event_type},
+        ).fetchall()
+
+        if not configs:
+            return {"dispatched": 0}
+
+        # Collect all target role names
+        target_roles: set[str] = set()
+        for cfg in configs:
+            if cfg.recipients:
+                target_roles.update(cfg.recipients)
+
+        # If no specific recipients, send to all admin users
+        if not target_roles:
+            target_roles = {"admin"}
+
+        # Find user IDs by role name
+        users = db.execute(
+            text("""
+                SELECT u.id FROM users u
+                JOIN roles r ON u.role_id = r.id
+                WHERE u.tenant_id = :tid AND u.is_active = true
+                  AND r.name = ANY(:roles)
+            """),
+            {"tid": tenant_id, "roles": list(target_roles)},
+        ).fetchall()
+
+        count = 0
+        for u in users:
+            db.execute(
+                text("""
+                    INSERT INTO notifications (id, tenant_id, user_id, title, message, link, event_type)
+                    VALUES (:id, :tid, :uid, :title, :msg, :link, :evt)
+                """),
+                {
+                    "id": str(uuid.uuid4()), "tid": tenant_id,
+                    "uid": str(u.id), "title": title,
+                    "msg": message, "link": link, "evt": event_type,
+                },
+            )
+            count += 1
+
+        db.commit()
+
+    return {"dispatched": count}
+
+
+# ---------------------------------------------------------------------------
+# Credit note PDF generation
+# ---------------------------------------------------------------------------
+@celery_app.task(name="app.infra.tasks.credit_note_generate_pdf")
+def credit_note_generate_pdf(credit_note_id: str) -> dict:
+    with _session() as db:
+        cn = db.execute(
+            text("SELECT * FROM credit_notes WHERE id = :id"), {"id": credit_note_id}
+        ).first()
+        if not cn:
+            return {"error": "Credit note not found"}
+
+        lines = db.execute(
+            text("SELECT * FROM credit_note_lines WHERE credit_note_id = :id ORDER BY line_order"),
+            {"id": credit_note_id},
+        ).fetchall()
+
+        customer = db.execute(
+            text("SELECT * FROM customers WHERE id = :id"), {"id": str(cn.customer_id)}
+        ).first()
+
+        tenant = db.execute(
+            text("SELECT * FROM tenants WHERE id = :id"), {"id": str(cn.tenant_id)}
+        ).first()
+
+    from app.modules.billing.pdf_service import generate_credit_note_pdf
+    pdf_bytes = generate_credit_note_pdf(cn, lines, customer, tenant)
+
+    # Upload to S3
+    from app.infra.s3 import _get_s3_client
+    s3 = _get_s3_client()
+    key = f"{cn.tenant_id}/credit-notes/{cn.credit_note_number}.pdf"
+    s3.put_object(Bucket=settings.S3_BUCKET, Key=key, Body=pdf_bytes, ContentType="application/pdf")
+
+    with _session() as db:
+        db.execute(
+            text("UPDATE credit_notes SET pdf_s3_key = :key WHERE id = :id"),
+            {"key": key, "id": credit_note_id},
+        )
+        db.commit()
+
+    return {"pdf_key": key}

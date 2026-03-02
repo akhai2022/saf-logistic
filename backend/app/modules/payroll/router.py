@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
@@ -62,7 +63,7 @@ async def create_period(
             VALUES (:id, :tid, :y, :m)
         """), {"id": str(pid), "tid": str(tenant.tenant_id), "y": year, "m": month})
         await db.commit()
-    except Exception:
+    except IntegrityError:
         await db.rollback()
         raise HTTPException(409, "Period already exists")
     return PeriodOut(id=str(pid), year=year, month=month, status="draft")
@@ -76,13 +77,14 @@ async def get_period_variables(
     db: AsyncSession = Depends(get_db),
 ):
     rows = await db.execute(text("""
-        SELECT pv.id, pv.driver_id, d.first_name || ' ' || d.last_name AS driver_name,
+        SELECT pv.id, pv.driver_id,
+               COALESCE(d.prenom, d.first_name, '') || ' ' || COALESCE(d.nom, d.last_name, '') AS driver_name,
                pvt.code AS variable_type_code, pvt.label AS variable_type_label, pv.value
         FROM payroll_variables pv
         JOIN drivers d ON pv.driver_id = d.id
         JOIN payroll_variable_types pvt ON pv.variable_type_id = pvt.id
         WHERE pv.period_id = :pid AND pv.tenant_id = :tid
-        ORDER BY d.last_name, d.first_name, pvt.code
+        ORDER BY COALESCE(d.nom, d.last_name), COALESCE(d.prenom, d.first_name), pvt.code
     """), {"pid": period_id, "tid": str(tenant.tenant_id)})
     return [PayrollVarOut(
         id=str(r.id), driver_id=str(r.driver_id), driver_name=r.driver_name,
@@ -236,7 +238,7 @@ async def submit_period(
 async def approve_period(
     period_id: str,
     tenant: TenantContext = Depends(get_tenant),
-    user: dict = Depends(get_current_user),
+    user: dict = require_permission("payroll.approve"),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(text("""
@@ -253,7 +255,7 @@ async def approve_period(
 async def lock_period(
     period_id: str,
     tenant: TenantContext = Depends(get_tenant),
-    user: dict = Depends(get_current_user),
+    user: dict = require_permission("payroll.lock"),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(text("""

@@ -4,14 +4,31 @@ from __future__ import annotations
 import uuid
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import text
+
+TID = "00000000-0000-0000-0000-000000000001"
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def clean_billing_data(db):
+    """Clean up billing/pricing data before each test."""
+    await db.execute(text(
+        "DELETE FROM invoice_lines WHERE invoice_id IN (SELECT id FROM invoices WHERE tenant_id = :tid)"
+    ), {"tid": TID})
+    await db.execute(text("DELETE FROM invoices WHERE tenant_id = :tid"), {"tid": TID})
+    await db.execute(text("DELETE FROM pricing_rules WHERE tenant_id = :tid"), {"tid": TID})
+    await db.execute(text("DELETE FROM disputes WHERE tenant_id = :tid"), {"tid": TID})
+    await db.execute(text("DELETE FROM jobs WHERE tenant_id = :tid"), {"tid": TID})
+    await db.commit()
+    yield
 
 
 @pytest.mark.asyncio
 async def test_km_pricing_basic(client: AsyncClient, db):
     """A km rule at 1.50 EUR/km applied to a 465 km job should yield 697.50 HT."""
-    tid = "00000000-0000-0000-0000-000000000001"
+    tid = TID
 
     # Seed customer
     cust_id = str(uuid.uuid4())
@@ -57,7 +74,7 @@ async def test_km_pricing_basic(client: AsyncClient, db):
 @pytest.mark.asyncio
 async def test_km_pricing_with_range(client: AsyncClient, db):
     """km rules with min_km/max_km ranges should only apply within bounds."""
-    tid = "00000000-0000-0000-0000-000000000001"
+    tid = TID
 
     cust_id = str(uuid.uuid4())
     await db.execute(text("""
@@ -98,7 +115,7 @@ async def test_km_pricing_with_range(client: AsyncClient, db):
 @pytest.mark.asyncio
 async def test_flat_and_surcharge(client: AsyncClient, db):
     """Flat rate + surcharge should be additive."""
-    tid = "00000000-0000-0000-0000-000000000001"
+    tid = TID
 
     cust_id = str(uuid.uuid4())
     await db.execute(text("""
@@ -142,7 +159,7 @@ async def test_flat_and_surcharge(client: AsyncClient, db):
 @pytest.mark.asyncio
 async def test_multi_job_invoice(client: AsyncClient, db):
     """Invoice from multiple jobs should sum all line amounts."""
-    tid = "00000000-0000-0000-0000-000000000001"
+    tid = TID
 
     cust_id = str(uuid.uuid4())
     await db.execute(text("""

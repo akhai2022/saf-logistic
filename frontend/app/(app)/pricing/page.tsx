@@ -52,7 +52,7 @@ export default function PricingPage() {
               <label className="text-sm font-medium text-gray-700">Client (optionnel)</label>
               <select value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })}>
                 <option value="">Tous les clients</option>
-                {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {customers.map((c) => <option key={c.id} value={c.id}>{c.raison_sociale || c.name || "—"}</option>)}
               </select>
             </div>
             <div className="flex flex-col gap-1">

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { apiGet, apiPut, apiPost, apiFetch } from "@/lib/api";
+import { apiGet, apiPut, apiPost, apiPatch } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { VehicleDetail, MaintenanceSchedule, MaintenanceRecord, VehicleCost, CostSummary } from "@/lib/types";
 import Button from "@/components/Button";
@@ -125,7 +125,7 @@ export default function VehicleDetailPage() {
   };
 
   const handleStatusChange = async (newStatut: string) => {
-    await apiFetch(`/v1/masterdata/vehicles/${id}/status`, { method: "PATCH", body: JSON.stringify({ statut: newStatut }) });
+    await apiPatch(`/v1/masterdata/vehicles/${id}/status`, { statut: newStatut });
     apiGet<VehicleDetail>(`/v1/masterdata/vehicles/${id}`).then(setVehicle);
   };
 

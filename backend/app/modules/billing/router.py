@@ -379,3 +379,233 @@ async def ar_aging(
         customer_name=r.customer_name, total_ttc=float(r.total_ttc),
         due_date=str(r.due_date), days_overdue=(today - r.due_date).days,
     ) for r in rows.fetchall()]
+
+
+# ---- Supplier Invoices ----
+
+class SupplierInvoiceOut(BaseModel):
+    id: str
+    supplier_id: str | None = None
+    invoice_number: str | None = None
+    invoice_date: str | None = None
+    total_ht: float | None = None
+    total_tva: float | None = None
+    total_ttc: float | None = None
+    status: str
+    s3_key: str | None = None
+    created_at: str | None = None
+
+
+# ---- Credit Notes (Avoirs) ----
+
+class CreditNoteOut(BaseModel):
+    id: str
+    credit_note_number: str | None = None
+    invoice_id: str | None = None
+    customer_id: str | None = None
+    status: str
+    issue_date: str | None = None
+    total_ht: float
+    tva_rate: float
+    total_tva: float
+    total_ttc: float
+    pdf_s3_key: str | None = None
+    notes: str | None = None
+    created_at: str | None = None
+
+
+class CreditNoteLineOut(BaseModel):
+    id: str
+    description: str | None = None
+    quantity: float
+    unit_price: float
+    amount_ht: float
+
+
+class CreditNoteDetailOut(CreditNoteOut):
+    lines: list[CreditNoteLineOut] = []
+
+
+class CreditNoteCreateRequest(BaseModel):
+    invoice_id: str
+    notes: str | None = None
+
+
+def _cn_from_row(r) -> CreditNoteOut:
+    return CreditNoteOut(
+        id=str(r.id), credit_note_number=r.credit_note_number,
+        invoice_id=str(r.invoice_id) if r.invoice_id else None,
+        customer_id=str(r.customer_id) if r.customer_id else None,
+        status=r.status,
+        issue_date=str(r.issue_date) if r.issue_date else None,
+        total_ht=float(r.total_ht), tva_rate=float(r.tva_rate),
+        total_tva=float(r.total_tva), total_ttc=float(r.total_ttc),
+        pdf_s3_key=r.pdf_s3_key, notes=r.notes,
+        created_at=str(r.created_at) if r.created_at else None,
+    )
+
+
+@router.post("/credit-notes", response_model=CreditNoteOut, status_code=201)
+async def create_credit_note(
+    body: CreditNoteCreateRequest,
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = require_permission("billing.credit_note.create"),
+    db: AsyncSession = Depends(get_db),
+):
+    tid = str(tenant.tenant_id)
+    # Load the source invoice
+    inv = (await db.execute(
+        text("SELECT * FROM invoices WHERE id = :id AND tenant_id = :tid"),
+        {"id": body.invoice_id, "tid": tid},
+    )).first()
+    if not inv:
+        raise HTTPException(404, "Facture non trouvee")
+    if inv.status != "validated":
+        raise HTTPException(400, "Seules les factures validees peuvent avoir un avoir")
+
+    # Load invoice lines
+    inv_lines = (await db.execute(
+        text("SELECT * FROM invoice_lines WHERE invoice_id = :id ORDER BY line_order"),
+        {"id": body.invoice_id},
+    )).fetchall()
+
+    cn_id = uuid.uuid4()
+    total_ht = -abs(float(inv.total_ht))
+    tva_rate = float(inv.tva_rate)
+    total_tva = -abs(float(inv.total_tva))
+    total_ttc = -abs(float(inv.total_ttc))
+
+    await db.execute(text("""
+        INSERT INTO credit_notes (id, tenant_id, invoice_id, customer_id, status,
+            issue_date, total_ht, tva_rate, total_tva, total_ttc, notes, created_by)
+        VALUES (:id, :tid, :iid, :cid, 'draft', :idate, :ht, :tva_rate, :tva, :ttc, :notes, :uid)
+    """), {
+        "id": str(cn_id), "tid": tid, "iid": body.invoice_id,
+        "cid": str(inv.customer_id), "idate": date.today(),
+        "ht": total_ht, "tva_rate": tva_rate,
+        "tva": total_tva, "ttc": total_ttc,
+        "notes": body.notes,
+        "uid": user.get("id") if isinstance(user, dict) else None,
+    })
+
+    # Copy lines with negated amounts
+    for idx, line in enumerate(inv_lines):
+        await db.execute(text("""
+            INSERT INTO credit_note_lines (id, credit_note_id, description, quantity, unit_price, amount_ht, line_order)
+            VALUES (:id, :cnid, :desc, :qty, :up, :amt, :ord)
+        """), {
+            "id": str(uuid.uuid4()), "cnid": str(cn_id),
+            "desc": line.description,
+            "qty": float(line.quantity),
+            "up": -abs(float(line.unit_price)),
+            "amt": -abs(float(line.amount_ht)),
+            "ord": idx,
+        })
+
+    await db.commit()
+    row = (await db.execute(text("SELECT * FROM credit_notes WHERE id = :id"), {"id": str(cn_id)})).first()
+    return _cn_from_row(row)
+
+
+@router.get("/credit-notes", response_model=list[CreditNoteOut])
+async def list_credit_notes(
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    status: str | None = Query(None),
+):
+    q = "SELECT * FROM credit_notes WHERE tenant_id = :tid"
+    params: dict = {"tid": str(tenant.tenant_id)}
+    if status:
+        q += " AND status = :status"
+        params["status"] = status
+    q += " ORDER BY created_at DESC"
+    rows = (await db.execute(text(q), params)).fetchall()
+    return [_cn_from_row(r) for r in rows]
+
+
+@router.get("/credit-notes/{cn_id}", response_model=CreditNoteDetailOut)
+async def get_credit_note(
+    cn_id: str,
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    row = (await db.execute(
+        text("SELECT * FROM credit_notes WHERE id = :id AND tenant_id = :tid"),
+        {"id": cn_id, "tid": str(tenant.tenant_id)},
+    )).first()
+    if not row:
+        raise HTTPException(404, "Avoir non trouve")
+
+    lines = (await db.execute(
+        text("SELECT * FROM credit_note_lines WHERE credit_note_id = :id ORDER BY line_order"),
+        {"id": cn_id},
+    )).fetchall()
+
+    cn = _cn_from_row(row)
+    return CreditNoteDetailOut(
+        **cn.model_dump(),
+        lines=[CreditNoteLineOut(
+            id=str(l.id), description=l.description,
+            quantity=float(l.quantity), unit_price=float(l.unit_price),
+            amount_ht=float(l.amount_ht),
+        ) for l in lines],
+    )
+
+
+@router.post("/credit-notes/{cn_id}/validate", response_model=CreditNoteOut)
+async def validate_credit_note(
+    cn_id: str,
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = require_permission("billing.credit_note.validate"),
+    db: AsyncSession = Depends(get_db),
+):
+    row = (await db.execute(
+        text("SELECT * FROM credit_notes WHERE id = :id AND tenant_id = :tid"),
+        {"id": cn_id, "tid": str(tenant.tenant_id)},
+    )).first()
+    if not row:
+        raise HTTPException(404, "Avoir non trouve")
+    if row.status != "draft":
+        raise HTTPException(400, "Seuls les avoirs en brouillon peuvent etre valides")
+
+    number = await next_invoice_number(db, tenant.tenant_id, prefix="AVR")
+
+    await db.execute(text("""
+        UPDATE credit_notes SET status='validated', credit_note_number=:num, updated_at=NOW()
+        WHERE id=:id
+    """), {"id": cn_id, "num": number})
+    await db.commit()
+
+    # Trigger PDF generation
+    from app.infra.celery_app import celery_app
+    celery_app.send_task("app.infra.tasks.credit_note_generate_pdf", args=[cn_id])
+
+    updated = (await db.execute(text("SELECT * FROM credit_notes WHERE id = :id"), {"id": cn_id})).first()
+    return _cn_from_row(updated)
+
+
+@router.get("/supplier-invoices", response_model=list[SupplierInvoiceOut])
+async def list_supplier_invoices(
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    status: str | None = Query(None),
+):
+    q = "SELECT * FROM supplier_invoices WHERE tenant_id = :tid"
+    params: dict = {"tid": str(tenant.tenant_id)}
+    if status:
+        q += " AND status = :status"
+        params["status"] = status
+    q += " ORDER BY created_at DESC"
+    rows = await db.execute(text(q), params)
+    return [SupplierInvoiceOut(
+        id=str(r.id), supplier_id=str(r.supplier_id) if r.supplier_id else None,
+        invoice_number=r.invoice_number, invoice_date=str(r.invoice_date) if r.invoice_date else None,
+        total_ht=float(r.total_ht) if r.total_ht else None,
+        total_tva=float(r.total_tva) if r.total_tva else None,
+        total_ttc=float(r.total_ttc) if r.total_ttc else None,
+        status=r.status, s3_key=r.s3_key,
+        created_at=str(r.created_at) if r.created_at else None,
+    ) for r in rows.fetchall()]

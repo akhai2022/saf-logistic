@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiGet, apiFetch } from "@/lib/api";
+import { apiGet } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { DashboardResponse, KpiCard } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
@@ -37,12 +37,20 @@ export default function ReportsPage() {
   const handleExport = async (dataset: string) => {
     setExporting(dataset);
     try {
-      const response = await apiFetch(`/v1/reports/export`, {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const token = localStorage.getItem("saf_token");
+      const tenantId = localStorage.getItem("saf_tenant_id");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (tenantId) headers["X-Tenant-ID"] = tenantId;
+
+      const res = await fetch(`${API_BASE}/v1/reports/export`, {
         method: "POST",
+        headers,
         body: JSON.stringify({ dataset, format: "csv" }),
       });
-      // Download the CSV
-      const blob = new Blob([response as string], { type: "text/csv" });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

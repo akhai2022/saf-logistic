@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Invoice, Customer, Job } from "@/lib/types";
+import type { Invoice, Customer, Job, CreditNote } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
@@ -40,6 +40,15 @@ export default function InvoicesPage() {
 
   const statusLabel = (s: string) => ({ draft: "Brouillon", validated: "Validée", paid: "Payée" }[s] || s);
 
+  const createCreditNote = async (invoiceId: string) => {
+    try {
+      await apiPost<CreditNote>("/v1/billing/credit-notes", { invoice_id: invoiceId });
+      alert("Avoir cree avec succes");
+    } catch {
+      alert("Erreur lors de la creation de l'avoir");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader icon="receipt_long" title="Factures" description="Facturation clients">
@@ -55,7 +64,7 @@ export default function InvoicesPage() {
               <label className="text-sm font-medium text-gray-700">Client</label>
               <select value={selectedCustomer} onChange={(e) => { setSelectedCustomer(e.target.value); setSelectedJobs([]); }}>
                 <option value="">-- Sélectionner --</option>
-                {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {customers.map((c) => <option key={c.id} value={c.id}>{c.raison_sociale || c.name || "—"}</option>)}
               </select>
             </div>
             {selectedCustomer && (
@@ -89,6 +98,7 @@ export default function InvoicesPage() {
               <th>Total HT</th>
               <th>Total TTC</th>
               <th>Échéance</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody className="table-body">
@@ -99,7 +109,7 @@ export default function InvoicesPage() {
                     {inv.invoice_number || "Brouillon"}
                   </Link>
                 </td>
-                <td className="text-gray-600">{customers.find((c) => c.id === inv.customer_id)?.name || "—"}</td>
+                <td className="text-gray-600">{(() => { const c = customers.find((c) => c.id === inv.customer_id); return c?.raison_sociale || c?.name || "—"; })()}</td>
                 <td>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${inv.status === "validated" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
                     {statusLabel(inv.status)}
@@ -108,6 +118,16 @@ export default function InvoicesPage() {
                 <td>{inv.total_ht.toFixed(2)} EUR</td>
                 <td className="font-medium">{inv.total_ttc.toFixed(2)} EUR</td>
                 <td className="text-gray-500">{inv.due_date || "—"}</td>
+                <td>
+                  {inv.status === "validated" && (
+                    <button
+                      onClick={() => createCreditNote(inv.id)}
+                      className="text-xs text-red-600 hover:text-red-800 hover:underline"
+                    >
+                      Creer un avoir
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

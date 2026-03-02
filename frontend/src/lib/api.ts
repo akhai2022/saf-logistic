@@ -55,6 +55,17 @@ export function apiPut<T>(path: string, body?: unknown) {
   });
 }
 
+export function apiPatch<T>(path: string, body?: unknown) {
+  return apiFetch<T>(path, {
+    method: "PATCH",
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
+export function apiDelete<T>(path: string) {
+  return apiFetch<T>(path, { method: "DELETE" });
+}
+
 export async function apiUploadFile(
   path: string,
   file: File

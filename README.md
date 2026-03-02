@@ -33,7 +33,7 @@ SAF-Logistic centralise la gestion administrative, financiere, RH et documentair
      +--------v---------+    +---------v----------+
      |  PostgreSQL 16   |    |   Celery Workers   |
      |  RLS tenant_id   |    +----+----------+----+
-     |  5 migrations    |         |          |
+     |  6 migrations    |         |          |
      +------------------+    +----v---+ +----v--------+
                              |default | |  ocr        |
                              |queue   | |  queue      |
@@ -142,23 +142,28 @@ saf-logistic/
 |   |   |   |-- s3.py                      # Operations S3
 |   |   |   +-- tasks.py                   # Taches async (compliance, OCR, rappels)
 |   |   +-- modules/
-|   |       |-- auth/router.py             # Authentification JWT + parametrage
+|   |       |-- auth/router.py             # Authentification JWT + reset mdp + rate limiting
 |   |       |-- masterdata/                # Clients, conducteurs, vehicules
 |   |       |-- jobs/                      # Missions, livraisons, POD, litiges
 |   |       |-- documents/                 # Gestion documentaire + conformite
-|   |       |-- billing/                   # Facturation PDF
+|   |       |-- billing/                   # Facturation PDF, avoirs, Factur-X
 |   |       |-- ocr/                       # OCR multi-provider
 |   |       |-- payroll/                   # Pre-paie
 |   |       |-- onboarding/                # Onboarding entreprise
 |   |       |-- tasks/                     # Gestion des taches
 |   |       |-- fleet/                     # Maintenance, couts, sinistres (Module H)
-|   |       +-- reports/                   # Reporting, KPI, exports CSV (Module I)
+|   |       |-- reports/                   # Reporting, KPI, exports CSV (Module I)
+|   |       |-- settings/                  # Parametrage (company, banque, TVA, centres de cout)
+|   |       |-- audit/                     # Journal d'audit immutable
+|   |       |-- notifications/             # Notifications in-app
+|   |       +-- gdpr/                      # RGPD (export, suppression)
 |   |-- migrations/versions/
 |   |   |-- 0001_initial_schema.py         # Users, tenants, agences
 |   |   |-- 0002_module_b_referentiels.py  # Clients, conducteurs, vehicules
 |   |   |-- 0003_module_c_missions.py      # Missions, livraisons, POD, litiges
 |   |   |-- 0004_module_d_compliance.py    # Templates, checklists, alertes
-|   |   +-- 0005_modules_h_i.py           # Maintenance, couts, sinistres (Module H)
+|   |   |-- 0005_modules_h_i.py           # Maintenance, couts, sinistres (Module H)
+|   |   +-- 0006_settings_notifications_audit_credit_notes.py  # Parametrage, audit, notifs, avoirs
 |   |-- ocr_models/                       # Modeles PaddleOCR pre-telecharges (offline)
 |   |-- Dockerfile.api
 |   |-- Dockerfile.ocr_worker
@@ -185,6 +190,9 @@ saf-logistic/
 |   |       |-- fleet/maintenance/page.tsx # Liste maintenances
 |   |       |-- fleet/claims/page.tsx      # Liste sinistres
 |   |       |-- reports/page.tsx           # Dashboard KPI (Module I)
+|   |       |-- settings/page.tsx          # Parametrage (5 onglets)
+|   |       |-- audit/page.tsx             # Journal d'audit
+|   |       |-- notifications/page.tsx     # Centre de notifications
 |   |       |-- compliance/page.tsx        # Dashboard conformite
 |   |       |-- compliance/alerts/page.tsx # Alertes conformite
 |   |       |-- compliance/templates/page.tsx
@@ -232,7 +240,9 @@ saf-logistic/
 ### Pre-requis
 
 - Docker & Docker Compose
+- Python 3.12+ (pour le backend en local)
 - Node.js 20+ (pour le frontend en local)
+- [uv](https://docs.astral.sh/uv/) (recommande pour gerer l'environnement Python)
 - Git
 
 ### Lancement (dev local)
@@ -401,11 +411,57 @@ Alertes progressives : J-60 -> J-30 -> J-15 -> J-7 -> J0 (expire)
 | GET/POST | `/v1/billing/invoices` | Liste / generation factures |
 | GET | `/v1/billing/invoices/{id}/pdf` | Telecharger PDF facture |
 
+### Avoirs / Notes de credit (Module E)
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/v1/billing/credit-notes` | Creer un avoir depuis une facture |
+| GET | `/v1/billing/credit-notes` | Liste des avoirs |
+| GET | `/v1/billing/credit-notes/{id}` | Detail avoir + lignes |
+| POST | `/v1/billing/credit-notes/{id}/validate` | Valider + generer PDF |
+
 ### OCR (Module F)
 | Methode | Endpoint | Description |
 |---------|----------|-------------|
 | POST | `/v1/ocr/jobs` | Lancer extraction OCR |
 | GET | `/v1/ocr/jobs/{id}` | Resultat extraction |
+
+### Parametrage (Module A — Settings)
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| GET/PUT | `/v1/settings/company` | Identite legale (SIREN, SIRET, TVA, adresse) |
+| GET/POST | `/v1/settings/bank-accounts` | Comptes bancaires (IBAN, BIC) |
+| DELETE | `/v1/settings/bank-accounts/{id}` | Supprimer un compte bancaire |
+| GET/POST | `/v1/settings/vat` | Taux de TVA configurables |
+| DELETE | `/v1/settings/vat/{id}` | Supprimer un taux de TVA |
+| GET/POST | `/v1/settings/cost-centers` | Centres de couts |
+| DELETE | `/v1/settings/cost-centers/{id}` | Supprimer un centre de cout |
+| GET/POST | `/v1/settings/notifications` | Configuration des notifications |
+| DELETE | `/v1/settings/notifications/{id}` | Supprimer une config de notification |
+
+### Notifications
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/v1/notifications` | Liste des notifications (utilisateur courant) |
+| GET | `/v1/notifications/count` | Nombre de notifications non lues |
+| PATCH | `/v1/notifications/{id}/read` | Marquer comme lue |
+| POST | `/v1/notifications/read-all` | Marquer toutes comme lues |
+
+### Journal d'audit
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| GET | `/v1/audit-logs` | Liste des logs d'audit (filtrable par entity_type, action, date) |
+
+### RGPD
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/v1/gdpr/export` | Export JSON des donnees utilisateur |
+| POST | `/v1/gdpr/delete-request` | Demande de suppression de compte |
+
+### Securite
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/v1/auth/password-reset/request` | Demander un lien de reinitialisation |
+| POST | `/v1/auth/password-reset/confirm` | Confirmer le reset avec token |
 
 ---
 
@@ -967,7 +1023,15 @@ docker compose up -d api
 
 # Option 2 : en local (developpement rapide, hot-reload)
 cd backend
-pip install -r requirements.txt
+
+# Avec uv (recommande)
+uv venv .venv --python 3.12
+source .venv/bin/activate     # Linux/macOS
+# .venv\Scripts\activate      # Windows
+uv pip install -r requirements.txt
+
+# Ou avec pip classique
+# pip install -r requirements.txt
 export DATABASE_URL="postgresql+asyncpg://saf:saf@localhost:5433/saf"
 export CELERY_BROKER_URL="redis://localhost:6380/1"
 export CELERY_RESULT_BACKEND="redis://localhost:6380/2"
@@ -1174,6 +1238,12 @@ docker compose exec api alembic history
 | `reports.read` | * | | | | | x | |
 | `tasks.read` | * | x | x | x | x | x | |
 | `tasks.update` | * | x | x | x | x | | |
+| `settings.read` | * | x | x | x | x | x | |
+| `settings.update` | * | | | | | | |
+| `audit.read` | * | | | | | x | |
+| `billing.credit_note.create` | * | | x | | | | |
+| `billing.credit_note.read` | * | | x | | | | |
+| `billing.credit_note.validate` | * | | x | | | | |
 
 > `*` = le role `admin` dispose du wildcard `["*"]` qui accorde toutes les permissions.
 
@@ -1385,11 +1455,11 @@ Chaque requete API inclut :
 
 | Module | Statut | Endpoints | Tables | Pages UI | Tests E2E |
 |--------|--------|-----------|--------|----------|-----------|
-| **A — Parametrage** | Partiel | 4 | tenants, agencies, roles, users, number_sequences | login, onboarding | personas.spec.ts |
+| **A — Parametrage** | Implemente | 15+ | tenants, agencies, roles, users, number_sequences, company_settings, bank_accounts, vat_configs, cost_centers, notification_configs, audit_logs, notifications | login, onboarding, settings, audit, notifications | personas.spec.ts |
 | **B — Referentiels** | Implemente | 30+ | customers, client_contacts, client_addresses, drivers, vehicles, subcontractors, subcontractor_contracts, suppliers | 8 pages (liste+detail) | modules_b_c_d.spec.ts |
 | **C — Missions** | Implemente | 24+ | jobs (25+ cols), mission_delivery_points, mission_goods, proof_of_delivery, disputes, dispute_attachments | jobs, disputes, jobs/[id] | modules_b_c_d.spec.ts |
 | **D — Conformite** | Implemente | 13 | documents (20+ cols), compliance_templates, compliance_checklists, compliance_alerts | compliance, alerts, templates, entity detail | modules_b_c_d.spec.ts |
-| **E — Facturation** | Implemente | 7 | invoices, invoice_lines, pricing_rules | invoices, invoices/[id], pricing | — |
+| **E — Facturation** | Implemente | 11+ | invoices, invoice_lines, pricing_rules, credit_notes, credit_note_lines | invoices, invoices/[id], pricing | — |
 | **F — Achats/OCR** | Implemente | 4 | supplier_invoices, ocr_jobs | ocr, supplier-invoices | — |
 | **G — RH/Pre-paie** | Implemente | 7 | payroll_periods, payroll_variables, payroll_variable_types, payroll_mappings | payroll | — |
 | **H — Flotte** | Implemente | 19 | maintenance_schedules, maintenance_records, vehicle_costs, vehicle_claims | fleet, fleet/maintenance, fleet/claims | fleet.spec.ts |
@@ -1404,14 +1474,14 @@ Chaque requete API inclut :
 | Roles RBAC | Oui | table `roles` : tenant-scoped, JSONB permissions | OK |
 | Users + auth JWT | Oui | table `users` + login JWT + `/auth/me` | Manque : reset mdp, verification email, MFA |
 | NumberingSequence | Oui | table `number_sequences` avec anti-decrement | Manque : UI de gestion, audit des changements |
-| Company (identite legale) | **Non** | Pas de table `company` ni d'endpoint | **GAP : validation SIREN/SIRET/TVA, comptes bancaires** |
-| BankAccount | **Non** | Pas de table ni d'endpoint | **GAP : RIB/IBAN, banque par defaut** |
-| VatConfig | **Non** | TVA en dur dans les factures (colonne tva_rate) | **GAP : taux TVA configurables, mentions legales** |
+| Company (identite legale) | Oui | table `company_settings` + GET/PUT `/v1/settings/company` | OK — validation SIREN/SIRET/TVA/CP |
+| BankAccount | Oui | table `bank_accounts` + CRUD `/v1/settings/bank-accounts` | OK — IBAN, BIC, banque par defaut |
+| VatConfig | Oui | table `vat_configs` + CRUD `/v1/settings/vat` | OK — taux configurables + mentions legales |
 | PdfTemplate | **Non** | pdf_service.py existe mais pas d'editeur de templates | **GAP : template JSONB + editeur UI + preview** |
-| NotificationConfig | **Non** | Pas de table ni de notification | **GAP : canaux, regles d'escalade, envoi email** |
+| NotificationConfig | Oui | table `notification_configs` + CRUD `/v1/settings/notifications` | OK — canaux, destinataires, delai |
 | PayrollConfig | Partiel | payroll_variable_types + payroll_mappings existent | Manque : config elargie (selection format SILAE/Sage, centres de cout UI) |
-| CostCenter | **Non** | Colonnes `centre_cout_id` existent mais pas de table `cost_centers` | **GAP : table + CRUD + UI** |
-| Audit log | **Non** | Pas de table audit_log ni de visualiseur | **GAP : journal d'actions immutable + UI** |
+| CostCenter | Oui | table `cost_centers` + CRUD `/v1/settings/cost-centers` | OK — code + libelle par tenant |
+| Audit log | Oui | table `audit_logs` + GET `/v1/audit-logs` + UI audit/page.tsx | OK — journal immutable + filtres |
 | Onboarding wizard | Oui | `/v1/onboarding/status` + `/demo-setup` | OK (basique) |
 
 ### Module B — Referentiels (implemente)
@@ -1421,13 +1491,13 @@ Chaque requete API inclut :
 | Clients CRUD | Oui | 10+ endpoints, 30+ colonnes (raison_sociale, SIRET, TVA intracom, conditions de paiement) | OK |
 | Contacts clients | Oui | table `client_contacts` + POST/PUT | OK |
 | Adresses clients | Oui | table `client_addresses` avec geocodage, contraintes, horaires | OK |
-| Conditions de paiement (LME) | Partiel | `delai_paiement_jours`, `penalite_retard_pourcent`, `indemnite_recouvrement` | Manque : validation LME max 60j/45j fin de mois (RG-B-003) |
+| Conditions de paiement (LME) | Oui | `delai_paiement_jours`, `penalite_retard_pourcent`, `indemnite_recouvrement` | OK — validation LME max 60j net / 45j fin de mois |
 | Encours plafond | Oui | colonne `plafond_encours` sur customers | Manque : blocage a la creation de facture |
 | Conducteurs CRUD | Oui | 35+ colonnes (matricule, NIR, qualifications, type contrat) | OK |
-| Validation NIR | Partiel | colonne `nir` + contrainte unique (tenant_id, nir) | Manque : validation format/cle NIR (RG-B-020/021) |
-| Auto-inactivation conducteur | **Non** | colonne `date_sortie` existe | **GAP : batch job quotidien (RG-B-026)** |
+| Validation NIR | Oui | colonne `nir` + contrainte unique + `validate_nir()` | OK — validation format et cle (RG-B-020/021) |
+| Auto-inactivation conducteur | Oui | tache Celery `driver_auto_inactivation` (quotidienne) | OK — batch job (RG-B-026) |
 | Vehicules CRUD | Oui | 30+ colonnes (immatriculation, VIN, PTAC, PTRA, equipements, norme_euro) | OK |
-| Validation VIN | Partiel | colonne `vin` (String(17)) | Manque : exclusion I/O/Q (RG-B-032) |
+| Validation VIN | Oui | colonne `vin` + `validate_vin()` exclusion I/O/Q | OK (RG-B-032) |
 | Blocage statut vehicule | Partiel | colonne `statut` (ACTIF, EN_MAINTENANCE, IMMOBILISE) | Manque : auto-blocage sur maintenance active (RG-B-035) |
 | Sous-traitants CRUD | Oui | 30+ colonnes (licence transport, zones geo, note qualite) | OK |
 | Contrats sous-traitants | Oui | table `subcontractor_contracts` | OK |
@@ -1441,7 +1511,7 @@ Chaque requete API inclut :
 |---|:---:|---|---|
 | Mission CRUD + cycle de vie | Oui | 25+ colonnes, transitions de statut, numerotation (MIS-YYYY-MM-NNNNN) | OK |
 | Machine a etats | Oui | BROUILLON->PLANIFIEE->AFFECTEE->EN_COURS->LIVREE->CLOTUREE->FACTUREE + ANNULEE | OK |
-| Affectation conducteur/vehicule | Oui | endpoints `/assign` + `/unassign` | Manque : controle de chevauchement (RG-C-013/014) |
+| Affectation conducteur/vehicule | Oui | endpoints `/assign` + `/unassign` + controle chevauchement | OK — avertissement si overlap (RG-C-013/014) |
 | Missions sous-traitees | Oui | `is_subcontracted`, `subcontractor_id` | OK |
 | Points de livraison multi-drop | Oui | table `mission_delivery_points`, ordonnees, statut par point | OK |
 | Description marchandises | Oui | table `mission_goods` avec ADR, temperature, volume, valeur | OK |
@@ -1452,7 +1522,7 @@ Chaque requete API inclut :
 | Calcul de marge | Oui | `montant_vente_ht`, `montant_achat_ht`, `marge_brute` | OK |
 | Escalade notifications POD (J+1/J+2/J+3) | **Non** | Pas de config de notification | **GAP** |
 | Generation CMR/lettre de voiture PDF | **Non** | Pas d'endpoint CMR | **GAP** |
-| Piste d'audit (transitions statut) | **Non** | Pas de table audit_log | **GAP** |
+| Piste d'audit (transitions statut) | Oui | `log_audit()` sur transitions de mission | OK |
 
 ### Module D — Conformite (implemente)
 
@@ -1483,8 +1553,8 @@ Chaque requete API inclut :
 | Regles tarifaires (multi-tier) | Oui | Client-specifique + global, km/forfait/supplement | OK |
 | Calcul TVA | Oui | tva_rate, total_ht, total_tva, total_ttc | OK |
 | Balance agee (AR aging) | Oui | endpoint `/aging` avec days_overdue | OK |
-| Avoirs (notes de credit) | **Non** | Colonnes `avoir_id` existent sur jobs/disputes mais pas d'endpoint | **GAP** |
-| Facturation electronique (Factur-X/PDP) | **Non** | PDF uniquement | **GAP : obligation Sept 2026** |
+| Avoirs (notes de credit) | Oui | tables `credit_notes` + `credit_note_lines`, 4 endpoints, PDF | OK — numerotation AVR-YYYYMM-NNNN |
+| Facturation electronique (Factur-X) | Oui | `generate_facturx_pdf()` avec EN 16931 XML dans PDF/A-3 | OK — conforme obligation Sept 2026 |
 
 ### Module F — Achats/OCR (implemente)
 
@@ -1532,40 +1602,40 @@ Chaque requete API inclut :
 | Domaine | Statut | Details |
 |---|---|---|
 | RLS au niveau base de donnees | **Non implemente** | Isolation tenant applicative (clauses WHERE), pas de `pg_policies` |
-| Reset mot de passe / MFA | **Non implemente** | Pas d'endpoint, pas de flux email |
-| Rate limiting | **Non implemente** | Pas de middleware |
+| Reset mot de passe | Implemente | POST `/v1/auth/password-reset/request` + `/confirm` |
+| Rate limiting | Implemente | slowapi : login 5/min, reset 3/min |
 | Scan antivirus upload | **Non implemente** | Pas d'integration antivirus |
-| Journal d'audit (immutable) | **Non implemente** | Pas de table audit_log |
-| Systeme de notifications | **Non implemente** | Pas d'email ni notification in-app |
-| RGPD (export/suppression) | **Non implemente** | Pas de workflow d'export ou de suppression |
-| Facturation electronique (Sept 2026) | **Non implemente** | Pas de support Factur-X/PDP/PPF |
+| Journal d'audit (immutable) | Implemente | table `audit_logs`, `log_audit()`, UI filtrable |
+| Systeme de notifications | Implemente | table `notifications` + `notification_configs`, in-app + badge |
+| RGPD (export/suppression) | Implemente | POST `/v1/gdpr/export` + `/delete-request` |
+| Facturation electronique (Sept 2026) | Implemente | Factur-X Basic (EN 16931 XML dans PDF/A-3) |
 
 ### Plan d'action prioritaire
 
-#### P0 — Necessaire pour revendiquer "Modules A-D complets"
+#### P0 — Modules A-D complets — FAIT
 
-1. **Module A complet** : ajouter tables `company` (identite legale), `bank_accounts`, `vat_config`, `cost_centers` + CRUD + UI
-2. **Module A** : systeme de notification (`notification_config` + email/in-app + escalade)
-3. **Module A** : journal d'audit (piste d'audit immutable + visualiseur UI)
-4. **Module B** : validation LME sur delais de paiement, validation format NIR, exclusion VIN I/O/Q
-5. **Module B** : batch job quotidien pour auto-inactivation conducteurs
-6. **Module C** : controle chevauchement conducteur/vehicule a l'affectation
-7. **Module C** : verifier POD obligatoire pour cloture mission (RG-C-024)
-8. **Module D** : verifier job quotidien alertes 06:00 UTC et idempotence
+1. ~~**Module A complet** : tables `company_settings`, `bank_accounts`, `vat_configs`, `cost_centers` + CRUD + UI~~ FAIT
+2. ~~**Module A** : systeme de notification (notification_configs + in-app)~~ FAIT
+3. ~~**Module A** : journal d'audit (piste d'audit immutable + visualiseur UI)~~ FAIT
+4. ~~**Module B** : validation LME, NIR, VIN~~ FAIT
+5. ~~**Module B** : batch job auto-inactivation conducteurs~~ FAIT
+6. ~~**Module C** : controle chevauchement conducteur/vehicule~~ FAIT
+7. **Module C** : verifier POD obligatoire pour cloture mission (RG-C-024) — a verifier
+8. **Module D** : verifier job quotidien alertes 06:00 UTC et idempotence — a verifier
 
-#### P1 — Necessaire pour mise sur le marche France 2026
+#### P1 — Mise sur le marche France 2026 — FAIT
 
-9. **Module E** : reception de factures electroniques (integration PDP/PPF) — **obligatoire Sept 2026**
-10. **Module E** : avoirs (notes de credit) — CRUD + PDF
-11. **Securite** : reset mot de passe, verification email, rate limiting
-12. **Audit** : journal immutable des actions financieres (facturation, validation)
+9. ~~**Module E** : Factur-X (EN 16931 XML dans PDF/A-3)~~ FAIT
+10. ~~**Module E** : avoirs (notes de credit) — CRUD + PDF~~ FAIT
+11. ~~**Securite** : reset mot de passe, rate limiting~~ FAIT
+12. ~~**Audit** : journal immutable des actions~~ FAIT
 
-#### P2 — Maturite SaaS
+#### P2 — Maturite SaaS — PARTIELLEMENT FAIT
 
-13. Politiques RLS au niveau base de donnees pour defense en profondeur
-14. RGPD : export des donnees + droit a l'effacement
-15. Observabilite : IDs de correlation, metriques, monitoring erreurs
-16. Automatisation provisionnement tenant + facturation (Stripe)
+13. Politiques RLS au niveau base de donnees — reste a implementer
+14. ~~RGPD : export des donnees + droit a l'effacement~~ FAIT
+15. ~~Observabilite : IDs de correlation (CorrelationIdMiddleware)~~ FAIT — metriques et monitoring restent
+16. Automatisation provisionnement tenant + facturation (Stripe) — reste a implementer
 
 ---
 
@@ -1608,6 +1678,115 @@ Variables d'environnement a configurer :
 | `S3_BUCKET` | Nom du bucket |
 | `S3_REGION` | Region AWS (ex: eu-west-3) |
 | `OCR_PROVIDER` | `MOCK`, `OPEN_SOURCE`, ou `AWS_TEXTRACT` |
+
+---
+
+## Maintenir et faire evoluer le SaaS
+
+### Ajouter un nouveau module backend
+
+1. Creer `backend/app/modules/<module_name>/__init__.py` (vide)
+2. Creer `backend/app/modules/<module_name>/router.py` avec un `APIRouter(prefix="/v1/<module_name>", tags=[...])`
+3. Creer la migration Alembic correspondante dans `backend/migrations/versions/`
+4. Enregistrer le router dans `backend/app/main.py` : `app.include_router(router)`
+5. Mettre a jour le seed dans `backend/app/core/seed.py` si de nouvelles permissions sont requises
+6. Ajouter les types TypeScript dans `frontend/src/lib/types.ts`
+7. Creer les pages frontend dans `frontend/app/(app)/<module_name>/`
+8. Ajouter l'entree de navigation dans `frontend/src/components/Nav.tsx`
+
+### Ajouter une migration de base de donnees
+
+```bash
+# Generer un squelette (dans Docker)
+docker compose exec api alembic revision -m "description"
+
+# Ou en local
+cd backend
+alembic revision -m "description"
+
+# Suivre le pattern existant : UUID PK gen_random_uuid(), tenant_id FK, created_at/updated_at now()
+# Editer le fichier dans backend/migrations/versions/
+# Appliquer
+docker compose exec api alembic upgrade head
+```
+
+### Ajouter une tache Celery
+
+1. Definir la tache dans `backend/app/infra/tasks.py` avec le decorateur `@celery_app.task`
+2. Utiliser `_session()` pour obtenir une session DB async (pattern existant)
+3. Si periodique, ajouter au `beat_schedule` dans `backend/app/infra/celery_app.py`
+4. Relancer le worker : `docker compose restart worker-default`
+
+### Ajouter une page frontend
+
+1. Creer `frontend/app/(app)/<section>/page.tsx` (composant `"use client"`)
+2. Utiliser les composants existants : `PageHeader`, `Card`, `Button`, `EmptyState`
+3. Utiliser `apiGet`, `apiPost`, `apiPut`, `apiPatch` de `@/lib/api` pour les appels API
+4. Ajouter le lien dans `Nav.tsx` dans la section appropriee
+
+### Gestion des permissions
+
+- Les permissions sont definies dans `backend/app/core/seed.py` (dictionnaire `ROLES`)
+- Format : `"module.action"` (ex: `billing.credit_note.create`)
+- Le role `admin` a le wildcard `["*"]` (toutes les permissions)
+- Proteger les endpoints avec `Depends(require_permission("module.action"))`
+
+### Variables d'environnement
+
+| Variable | Defaut dev | Description |
+|----------|-----------|-------------|
+| `DATABASE_URL` | `postgresql+asyncpg://saf:saf@localhost:5433/saf` | URL PostgreSQL async |
+| `CELERY_BROKER_URL` | `redis://localhost:6380/1` | Broker Celery |
+| `CELERY_RESULT_BACKEND` | `redis://localhost:6380/2` | Backend resultats Celery |
+| `APP_SECRET_KEY` | `dev-secret-change-in-prod` | Cle JWT (generer avec `openssl rand -hex 32` en prod) |
+| `S3_ENDPOINT_URL` | `http://localhost:9002` | Endpoint S3 (MinIO en dev) |
+| `S3_ACCESS_KEY` | `minio` | Cle d'acces S3 |
+| `S3_SECRET_KEY` | `minio12345` | Secret S3 |
+| `S3_BUCKET` | `saf-docs` | Bucket documents |
+| `S3_REGION` | `eu-west-3` | Region S3 |
+| `S3_USE_PATH_STYLE` | `true` | Path-style URLs (MinIO) |
+| `S3_PUBLIC_ENDPOINT_URL` | — | URL publique S3 pour telechargements |
+| `OCR_PROVIDER` | `MOCK` | Provider OCR (`MOCK`, `OPEN_SOURCE`, `AWS_TEXTRACT`) |
+
+### Ports des services (dev local)
+
+| Service | Port | Acces |
+|---------|------|-------|
+| Frontend (Next.js) | 3000 | http://localhost:3000 |
+| API (FastAPI) | 8001 | http://localhost:8001 |
+| Swagger UI | 8001 | http://localhost:8001/docs |
+| PostgreSQL | 5433 | `psql -h localhost -p 5433 -U saf -d saf` |
+| Redis | 6380 | `redis-cli -p 6380` |
+| MinIO API | 9002 | http://localhost:9002 |
+| MinIO Console | 9003 | http://localhost:9003 (minio / minio12345) |
+
+### Conventions de code
+
+**Backend (Python) :**
+- Python 3.12+, formatteur/linter : `ruff` (line-length 120)
+- Async partout (SQLAlchemy async, asyncpg)
+- Pydantic v2 pour la validation
+- UUIDs comme cles primaires (gen_random_uuid())
+- Isolation tenant obligatoire sur chaque table (colonne `tenant_id`)
+- Validateurs metier dans `backend/app/core/validators.py`
+
+**Frontend (TypeScript) :**
+- Next.js 14 App Router, React 18
+- Tailwind CSS pour le styling
+- Interfaces TypeScript dans `frontend/src/lib/types.ts`
+- Composants reutilisables dans `frontend/src/components/`
+- Material Symbols pour les icones
+
+### Checklist avant deploiement
+
+- [ ] Toutes les migrations Alembic sont appliquees (`alembic upgrade head`)
+- [ ] Le seed a ete relance si des nouvelles configs par defaut ont ete ajoutees
+- [ ] Les tests backend passent (`pytest -v`)
+- [ ] Les tests E2E Playwright passent (`npm run test:e2e`)
+- [ ] Les variables d'environnement de production sont configurees (surtout `APP_SECRET_KEY`)
+- [ ] Les images Docker sont reconstruites si `requirements.txt` ou `Dockerfile` ont change
+- [ ] Le rate limiting est actif en production (slowapi)
+- [ ] Les credentials MinIO sont remplaces par des credentials S3/AWS en production
 
 ---
 

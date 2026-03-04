@@ -23,6 +23,10 @@ from app.modules.audit.router import router as audit_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.gdpr.router import router as gdpr_router
 from app.modules.admin.router import router as admin_router
+from app.modules.planning.router import router as planning_router
+from app.modules.billing.router_extensions import router as billing_ext_router
+from app.modules.subcontracting.router import router as subcontracting_router
+from app.modules.driver_mobile.router import router as driver_mobile_router
 
 
 @asynccontextmanager
@@ -86,6 +90,10 @@ app.include_router(audit_router)
 app.include_router(notifications_router)
 app.include_router(gdpr_router)
 app.include_router(admin_router)
+app.include_router(planning_router)
+app.include_router(billing_ext_router)
+app.include_router(subcontracting_router)
+app.include_router(driver_mobile_router)
 
 
 @app.get("/health")

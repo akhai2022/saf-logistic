@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date as date_type
+from dateutil.parser import parse as parse_dt
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
@@ -45,6 +46,19 @@ def _ts(val) -> str | None:
 
 def _dec(val) -> float | None:
     return float(val) if val is not None else None
+
+def _parse_date(val) -> datetime | None:
+    """Parse a date string to datetime for DB insertion."""
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val
+    if isinstance(val, date_type):
+        return datetime(val.year, val.month, val.day, tzinfo=timezone.utc)
+    try:
+        return parse_dt(str(val))
+    except (ValueError, TypeError):
+        return None
 
 def _json_load(val) -> dict | list | None:
     if val is None:
@@ -337,8 +351,8 @@ async def create_mission(
         "ref_client": body.reference_client,
         "cid": cid, "crs": client_rs,
         "type_m": body.type_mission, "prio": body.priorite,
-        "dcp": body.date_chargement_prevue or body.pickup_date,
-        "dlp": body.date_livraison_prevue or body.delivery_date,
+        "dcp": _parse_date(body.date_chargement_prevue or body.pickup_date),
+        "dlp": _parse_date(body.date_livraison_prevue or body.delivery_date),
         "aci": body.adresse_chargement_id,
         "acl": json.dumps(body.adresse_chargement_libre) if body.adresse_chargement_libre else None,
         "acc": body.adresse_chargement_contact,
@@ -348,8 +362,8 @@ async def create_mission(
         "contraintes": json.dumps(body.contraintes) if body.contraintes else None,
         "ne": body.notes_exploitation, "ni": body.notes_internes,
         "pa": body.pickup_address, "da": body.delivery_address,
-        "pd": body.pickup_date or body.date_chargement_prevue,
-        "dd": body.delivery_date or body.date_livraison_prevue,
+        "pd": _parse_date(body.pickup_date or body.date_chargement_prevue),
+        "dd": _parse_date(body.delivery_date or body.date_livraison_prevue),
         "dk": body.distance_km or (float(body.distance_estimee_km) if body.distance_estimee_km else None),
         "wk": body.weight_kg, "gd": body.goods_description, "notes": body.notes,
         "uid": str(user["id"]) if isinstance(user, dict) and "id" in user else None,
@@ -399,7 +413,7 @@ async def update_mission(
         "id": job_id, "tid": str(tenant.tenant_id),
         "ref": body.reference, "ref_client": body.reference_client,
         "cid": body.client_id, "type_m": body.type_mission, "prio": body.priorite,
-        "dcp": body.date_chargement_prevue, "dlp": body.date_livraison_prevue,
+        "dcp": _parse_date(body.date_chargement_prevue), "dlp": _parse_date(body.date_livraison_prevue),
         "acl": json.dumps(body.adresse_chargement_libre) if body.adresse_chargement_libre else None,
         "acc": body.adresse_chargement_contact, "aci": body.adresse_chargement_instructions,
         "dek": float(body.distance_estimee_km) if body.distance_estimee_km else None,
@@ -407,7 +421,7 @@ async def update_mission(
         "contraintes": json.dumps(body.contraintes) if body.contraintes else None,
         "ne": body.notes_exploitation, "ni": body.notes_internes,
         "pa": body.pickup_address, "da": body.delivery_address,
-        "pd": body.pickup_date, "dd": body.delivery_date,
+        "pd": _parse_date(body.pickup_date), "dd": _parse_date(body.delivery_date),
         "dk": body.distance_km, "wk": body.weight_kg,
         "gd": body.goods_description, "notes": body.notes,
     })
@@ -712,7 +726,7 @@ async def add_delivery_point(
         "ordre": body.ordre, "aid": body.adresse_id,
         "al": json.dumps(body.adresse_libre) if body.adresse_libre else None,
         "cn": body.contact_nom, "ct": body.contact_telephone,
-        "dlp": body.date_livraison_prevue, "inst": body.instructions,
+        "dlp": _parse_date(body.date_livraison_prevue), "inst": body.instructions,
     })
     await db.commit()
     row = (await db.execute(text("SELECT * FROM mission_delivery_points WHERE id = :id"), {"id": str(dpid)})).first()
@@ -1189,3 +1203,103 @@ async def planning_vehicles(
                 "client": r.client_raison_sociale,
             })
     return list(vehicles_map.values())
+
+
+# ══════════════════════════════════════════════════════════════════
+# CMR (LETTRE DE VOITURE) GENERATION
+# ══════════════════════════════════════════════════════════════════
+
+@router.post("/{job_id}/generate-cmr")
+async def generate_cmr(
+    job_id: str,
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate a CMR (Lettre de Voiture) PDF for a mission, upload to S3, and return the key."""
+    tid = str(tenant.tenant_id)
+
+    # Load mission
+    mission = (await db.execute(
+        text("SELECT * FROM jobs WHERE id = :id AND tenant_id = :tid"),
+        {"id": job_id, "tid": tid},
+    )).first()
+    if not mission:
+        raise HTTPException(404, "Mission not found")
+
+    # Load delivery points
+    delivery_points = (await db.execute(
+        text("SELECT * FROM delivery_points WHERE mission_id = :mid AND tenant_id = :tid ORDER BY ordre"),
+        {"mid": job_id, "tid": tid},
+    )).fetchall()
+
+    # Load goods
+    goods = (await db.execute(
+        text("SELECT * FROM goods WHERE mission_id = :mid AND tenant_id = :tid ORDER BY created_at"),
+        {"mid": job_id, "tid": tid},
+    )).fetchall()
+
+    # Load customer
+    customer = None
+    if mission.customer_id:
+        customer = (await db.execute(
+            text("SELECT * FROM customers WHERE id = :id"),
+            {"id": str(mission.customer_id)},
+        )).first()
+
+    # Load company settings (tenant)
+    company = (await db.execute(
+        text("SELECT * FROM tenants WHERE id = :id"),
+        {"id": tid},
+    )).first()
+
+    # Load driver
+    driver = None
+    if mission.driver_id:
+        driver = (await db.execute(
+            text("SELECT * FROM drivers WHERE id = :id"),
+            {"id": str(mission.driver_id)},
+        )).first()
+
+    # Load vehicle
+    vehicle = None
+    if mission.vehicle_id:
+        vehicle = (await db.execute(
+            text("SELECT * FROM vehicles WHERE id = :id"),
+            {"id": str(mission.vehicle_id)},
+        )).first()
+
+    # Generate CMR numero
+    cmr_numero = getattr(mission, "cmr_numero", None)
+    if not cmr_numero:
+        mission_numero = getattr(mission, "numero", None) or getattr(mission, "reference", "") or ""
+        cmr_numero = f"CMR-{mission_numero}" if mission_numero else f"CMR-{job_id[:8].upper()}"
+
+    # Generate PDF
+    from app.modules.jobs.cmr_service import generate_cmr_pdf
+    pdf_bytes = generate_cmr_pdf(mission, delivery_points, goods, customer, company, driver, vehicle)
+
+    # Upload to S3
+    from app.infra.s3 import _get_s3_client
+    from app.core.settings import settings
+    s3 = _get_s3_client()
+    s3_key = f"{tid}/cmr/{cmr_numero}.pdf"
+    s3.put_object(
+        Bucket=settings.S3_BUCKET,
+        Key=s3_key,
+        Body=pdf_bytes,
+        ContentType="application/pdf",
+    )
+
+    # Update mission with CMR info
+    await db.execute(text("""
+        UPDATE jobs SET cmr_s3_key = :s3key, cmr_numero = :num, updated_at = NOW()
+        WHERE id = :id AND tenant_id = :tid
+    """), {"s3key": s3_key, "num": cmr_numero, "id": job_id, "tid": tid})
+    await db.commit()
+
+    return {
+        "cmr_numero": cmr_numero,
+        "s3_key": s3_key,
+        "mission_id": job_id,
+    }

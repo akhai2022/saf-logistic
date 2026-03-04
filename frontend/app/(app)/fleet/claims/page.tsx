@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { apiGet, apiPost, apiPatch } from "@/lib/api";
 import type { VehicleClaim, Vehicle, Driver } from "@/lib/types";
 import Button from "@/components/Button";
@@ -227,8 +227,8 @@ export default function ClaimsListPage() {
             </thead>
             <tbody>
               {claims.map((c) => (
-                <>
-                  <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onClick={() => setExpandedRow(expandedRow === c.id ? null : c.id)}>
+                <React.Fragment key={c.id}>
+                  <tr className="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onClick={() => setExpandedRow(expandedRow === c.id ? null : c.id)}>
                     <td className="py-3 px-4 font-medium text-blue-700">{c.numero}</td>
                     <td className="py-3 px-4">{vehicleMap.get(c.vehicle_id) || c.vehicle_id.slice(0, 8)}</td>
                     <td className="py-3 px-4">{c.date_sinistre}</td>
@@ -267,7 +267,7 @@ export default function ClaimsListPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </tbody>
           </table>

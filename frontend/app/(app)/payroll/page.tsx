@@ -60,6 +60,26 @@ export default function PayrollPage() {
     apiGet<PayrollVar[]>(`/v1/payroll/periods/${selectedPeriod}/variables`).then(setVariables);
   };
 
+  const [computing, setComputing] = useState(false);
+  const [computeResult, setComputeResult] = useState<{ drivers_processed: number; variables_created: number } | null>(null);
+
+  const handleComputeFromMissions = async () => {
+    if (!selectedPeriod) return;
+    setComputing(true);
+    setComputeResult(null);
+    try {
+      const result = await apiPost<{ drivers_processed: number; variables_created: number }>(
+        `/v1/payroll/periods/${selectedPeriod}/compute-from-missions`
+      );
+      setComputeResult(result);
+      apiGet<PayrollVar[]>(`/v1/payroll/periods/${selectedPeriod}/variables`).then(setVariables);
+    } catch (err) {
+      alert("Erreur: " + (err as Error).message);
+    } finally {
+      setComputing(false);
+    }
+  };
+
   const handleExport = () => {
     if (!selectedPeriod) return;
     const token = localStorage.getItem("saf_token");
@@ -114,6 +134,7 @@ export default function PayrollPage() {
                         {currentPeriod.status === "draft" && (
                           <>
                             <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
+                            <Button size="sm" variant="secondary" icon="calculate" onClick={handleComputeFromMissions} disabled={computing}>{computing ? "Calcul..." : "Calculer depuis missions"}</Button>
                             <Button size="sm" variant="secondary" icon="upload" onClick={() => fileRef.current?.click()}>Importer CSV</Button>
                             <Button size="sm" variant="secondary" icon="download" onClick={handleExport}>Export SILAE</Button>
                             <Button size="sm" icon="send" onClick={() => handleTransition("submit")}>Soumettre</Button>
@@ -129,6 +150,14 @@ export default function PayrollPage() {
                       </div>
                     }
               >
+                {computeResult && (
+                  <div className="mb-4 p-3 bg-green-50 rounded-lg text-sm">
+                    <div className="font-medium flex items-center gap-2">
+                      <span className="material-symbols-outlined icon-sm text-green-600">check_circle</span>
+                      {computeResult.drivers_processed} conducteurs traités, {computeResult.variables_created} variables générées depuis les missions
+                    </div>
+                  </div>
+                )}
                 {importResult && (
                   <div className="mb-4 p-3 bg-blue-50 rounded-lg text-sm">
                     <div className="font-medium flex items-center gap-2">

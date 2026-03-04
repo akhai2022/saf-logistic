@@ -631,3 +631,270 @@ def credit_note_generate_pdf(credit_note_id: str) -> dict:
         db.commit()
 
     return {"pdf_key": key}
+
+
+# ---------------------------------------------------------------------------
+# Maintenance auto-trigger — daily
+# ---------------------------------------------------------------------------
+@celery_app.task(name="app.infra.tasks.maintenance_auto_trigger")
+def maintenance_auto_trigger() -> dict:
+    """Daily: check maintenance schedules approaching their next due date and
+    auto-create PLANIFIE maintenance records if none are pending."""
+    today = date.today()
+    stats = {"records_created": 0}
+
+    with _session() as db:
+        # 1. Find all active schedules where prochaine_date_prevue falls within the
+        #    alert window (today + alerte_jours_avant days).
+        schedules = db.execute(
+            text("""
+                SELECT ms.*
+                FROM maintenance_schedules ms
+                WHERE ms.is_active = true
+                  AND ms.prochaine_date_prevue IS NOT NULL
+                  AND ms.prochaine_date_prevue <= (:today + (COALESCE(ms.alerte_jours_avant, 0) * INTERVAL '1 day'))
+            """),
+            {"today": today},
+        ).fetchall()
+
+        for sched in schedules:
+            sched_id = str(sched.id)
+            tenant_id = str(sched.tenant_id)
+            vehicle_id = str(sched.vehicle_id)
+
+            # 2. Check if a maintenance_record already exists for this schedule
+            #    with statut PLANIFIE or EN_COURS — skip if so
+            existing = db.execute(
+                text("""
+                    SELECT id FROM maintenance_records
+                    WHERE maintenance_schedule_id = :sid
+                      AND statut IN ('PLANIFIE', 'EN_COURS')
+                    LIMIT 1
+                """),
+                {"sid": sched_id},
+            ).first()
+
+            if existing:
+                continue
+
+            # 3. INSERT new maintenance_record
+            record_id = str(uuid.uuid4())
+            libelle = getattr(sched, "libelle", None) or "Maintenance planifiee"
+            type_maintenance = getattr(sched, "type_maintenance", None) or "PREVENTIF"
+            cout_estime = getattr(sched, "cout_estime", None)
+            prochaine_date = sched.prochaine_date_prevue
+
+            db.execute(
+                text("""
+                    INSERT INTO maintenance_records (
+                        id, tenant_id, vehicle_id, maintenance_schedule_id,
+                        statut, type, libelle,
+                        date_debut, is_planifie, cout_total_ht,
+                        created_at
+                    ) VALUES (
+                        :id, :tid, :vid, :sid,
+                        'PLANIFIE', :type, :libelle,
+                        :date_debut, true, :cout,
+                        NOW()
+                    )
+                """),
+                {
+                    "id": record_id,
+                    "tid": tenant_id,
+                    "vid": vehicle_id,
+                    "sid": sched_id,
+                    "type": type_maintenance,
+                    "libelle": libelle,
+                    "date_debut": prochaine_date,
+                    "cout": float(cout_estime) if cout_estime is not None else None,
+                },
+            )
+            stats["records_created"] += 1
+
+            # 4. Create notification for fleet manager role
+            notification_dispatch.delay(
+                tenant_id=tenant_id,
+                event_type="MAINTENANCE_AUTO_PLANIFIEE",
+                title=f"Maintenance planifiee: {libelle}",
+                message=(
+                    f"Une maintenance a ete automatiquement planifiee pour le vehicule "
+                    f"{vehicle_id} - {libelle} (prevu le {prochaine_date})."
+                ),
+                link=f"/fleet/vehicles/{vehicle_id}/maintenance",
+            )
+
+        db.commit()
+
+    return stats
+
+
+# ---------------------------------------------------------------------------
+# Dunning check — auto-create dunning actions for overdue invoices
+# ---------------------------------------------------------------------------
+@celery_app.task(name="app.infra.tasks.dunning_check_daily")
+def dunning_check_daily() -> dict:
+    """Daily: find overdue invoices and auto-create dunning actions based on
+    configured dunning levels."""
+    today = date.today()
+    stats = {"actions_created": 0}
+
+    with _session() as db:
+        tenants_with_levels = db.execute(
+            text("SELECT DISTINCT tenant_id FROM dunning_levels WHERE is_active = true")
+        ).fetchall()
+
+        for t in tenants_with_levels:
+            tid = str(t.tenant_id)
+
+            levels = db.execute(
+                text("""
+                    SELECT * FROM dunning_levels
+                    WHERE tenant_id = :tid AND is_active = true
+                    ORDER BY jours_apres_echeance DESC
+                """),
+                {"tid": tid},
+            ).fetchall()
+
+            if not levels:
+                continue
+
+            overdue = db.execute(
+                text("""
+                    SELECT i.id, i.invoice_number, i.customer_id, i.due_date, i.total_ttc
+                    FROM invoices i
+                    WHERE i.tenant_id = :tid
+                      AND i.status = 'validated'
+                      AND i.due_date < :today
+                """),
+                {"tid": tid, "today": today},
+            ).fetchall()
+
+            for inv in overdue:
+                days_overdue = (today - inv.due_date).days
+                applicable_level = None
+                for lvl in levels:
+                    if days_overdue >= lvl.jours_apres_echeance:
+                        applicable_level = lvl
+                        break
+
+                if not applicable_level:
+                    continue
+
+                existing = db.execute(
+                    text("""
+                        SELECT id FROM dunning_actions
+                        WHERE invoice_id = :iid AND dunning_level_id = :lid
+                        LIMIT 1
+                    """),
+                    {"iid": str(inv.id), "lid": str(applicable_level.id)},
+                ).first()
+
+                if existing:
+                    continue
+
+                db.execute(
+                    text("""
+                        INSERT INTO dunning_actions (
+                            id, tenant_id, invoice_id, customer_id,
+                            dunning_level_id, date_relance, mode, notes
+                        ) VALUES (
+                            :id, :tid, :iid, :cid,
+                            :lid, :date, 'EMAIL', :notes
+                        )
+                    """),
+                    {
+                        "id": str(uuid.uuid4()), "tid": tid,
+                        "iid": str(inv.id), "cid": str(inv.customer_id),
+                        "lid": str(applicable_level.id),
+                        "date": today,
+                        "notes": f"Auto-relance niveau {applicable_level.niveau} — "
+                                 f"{days_overdue} jours de retard",
+                    },
+                )
+                stats["actions_created"] += 1
+
+                db.execute(
+                    text("""
+                        INSERT INTO tasks (id, tenant_id, category, title,
+                            entity_type, entity_id, status, created_at)
+                        VALUES (:id, :tid, 'dunning', :title, 'invoice', :eid, 'open', NOW())
+                    """),
+                    {
+                        "id": str(uuid.uuid4()), "tid": tid,
+                        "title": f"Relance N{applicable_level.niveau}: "
+                                 f"{inv.invoice_number} — {days_overdue}j retard",
+                        "eid": str(inv.id),
+                    },
+                )
+
+        db.commit()
+
+    return stats
+
+
+# ---------------------------------------------------------------------------
+# CMR PDF generation
+# ---------------------------------------------------------------------------
+@celery_app.task(name="app.infra.tasks.cmr_generate_pdf")
+def cmr_generate_pdf(job_id: str) -> dict:
+    """Generate CMR (lettre de voiture) PDF for a mission."""
+    with _session() as db:
+        job = db.execute(
+            text("SELECT * FROM jobs WHERE id = :id"), {"id": job_id}
+        ).first()
+        if not job:
+            return {"error": "Job not found"}
+
+        delivery_points = db.execute(
+            text("SELECT * FROM mission_delivery_points WHERE mission_id = :id ORDER BY ordre"),
+            {"id": job_id},
+        ).fetchall()
+
+        goods = db.execute(
+            text("SELECT * FROM mission_goods WHERE mission_id = :id"),
+            {"id": job_id},
+        ).fetchall()
+
+        customer = None
+        if job.customer_id:
+            customer = db.execute(
+                text("SELECT * FROM customers WHERE id = :id"),
+                {"id": str(job.customer_id)},
+            ).first()
+
+        company = db.execute(
+            text("SELECT * FROM company_settings WHERE tenant_id = :tid"),
+            {"tid": str(job.tenant_id)},
+        ).first()
+
+        driver = None
+        if job.driver_id:
+            driver = db.execute(
+                text("SELECT * FROM drivers WHERE id = :id"),
+                {"id": str(job.driver_id)},
+            ).first()
+
+        vehicle = None
+        if job.vehicle_id:
+            vehicle = db.execute(
+                text("SELECT * FROM vehicles WHERE id = :id"),
+                {"id": str(job.vehicle_id)},
+            ).first()
+
+    from app.modules.jobs.cmr_service import generate_cmr_pdf
+    pdf_bytes = generate_cmr_pdf(job, delivery_points, goods, customer, company, driver, vehicle)
+
+    from app.infra.s3 import _get_s3_client
+    s3 = _get_s3_client()
+    cmr_num = job.cmr_numero or f"CMR-{str(job.id)[:8].upper()}"
+    key = f"{job.tenant_id}/cmr/{cmr_num}.pdf"
+    s3.put_object(Bucket=settings.S3_BUCKET, Key=key, Body=pdf_bytes, ContentType="application/pdf")
+
+    with _session() as db:
+        db.execute(
+            text("UPDATE jobs SET cmr_s3_key = :key WHERE id = :id"),
+            {"key": key, "id": job_id},
+        )
+        db.commit()
+
+    return {"pdf_key": key}

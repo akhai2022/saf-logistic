@@ -278,7 +278,7 @@
   <div class="hero">
     <h1>SAF Logistic</h1>
     <p>Plateforme SaaS B2B de gestion de transport routier — Demo Walkthrough</p>
-    <span class="badge">Duree estimee : 15-20 minutes</span>
+    <span class="badge">Duree estimee : 18-22 minutes</span>
   </div>
 
   <!-- ═══════════════════════ TOC ═══════════════════════ -->
@@ -296,14 +296,15 @@
       <a href="#scene9" class="toc-item"><span class="toc-num">9</span><div><div class="toc-label">Flotte : Maintenance</div><div class="toc-time">2 min</div></div></a>
       <a href="#scene10" class="toc-item"><span class="toc-num">10</span><div><div class="toc-label">Flotte : Sinistres</div><div class="toc-time">2 min</div></div></a>
       <a href="#scene11" class="toc-item"><span class="toc-num">11</span><div><div class="toc-label">Facturation</div><div class="toc-time">2 min</div></div></a>
-      <a href="#scene12" class="toc-item"><span class="toc-num">12</span><div><div class="toc-label">OCR & Extraction</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene12" class="toc-item"><span class="toc-num">12</span><div><div class="toc-label">OCR & Extraction intelligente</div><div class="toc-time">2 min</div></div></a>
       <a href="#scene13" class="toc-item"><span class="toc-num">13</span><div><div class="toc-label">Paie</div><div class="toc-time">1 min</div></div></a>
       <a href="#scene14" class="toc-item"><span class="toc-num">14</span><div><div class="toc-label">Taches & Alertes</div><div class="toc-time">30 sec</div></div></a>
       <a href="#scene15" class="toc-item"><span class="toc-num">15</span><div><div class="toc-label">Reporting & KPI</div><div class="toc-time">1 min</div></div></a>
-      <a href="#scene16" class="toc-item"><span class="toc-num">16</span><div><div class="toc-label">Parametrage</div><div class="toc-time">1 min</div></div></a>
+      <a href="#scene16" class="toc-item"><span class="toc-num">16</span><div><div class="toc-label">Parametrage & Utilisateurs</div><div class="toc-time">2 min</div></div></a>
       <a href="#scene17" class="toc-item"><span class="toc-num">17</span><div><div class="toc-label">Notifications</div><div class="toc-time">30 sec</div></div></a>
       <a href="#scene18" class="toc-item"><span class="toc-num">18</span><div><div class="toc-label">Multi-roles</div><div class="toc-time">1 min</div></div></a>
       <a href="#scene19" class="toc-item"><span class="toc-num">19</span><div><div class="toc-label">Configuration initiale</div><div class="toc-time">30 sec</div></div></a>
+      <a href="#scene20" class="toc-item"><span class="toc-num">20</span><div><div class="toc-label">Administration multi-tenant</div><div class="toc-time">1 min 30</div></div></a>
     </div>
   </div>
 
@@ -358,26 +359,28 @@
       <span class="scene-duration">1 min</span>
     </div>
     <div class="narration">
-      "La sidebar organise les fonctionnalites en 6 sections metiers."
+      "La sidebar organise les fonctionnalites en 7 sections metiers."
     </div>
     <div class="steps">
       <ol>
-        <li>Sidebar avec 6 sections : <strong>Exploitation</strong>, <strong>Referentiels</strong>, <strong>Finance</strong>, <strong>Flotte</strong>, <strong>Pilotage</strong>, <strong>Parametrage</strong></li>
-        <li>Icone de notification avec badge compteur</li>
+        <li>Sidebar avec 7 sections : <strong>Exploitation</strong>, <strong>Referentiels</strong>, <strong>Finance</strong>, <strong>Flotte</strong>, <strong>Pilotage</strong>, <strong>Parametrage</strong>, <strong>Administration</strong> (super admins uniquement)</li>
+        <li>Icone de notification avec badge compteur (polling automatique toutes les 30s)</li>
         <li>Infos utilisateur en bas (nom, email, role)</li>
         <li>Bouton Deconnexion</li>
+        <li>Navigation responsive avec menu hamburger sur mobile</li>
       </ol>
     </div>
     <div class="screenshot-full">
       <img src="demo-screenshots/02a-sidebar-navigation.png" alt="Sidebar navigation">
-      <div class="screenshot-caption">Sidebar avec les 6 sections metiers et infos utilisateur</div>
+      <div class="screenshot-caption">Sidebar avec les 7 sections metiers, notifications et infos utilisateur</div>
     </div>
     <div class="key-points">
       <h4>Points cles</h4>
       <ul>
         <li>Navigation contextuelle par role (chaque role voit ses sections)</li>
-        <li>Notifications en temps reel avec badge compteur</li>
-        <li>Interface responsive (mobile/desktop)</li>
+        <li>Section Administration reservee aux super admins pour la gestion multi-tenant</li>
+        <li>Notifications en temps reel avec badge compteur (auto-refresh)</li>
+        <li>Interface responsive (mobile/desktop) avec menu hamburger</li>
       </ul>
     </div>
   </div>
@@ -583,9 +586,10 @@
     <div class="steps">
       <ol>
         <li>Onglets : Tous, Ouverts, En instruction, Resolus, Clos</li>
-        <li>Tableau avec colonnes : Numero, Mission, Type, Responsabilite, Montants, Statut, Actions</li>
-        <li><strong>Transitions de statut</strong> : Instruire / Resoudre / Clore</li>
-        <li>Details expandables + Lien vers la mission d'origine</li>
+        <li>Tableau avec colonnes : Numero, Mission, Type, Responsabilite, Montants estime/retenu (EUR), Statut, Date ouverture, Actions</li>
+        <li><strong>Transitions de statut</strong> contextuelles : Instruire / Resoudre / Clore</li>
+        <li>Cliquer sur une ligne → <strong>Details expandables</strong> : description complete, texte de resolution, date de resolution</li>
+        <li>Lien direct vers la mission d'origine</li>
       </ol>
     </div>
     <div class="screenshot-grid">
@@ -637,7 +641,7 @@
     <div class="steps">
       <ol>
         <li>Filtres : Statut (PLANIFIE, EN_COURS, TERMINE, ANNULE) + Periode (30j a 1 an)</li>
-        <li>Cliquer <strong>"Nouvelle intervention"</strong> — Formulaire : Vehicule, Type, Libelle, Dates, Prestataire, Lieu, Cout, Notes</li>
+        <li>Cliquer <strong>"Nouvelle intervention"</strong> — Formulaire : Vehicule, Type (CT, VIDANGE, PNEUS, FREINS, REVISION, TACHYGRAPHE, ATP, ASSURANCE...), Libelle, Description, Dates debut/fin, Prestataire, Lieu, Couts detailles (Pieces HT, Main-d'oeuvre HT, Total HT), Notes</li>
         <li>Transitions : <strong>Demarrer</strong> (PLANIFIE → EN_COURS), <strong>Terminer</strong> (→ TERMINE), <strong>Annuler</strong></li>
       </ol>
     </div>
@@ -669,7 +673,7 @@
           Vehicule, Date, Heure, Type, Conducteur, Responsabilite, Lieu, Description, Cout reparation, Tiers implique (toggle)</li>
         <li>Liste avec filtres vehicule/statut</li>
         <li>Transitions : DECLARE → EN_EXPERTISE → EN_REPARATION → CLOS → REMBOURSE</li>
-        <li>Details expandables (lieu, heure, franchise, indemnisation, tiers)</li>
+        <li>Details expandables (lieu, heure, franchise, indemnisation recue, jours d'immobilisation, reference assurance, informations tiers)</li>
       </ol>
     </div>
     <div class="screenshot-grid">
@@ -704,7 +708,7 @@
     </div>
     <div class="steps">
       <ol>
-        <li><strong>Tarifs</strong> : Creer/Modifier/Supprimer des regles (Au km, Forfait, Supplement), association client ou globale</li>
+        <li><strong>Tarifs</strong> : Creer/Modifier/Supprimer (avec confirmation) des regles (Au km avec plage km min/max, Forfait, Supplement), association client specifique ou regle globale</li>
         <li><strong>Factures</strong> : Selectionner missions cloturees, creer, valider (FAC-YYYYMM-NNNN), telecharger PDF</li>
         <li><strong>Factures Fournisseurs</strong> : Liste read-only (creees apres validation OCR)</li>
       </ol>
@@ -739,23 +743,43 @@
   <div class="scene" id="scene12">
     <div class="scene-header">
       <span class="scene-num">12</span>
-      <span class="scene-title">OCR & Extraction</span>
-      <span class="scene-duration">1 min</span>
+      <span class="scene-title">OCR & Extraction intelligente</span>
+      <span class="scene-duration">2 min</span>
     </div>
     <div class="narration">
-      "L'OCR automatise la saisie des documents fournisseurs."
+      "L'OCR automatise la saisie des documents avec classification intelligente et extraction multi-types."
     </div>
     <div class="steps">
       <ol>
-        <li>Uploader un document (facture, RIB, KBIS...)</li>
+        <li>Uploader un document (PDF ou image) — traitement asynchrone via Celery</li>
         <li>Traitement automatique : pending → processing → validated/needs_review</li>
-        <li>Classification automatique du type de document</li>
-        <li>Extraction des champs avec score de confiance</li>
+        <li><strong>Classification automatique</strong> du type de document parmi 5 categories :
+          <ul style="margin-top:6px;">
+            <li><strong>Facture</strong> : fournisseur, numero, dates, montants HT/TVA/TTC, taux TVA, IBAN</li>
+            <li><strong>RIB bancaire</strong> : IBAN (validation mod-97), BIC, banque, titulaire, domiciliation, codes guichet</li>
+            <li><strong>KBIS</strong> : raison sociale, SIREN/SIRET (validation Luhn), RCS, forme juridique, capital, NAF/APE, dirigeant</li>
+            <li><strong>URSSAF</strong> : entreprise, SIRET, reference attestation, dates de validite, effectif salaries</li>
+            <li><strong>Attestation assurance</strong> : assure, assureur, numero police, type couverture, montants garanties, franchise</li>
+          </ul>
+        </li>
+        <li><strong>Scores de confiance</strong> : confiance globale de classification + confiance par champ extrait (barre de progression) + alertes d'erreurs d'extraction</li>
+        <li>Cliquer sur une ligne → <strong>Detail expandable</strong> avec tous les champs extraits par type</li>
+        <li>Texte OCR brut et apercu du document original</li>
+        <li><strong>Valider</strong> un document → creation automatique d'une facture fournisseur</li>
       </ol>
     </div>
     <div class="screenshot-full">
       <img src="demo-screenshots/12a-ocr-page.png" alt="OCR page">
-      <div class="screenshot-caption">Module OCR — Upload et extraction automatique</div>
+      <div class="screenshot-caption">Module OCR — Upload, classification intelligente et extraction multi-types avec scores de confiance</div>
+    </div>
+    <div class="key-points">
+      <h4>Points cles</h4>
+      <ul>
+        <li>Classification par scoring de mots-cles ponderes + patterns regex</li>
+        <li>Extracteurs specialises par type de document (Facture, RIB, KBIS, URSSAF, Assurance)</li>
+        <li>Validation metier (IBAN mod-97, SIREN/SIRET Luhn, coherence montants HT+TVA=TTC)</li>
+        <li>Masquage IBAN dans les reponses API pour la securite</li>
+      </ul>
     </div>
   </div>
 
@@ -833,17 +857,17 @@
   <div class="scene" id="scene16">
     <div class="scene-header">
       <span class="scene-num">16</span>
-      <span class="scene-title">Parametrage</span>
-      <span class="scene-duration">1 min</span>
+      <span class="scene-title">Parametrage & Utilisateurs</span>
+      <span class="scene-duration">2 min</span>
     </div>
     <div class="narration">
-      "Le parametrage centralise la configuration de l'entreprise."
+      "Le parametrage centralise la configuration de l'entreprise et la gestion des utilisateurs."
     </div>
     <div class="steps">
       <ol>
-        <li><strong>Parametres</strong> — 5 onglets : Entreprise, Banque, TVA, Centres de couts, Notifications</li>
-        <li><strong>Journal d'audit</strong> — Filtres : Type entite, Action, Date debut/fin</li>
-        <li>Historique complet des modifications (ancien/nouveau JSON)</li>
+        <li><strong>Parametres</strong> — 6 onglets : Entreprise, Banque (compte par defaut), TVA, Centres de couts (actif/inactif), Notifications (canaux, destinataires, delais), <strong>Utilisateurs</strong> (admin uniquement)</li>
+        <li><strong>Onglet Utilisateurs</strong> : recherche par nom/email, creer un utilisateur (nom, email, mot de passe, role, agence), modifier roles, activer/desactiver comptes (protection : l'admin ne peut pas se desactiver), reinitialiser mot de passe</li>
+        <li><strong>Journal d'audit</strong> — Filtres : Type entite, Action, Date debut/fin — Historique complet (ancien/nouveau JSON)</li>
       </ol>
     </div>
     <div class="screenshot-grid">
@@ -865,6 +889,14 @@
         <img src="demo-screenshots/16d-audit-log.png" alt="Audit log">
         <div class="screenshot-caption">Journal d'audit</div>
       </div>
+    </div>
+    <div class="key-points">
+      <h4>Points cles</h4>
+      <ul>
+        <li>6 onglets de configuration : Entreprise, Banque, TVA, Centres de couts, Notifications, Utilisateurs</li>
+        <li>Gestion complete des utilisateurs par le tenant admin (CRUD, roles, agences, mot de passe)</li>
+        <li>Protection de securite : l'admin ne peut pas desactiver son propre compte</li>
+      </ul>
     </div>
   </div>
 
@@ -962,6 +994,41 @@
     </div>
   </div>
 
+  <!-- ═══════════════ SCENE 20 — Administration multi-tenant ═══════════════ -->
+  <div class="scene" id="scene20">
+    <div class="scene-header">
+      <span class="scene-num">20</span>
+      <span class="scene-title">Administration multi-tenant</span>
+      <span class="scene-duration">1 min 30</span>
+    </div>
+    <div class="narration">
+      "La plateforme est concue pour gerer plusieurs entreprises de transport depuis une console d'administration centralisee."
+    </div>
+    <div class="steps">
+      <ol>
+        <li>Se connecter en tant que <strong>super admin</strong></li>
+        <li>Aller dans <strong>Administration > Entreprises</strong></li>
+        <li>Vue liste de tous les tenants : Nom, SIREN, Nombre d'utilisateurs, Date de creation</li>
+        <li>Cliquer <strong>"Nouvelle entreprise"</strong> — Formulaire : Nom, SIREN, Adresse, Agence par defaut (nom + code), Compte admin initial (nom, email, mot de passe)</li>
+        <li>Cliquer sur une entreprise → Page detail avec 2 onglets :
+          <ul style="margin-top:6px;">
+            <li><strong>Info</strong> : Modifier nom, SIREN, adresse + liste des agences</li>
+            <li><strong>Utilisateurs</strong> : Liste avec nom, email, role, agence, statut actif</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+    <div class="key-points">
+      <h4>Points cles</h4>
+      <ul>
+        <li>Architecture multi-tenant complete (donnees isolees par entreprise)</li>
+        <li>Creation de tenant avec agence et admin en une seule operation</li>
+        <li>Flag super admin en base avec index partiel pour performances</li>
+        <li>Gestion centralisee de tous les tenants depuis une seule console</li>
+      </ul>
+    </div>
+  </div>
+
   <!-- ═══════════════ BONUS — Sous-traitants ═══════════════ -->
   <div class="scene" id="bonus">
     <div class="scene-header">
@@ -1018,7 +1085,8 @@
       <div class="tech-card"><div class="tech-name">PDF</div><div class="tech-value">WeasyPrint</div></div>
       <div class="tech-card"><div class="tech-name">OCR</div><div class="tech-value">Tesseract / Mock</div></div>
       <div class="tech-card"><div class="tech-name">Auth</div><div class="tech-value">JWT (HS256)</div></div>
-      <div class="tech-card"><div class="tech-name">Tests E2E</div><div class="tech-value">Playwright (250+ scenarios)</div></div>
+      <div class="tech-card"><div class="tech-name">OCR Extracteurs</div><div class="tech-value">Classifier + Invoice + RIB + Compliance</div></div>
+      <div class="tech-card"><div class="tech-name">Tests E2E</div><div class="tech-value">Playwright (300+ scenarios)</div></div>
     </div>
   </div>
 
@@ -1027,7 +1095,8 @@
     <h1 style="font-size: 1.8rem;">Conclusion</h1>
     <p>SAF Logistic couvre l'ensemble du cycle de gestion du transport routier :<br>
     De la creation de mission a la facturation. De la gestion de flotte aux sinistres.<br>
-    De la conformite au reporting. Le tout dans une interface moderne, securisee et multi-tenant.</p>
+    De la conformite au reporting. De l'OCR intelligent a l'administration multi-tenant.<br>
+    Le tout dans une interface moderne, securisee et multi-tenant.</p>
   </div>
 
 </body>

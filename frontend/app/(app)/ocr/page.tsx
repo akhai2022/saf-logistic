@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { apiGet, apiPost } from "@/lib/api";
 import { uploadFile, getDownloadUrl } from "@/lib/upload";
 import { useAuth } from "@/lib/auth";
@@ -318,8 +318,8 @@ export default function OcrPage() {
               const isExpanded = expandedId === job.id;
               const docType = job.doc_type || "UNKNOWN";
               return (
-                <>{/* Fragment for row + expansion */}
-                  <tr key={job.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setExpandedId(isExpanded ? null : job.id)}>
+                <React.Fragment key={job.id}>{/* Fragment for row + expansion */}
+                  <tr className="cursor-pointer hover:bg-gray-50" onClick={() => setExpandedId(isExpanded ? null : job.id)}>
                     <td className="font-medium text-primary">{job.file_name || "—"}</td>
                     <td>
                       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${DOC_TYPE_COLORS[docType] || DOC_TYPE_COLORS.UNKNOWN}`}>
@@ -414,7 +414,7 @@ export default function OcrPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               );
             })}
           </tbody>

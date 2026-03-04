@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import calendar
 import csv
 import io
 import uuid
+from collections import defaultdict
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
@@ -266,3 +269,160 @@ async def lock_period(
         raise HTTPException(400, "Period not found or not in approved status")
     await db.commit()
     return {"status": "locked"}
+
+
+# ══════════════════════════════════════════════════════════════════
+# AUTO-COMPUTE FROM MISSIONS
+# ══════════════════════════════════════════════════════════════════
+
+HEURES_NORMALES_CAP = 151.67
+HEURES_SUP_25_CAP = 186.67  # hours between 151.67 and 186.67 at +25%
+FORFAIT_REPAS = 9.90
+
+PAYROLL_VARIABLE_CODES = [
+    "HEURES_NORMALES",
+    "HEURES_SUP_25",
+    "HEURES_SUP_50",
+    "NB_MISSIONS",
+    "KM_TOTAL",
+    "PRIME_PANIER",
+]
+
+
+def _compute_hours(date_chargement_reelle, date_livraison_reelle) -> float:
+    """Estimate worked hours from loading to delivery timestamps."""
+    if not date_chargement_reelle or not date_livraison_reelle:
+        return 0.0
+    try:
+        start = date_chargement_reelle if isinstance(date_chargement_reelle, datetime) else datetime.fromisoformat(str(date_chargement_reelle))
+        end = date_livraison_reelle if isinstance(date_livraison_reelle, datetime) else datetime.fromisoformat(str(date_livraison_reelle))
+        delta = (end - start).total_seconds() / 3600.0
+        return max(delta, 0.0)
+    except (ValueError, TypeError):
+        return 0.0
+
+
+@router.post("/periods/{period_id}/compute-from-missions")
+async def compute_from_missions(
+    period_id: str,
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Auto-compute payroll variables from closed mission data for a given period."""
+    tid = str(tenant.tenant_id)
+
+    # 1. Load period, verify status is draft
+    period = (await db.execute(
+        text("SELECT * FROM payroll_periods WHERE id = :id AND tenant_id = :tid"),
+        {"id": period_id, "tid": tid},
+    )).first()
+    if not period:
+        raise HTTPException(404, "Period not found")
+    if period.status != "draft":
+        raise HTTPException(400, "Can only compute into draft periods")
+
+    year = period.year
+    month = period.month
+    # Compute period date range
+    _, last_day = calendar.monthrange(year, month)
+    period_start = f"{year}-{month:02d}-01"
+    period_end = f"{year}-{month:02d}-{last_day}"
+
+    # 2. Find all closed missions for this tenant in the period
+    missions = (await db.execute(text("""
+        SELECT j.id, j.driver_id,
+               j.date_chargement_reelle, j.date_livraison_reelle,
+               j.date_cloture, j.distance_reelle_km, j.distance_estimee_km,
+               j.status
+        FROM jobs j
+        WHERE j.tenant_id = :tid
+          AND j.status IN ('CLOTUREE', 'LIVREE', 'closed', 'delivered')
+          AND j.driver_id IS NOT NULL
+          AND (
+              COALESCE(j.date_cloture, j.date_livraison_reelle)::date >= :pstart
+              AND COALESCE(j.date_cloture, j.date_livraison_reelle)::date <= :pend
+          )
+    """), {"tid": tid, "pstart": period_start, "pend": period_end})).fetchall()
+
+    # 3. Group by driver_id
+    driver_missions: dict[str, list] = defaultdict(list)
+    for m in missions:
+        driver_missions[str(m.driver_id)].append(m)
+
+    # 4. Resolve variable type IDs
+    var_types = (await db.execute(
+        text("SELECT id, code FROM payroll_variable_types WHERE tenant_id = :tid AND code = ANY(:codes)"),
+        {"tid": tid, "codes": PAYROLL_VARIABLE_CODES},
+    )).fetchall()
+    code_to_vtid: dict[str, str] = {vt.code: str(vt.id) for vt in var_types}
+
+    missing_codes = [c for c in PAYROLL_VARIABLE_CODES if c not in code_to_vtid]
+    if missing_codes:
+        raise HTTPException(
+            400,
+            f"Missing payroll_variable_types for codes: {', '.join(missing_codes)}. "
+            "Please create them first.",
+        )
+
+    # 5. DELETE existing payroll_variables for this period (allow re-computation)
+    await db.execute(
+        text("DELETE FROM payroll_variables WHERE period_id = :pid AND tenant_id = :tid"),
+        {"pid": period_id, "tid": tid},
+    )
+
+    # 6. Compute and insert variables per driver
+    summary = []
+    for driver_id, driver_ms in driver_missions.items():
+        # Compute totals
+        total_hours = 0.0
+        nb_missions = len(driver_ms)
+        km_total = 0.0
+
+        for m in driver_ms:
+            total_hours += _compute_hours(m.date_chargement_reelle, m.date_livraison_reelle)
+            dist = m.distance_reelle_km if m.distance_reelle_km is not None else m.distance_estimee_km
+            km_total += float(dist) if dist is not None else 0.0
+
+        heures_normales = min(total_hours, HEURES_NORMALES_CAP)
+        heures_sup_25 = min(max(total_hours - HEURES_NORMALES_CAP, 0.0), HEURES_SUP_25_CAP - HEURES_NORMALES_CAP)
+        heures_sup_50 = max(total_hours - HEURES_SUP_25_CAP, 0.0)
+        prime_panier = nb_missions * FORFAIT_REPAS
+
+        variables = {
+            "HEURES_NORMALES": round(heures_normales, 2),
+            "HEURES_SUP_25": round(heures_sup_25, 2),
+            "HEURES_SUP_50": round(heures_sup_50, 2),
+            "NB_MISSIONS": float(nb_missions),
+            "KM_TOTAL": round(km_total, 2),
+            "PRIME_PANIER": round(prime_panier, 2),
+        }
+
+        driver_vars = []
+        for code, value in variables.items():
+            vtid = code_to_vtid[code]
+            vid = str(uuid.uuid4())
+            await db.execute(text("""
+                INSERT INTO payroll_variables (id, tenant_id, period_id, driver_id, variable_type_id, value)
+                VALUES (:id, :tid, :pid, :did, :vtid, :val)
+            """), {
+                "id": vid, "tid": tid, "pid": period_id,
+                "did": driver_id, "vtid": vtid, "val": value,
+            })
+            driver_vars.append({"code": code, "value": value})
+
+        summary.append({
+            "driver_id": driver_id,
+            "nb_missions": nb_missions,
+            "total_hours": round(total_hours, 2),
+            "variables": driver_vars,
+        })
+
+    await db.commit()
+    return {
+        "period_id": period_id,
+        "year": year,
+        "month": month,
+        "drivers_computed": len(summary),
+        "drivers": summary,
+    }

@@ -40,6 +40,7 @@ export default function JobDetailPage() {
   const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
   const [tab, setTab] = useState<Tab>("Général");
   const [uploading, setUploading] = useState(false);
+  const [generatingCmr, setGeneratingCmr] = useState(false);
 
   // Assignment form
   const [assignForm, setAssignForm] = useState({ driver_id: "", vehicle_id: "", trailer_id: "", subcontractor_id: "", is_subcontracted: false, montant_achat_ht: "" });
@@ -161,6 +162,25 @@ export default function JobDetailPage() {
     reload();
   };
 
+  const handleGenerateCmr = async () => {
+    setGeneratingCmr(true);
+    try {
+      await apiPost(`/v1/jobs/${id}/generate-cmr`);
+      reload();
+    } catch (err) {
+      alert("Erreur CMR: " + (err as Error).message);
+    } finally {
+      setGeneratingCmr(false);
+    }
+  };
+
+  const handleDownloadCmr = async () => {
+    if (mission.cmr_s3_key) {
+      const url = await getDownloadUrl(mission.cmr_s3_key);
+      window.open(url, "_blank");
+    }
+  };
+
   const handleDownloadPod = async (s3Key: string) => {
     const url = await getDownloadUrl(s3Key);
     window.open(url, "_blank");
@@ -186,6 +206,14 @@ export default function JobDetailPage() {
           </span>
         )}
         <div className="flex-1" />
+        {/* CMR button */}
+        {mission.cmr_s3_key ? (
+          <Button size="sm" variant="secondary" icon="description" onClick={handleDownloadCmr}>CMR PDF</Button>
+        ) : (
+          <Button size="sm" variant="secondary" icon="description" onClick={handleGenerateCmr} disabled={generatingCmr}>
+            {generatingCmr ? "Génération..." : "Générer CMR"}
+          </Button>
+        )}
         {/* Transition buttons */}
         {transitions.map((t) => (
           <Button key={t} size="sm" variant={t === "ANNULEE" ? "danger" : "primary"} onClick={() => handleTransition(t)}>

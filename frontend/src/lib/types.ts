@@ -376,6 +376,8 @@ export interface Mission {
   goods_description?: string;
   notes?: string;
   pod_s3_key?: string;
+  cmr_s3_key?: string;
+  cmr_numero?: string;
   // Nested (detail)
   delivery_points?: DeliveryPoint[];
   goods?: MissionGoods[];
@@ -968,4 +970,149 @@ export interface LoginResponseFull {
   agency?: AgencyInfo;
   permissions?: PermissionsInfo;
   dashboard_config?: DashboardConfig;
+}
+
+// ── Planning / Dispatch Board ──────────────────────────────────
+
+export interface TimeBlock {
+  job_id: string;
+  numero: string | null;
+  client_name: string | null;
+  statut: string;
+  start: string;
+  end: string;
+  type_mission: string | null;
+  is_subcontracted: boolean;
+}
+
+export interface DriverPlanning {
+  driver_id: string;
+  driver_name: string;
+  agency_id: string | null;
+  conformite_statut: string | null;
+  blocks: TimeBlock[];
+}
+
+export interface VehiclePlanning {
+  vehicle_id: string;
+  plate: string;
+  categorie: string | null;
+  conformite_statut: string | null;
+  blocks: TimeBlock[];
+}
+
+// ── Subcontracting / Offers ────────────────────────────────────
+
+export interface SubcontractorOffer {
+  id: string;
+  job_id: string;
+  job_numero: string | null;
+  subcontractor_id: string;
+  subcontractor_name: string | null;
+  montant_propose: number;
+  montant_contre_offre: number | null;
+  date_envoi: string;
+  date_limite_reponse: string | null;
+  date_reponse: string | null;
+  statut: string;
+  motif_refus: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+// ── Dunning ────────────────────────────────────────────────────
+
+export interface DunningLevel {
+  id: string;
+  niveau: number;
+  libelle: string;
+  jours_apres_echeance: number;
+  template_objet: string | null;
+  template_texte: string | null;
+  is_active: boolean;
+}
+
+export interface DunningAction {
+  id: string;
+  invoice_id: string;
+  invoice_number: string | null;
+  customer_id: string;
+  customer_name: string | null;
+  dunning_level_id: string | null;
+  niveau: number | null;
+  date_relance: string;
+  mode: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface OverdueInvoice {
+  invoice_id: string;
+  invoice_number: string;
+  customer_name: string;
+  total_ttc: number;
+  due_date: string;
+  days_overdue: number;
+  last_relance_date: string | null;
+  last_relance_niveau: number | null;
+  nb_relances: number;
+}
+
+// ── Supplier Invoice Matching ──────────────────────────────────
+
+export interface SupplierInvoiceDetail {
+  id: string;
+  supplier_name: string | null;
+  invoice_number: string | null;
+  invoice_date: string | null;
+  total_ht: number | null;
+  total_tva: number | null;
+  total_ttc: number | null;
+  status: string;
+  subcontractor_id: string | null;
+  statut_rapprochement: string | null;
+  matchings: SupplierInvoiceMatch[];
+}
+
+export interface SupplierInvoiceMatch {
+  id: string;
+  job_id: string;
+  job_numero: string | null;
+  montant_attendu: number | null;
+  montant_facture: number;
+  ecart: number | null;
+  ecart_pourcent: number | null;
+  statut: string;
+}
+
+export interface MatchSuggestion {
+  job_id: string;
+  job_numero: string | null;
+  client_name: string | null;
+  date_chargement: string | null;
+  montant_achat_ht: number | null;
+  already_matched: boolean;
+}
+
+// ── Driver Mobile ──────────────────────────────────────────────
+
+export interface DriverMission {
+  id: string;
+  numero: string | null;
+  client_name: string | null;
+  statut: string;
+  type_mission: string | null;
+  date_chargement_prevue: string | null;
+  date_livraison_prevue: string | null;
+  pickup_address_text: string | null;
+  delivery_address_text: string | null;
+}
+
+export interface DriverEvent {
+  id: string;
+  event_type: string;
+  latitude: number | null;
+  longitude: number | null;
+  notes: string | null;
+  created_at: string;
 }

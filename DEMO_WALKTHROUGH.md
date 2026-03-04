@@ -1,7 +1,7 @@
 # SAF Logistic — Demo Walkthrough / Script Video
 
 > SaaS B2B pour entreprises de transport routier
-> Duree estimee video : 15-20 minutes
+> Duree estimee video : 18-22 minutes
 
 ---
 
@@ -32,23 +32,26 @@
 
 ## SCENE 2 — Navigation & Sidebar (1 min)
 
-**Narration :** "La sidebar organise les fonctionnalites en 6 sections metiers."
+**Narration :** "La sidebar organise les fonctionnalites en 7 sections metiers."
 
-1. Montrer la sidebar avec les 6 sections :
+1. Montrer la sidebar avec les 7 sections :
    - **Exploitation** : Missions, Litiges, Taches, Configuration
    - **Referentiels** : Clients, Sous-traitants, Conducteurs, Vehicules, Conformite
    - **Finance** : Factures, Tarifs, Paie, OCR, Factures Fournisseurs
    - **Flotte** : Tableau de bord, Maintenance, Sinistres
    - **Pilotage** : Tableau de bord KPI
    - **Parametrage** : Parametres, Journal d'audit
-2. Montrer l'icone de notification avec badge
+   - **Administration** : Entreprises (visible uniquement pour les super admins)
+2. Montrer l'icone de notification avec badge (polling automatique toutes les 30s)
 3. Montrer les infos utilisateur en bas (nom, email, role)
 4. Montrer le bouton Deconnexion
+5. Montrer la navigation responsive (menu hamburger sur mobile)
 
 **Points cles :**
 - Navigation contextuelle par role (chaque role voit ses sections)
-- Notifications en temps reel avec badge compteur
-- Interface responsive (mobile/desktop)
+- Section Administration reservee aux super admins pour la gestion multi-tenant
+- Notifications en temps reel avec badge compteur (auto-refresh)
+- Interface responsive (mobile/desktop) avec menu hamburger
 
 ---
 
@@ -158,10 +161,10 @@
 
 1. Aller dans **Exploitation > Litiges**
 2. Onglets : Tous, Ouverts, En instruction, Resolus, Clos
-3. Montrer le tableau avec colonnes : Numero, Mission, Type, Responsabilite, Montants, Statut, Actions
-4. **Transitions de statut** : Cliquer les boutons Instruire / Resoudre / Clore
-5. Cliquer sur une ligne pour voir les details expandables
-6. Lien vers la mission d'origine
+3. Montrer le tableau avec colonnes : Numero, Mission, Type, Responsabilite, Montants (estime/retenu en EUR), Statut, Date ouverture, Actions
+4. **Transitions de statut** : Cliquer les boutons contextuels Instruire / Resoudre / Clore
+5. Cliquer sur une ligne pour voir les **details expandables** : description complete, texte de resolution, date de resolution
+6. Lien direct vers la mission d'origine
 
 ---
 
@@ -184,10 +187,11 @@
 1. Aller dans **Flotte > Maintenance**
 2. Filtres : Statut (PLANIFIE, EN_COURS, TERMINE, ANNULE) + Periode (30j a 1 an)
 3. Cliquer **"Nouvelle intervention"** — Formulaire :
-   - Vehicule, Type (CT, VIDANGE, PNEUS, FREINS, REVISION...)
-   - Libelle, Date debut/fin
+   - Vehicule, Type (CT, VIDANGE, PNEUS, FREINS, REVISION, TACHYGRAPHE, ATP, ASSURANCE...)
+   - Libelle, Description, Date debut/fin
    - Prestataire, Lieu
-   - Cout total HT, Notes
+   - Couts detailles : Pieces HT, Main-d'oeuvre HT, Total HT
+   - Notes, Statut
 4. Voir le tableau avec colonne Actions
 5. **Transitions de statut** : Cliquer "Demarrer" (PLANIFIE → EN_COURS), "Terminer" (→ TERMINE), "Annuler"
 
@@ -209,7 +213,7 @@
    - **Notes**
 3. Voir le sinistre dans la liste avec filtres vehicule/statut
 4. **Transitions de statut** : DECLARE → EN_EXPERTISE → EN_REPARATION → CLOS → REMBOURSE
-5. Cliquer sur une ligne pour voir les **details expandables** (lieu, heure, franchise, indemnisation, tiers...)
+5. Cliquer sur une ligne pour voir les **details expandables** (lieu, heure, franchise, indemnisation recue, jours d'immobilisation, reference assurance, informations tiers...)
 
 **Points cles :**
 - Formulaire complet avec section tiers optionnelle
@@ -224,8 +228,9 @@
 
 1. Aller dans **Finance > Tarifs**
    - Creer une regle de tarification (Au km, Forfait, Supplement)
-   - **Modifier** ou **Supprimer** une regle existante
-   - Association client ou globale
+   - Plage kilometrique (min/max) pour les regles "Au km"
+   - **Modifier** ou **Supprimer** une regle existante (avec confirmation)
+   - Association client specifique ou regle globale
 
 2. Aller dans **Finance > Factures**
    - Cliquer "Nouvelle facture"
@@ -241,16 +246,32 @@
 
 ---
 
-## SCENE 12 — OCR & Extraction (1 min)
+## SCENE 12 — OCR & Extraction intelligente (2 min)
 
-**Narration :** "L'OCR automatise la saisie des documents fournisseurs."
+**Narration :** "L'OCR automatise la saisie des documents avec classification intelligente et extraction multi-types."
 
 1. Aller dans **Finance > OCR**
-2. Uploader un document (facture, RIB, KBIS...)
+2. Uploader un document (PDF ou image) — traitement asynchrone via Celery
 3. Voir le traitement automatique : statut pending → processing → validated/needs_review
-4. Classification automatique du type de document
-5. Extraction des champs avec score de confiance
-6. Texte OCR brut disponible
+4. **Classification automatique** du type de document parmi 5 categories :
+   - **Facture** : fournisseur, numero, dates, montants HT/TVA/TTC, taux TVA, IBAN
+   - **RIB bancaire** : IBAN (avec validation mod-97), BIC, banque, titulaire, domiciliation, codes guichet
+   - **KBIS** : raison sociale, SIREN/SIRET (validation Luhn), RCS, forme juridique, capital, NAF/APE, dirigeant
+   - **URSSAF** : entreprise, SIRET, reference attestation, dates de validite, effectif salaries
+   - **Attestation assurance** : assure, assureur, numero police, type couverture, montants garanties, franchise
+5. **Scores de confiance** :
+   - Confiance globale de classification
+   - Confiance par champ extrait (barre de progression)
+   - Alertes d'erreurs d'extraction
+6. Cliquer sur une ligne → **Detail expandable** avec tous les champs extraits
+7. Voir le texte OCR brut et apercu du document original
+8. **Valider** un document → creation automatique d'une facture fournisseur
+
+**Points cles :**
+- Classification par scoring de mots-cles ponderes + patterns regex
+- Extracteurs specialises par type de document
+- Validation metier (IBAN, SIREN/SIRET, coherence montants HT+TVA=TTC)
+- Masquage IBAN dans les reponses API pour la securite
 
 ---
 
@@ -292,18 +313,26 @@
 
 ---
 
-## SCENE 16 — Parametrage (1 min)
+## SCENE 16 — Parametrage (2 min)
 
-**Narration :** "Le parametrage centralise la configuration de l'entreprise."
+**Narration :** "Le parametrage centralise la configuration de l'entreprise et la gestion des utilisateurs."
 
-1. Aller dans **Parametrage > Parametres** — 5 onglets :
+1. Aller dans **Parametrage > Parametres** — 6 onglets :
    - **Entreprise** : SIREN, SIRET, TVA Intracom, adresse, licence transport
-   - **Banque** : Comptes bancaires (IBAN/BIC) avec CRUD complet
+   - **Banque** : Comptes bancaires (IBAN/BIC) avec CRUD complet, compte par defaut
    - **TVA** : Taux de TVA (20%, 10%, 5.5%, 2.1%) avec mentions legales
-   - **Centres de couts** : Code + Libelle
-   - **Notifications** : Configuration des alertes par type d'evenement
+   - **Centres de couts** : Code + Libelle, statut actif/inactif
+   - **Notifications** : Configuration des alertes par type d'evenement, canaux, destinataires, delais
+   - **Utilisateurs** (admin uniquement) : Gestion des utilisateurs du tenant
 
-2. Aller dans **Parametrage > Journal d'audit**
+2. Montrer l'onglet **Utilisateurs** :
+   - Recherche par nom ou email
+   - Creer un utilisateur (nom, email, mot de passe, role, agence)
+   - Modifier les informations et le role d'un utilisateur
+   - Activer/desactiver un compte (protection : l'admin ne peut pas se desactiver)
+   - Reinitialiser le mot de passe d'un utilisateur
+
+3. Aller dans **Parametrage > Journal d'audit**
    - Filtres : Type entite, Action, Date debut/fin
    - Historique complet des modifications (ancien/nouveau JSON)
 
@@ -349,12 +378,36 @@
 
 ---
 
+## SCENE 20 — Administration multi-tenant (1 min 30)
+
+**Narration :** "La plateforme est concue pour gerer plusieurs entreprises de transport depuis une console d'administration centralisee."
+
+1. Se connecter en tant que **super admin**
+2. Aller dans **Administration > Entreprises**
+3. Vue liste de tous les tenants avec : Nom, SIREN, Nombre d'utilisateurs, Date de creation
+4. Cliquer **"Nouvelle entreprise"** — Formulaire de creation :
+   - Nom de l'entreprise, SIREN, Adresse
+   - Agence par defaut (nom + code)
+   - Compte admin initial (nom complet, email, mot de passe)
+5. Cliquer sur une entreprise → Page de detail avec 2 onglets :
+   - **Info** : Modifier nom, SIREN, adresse + liste des agences
+   - **Utilisateurs** : Liste des utilisateurs avec nom, email, role, agence, statut actif
+
+**Points cles :**
+- Architecture multi-tenant complete (donnees isolees par entreprise)
+- Creation de tenant avec agence et admin en une seule operation
+- Flag super admin en base avec index partiel pour performances
+- Gestion centralisee de tous les tenants depuis une seule console
+
+---
+
 ## Conclusion (30 sec)
 
 **Narration :** "SAF Logistic couvre l'ensemble du cycle de gestion du transport routier :
 - De la creation de mission a la facturation
 - De la gestion de flotte aux sinistres
 - De la conformite au reporting
+- De l'OCR intelligent a l'administration multi-tenant
 - Le tout dans une interface moderne, securisee et multi-tenant."
 
 ---
@@ -386,4 +439,5 @@
 | PDF | WeasyPrint |
 | OCR | Tesseract / Mock |
 | Auth | JWT (HS256) |
-| Tests E2E | Playwright (250+ scenarios) |
+| OCR Extracteurs | Classifier + Invoice + RIB + Compliance (KBIS/URSSAF/Assurance) |
+| Tests E2E | Playwright (300+ scenarios) |

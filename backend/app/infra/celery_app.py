@@ -31,5 +31,13 @@ celery_app.conf.update(
             "task": "app.infra.tasks.driver_auto_inactivation",
             "schedule": 86400.0,  # 24h
         },
+        "maintenance-auto-trigger": {
+            "task": "app.infra.tasks.maintenance_auto_trigger",
+            "schedule": 86400.0,  # 24h
+        },
+        "dunning-check-daily": {
+            "task": "app.infra.tasks.dunning_check_daily",
+            "schedule": 86400.0,  # 24h
+        },
     },
 )

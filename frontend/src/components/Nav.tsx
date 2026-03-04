@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth, getDashboardConfig } from "@/lib/auth";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { apiGet } from "@/lib/api";
 
 interface NavItem {
@@ -26,7 +26,9 @@ const ALL_SECTIONS: NavSection[] = [
     icon: "route",
     items: [
       { href: "/jobs", label: "Missions", icon: "local_shipping" },
+      { href: "/planning", label: "Planning", icon: "calendar_month" },
       { href: "/disputes", label: "Litiges", icon: "gavel" },
+      { href: "/subcontracting", label: "Affrètement", icon: "swap_horiz" },
       { href: "/tasks", label: "Tâches", icon: "task_alt" },
       { href: "/onboarding", label: "Configuration", icon: "rocket_launch" },
     ],
@@ -49,6 +51,7 @@ const ALL_SECTIONS: NavSection[] = [
     icon: "account_balance",
     items: [
       { href: "/invoices", label: "Factures", icon: "receipt_long" },
+      { href: "/billing/dunning", label: "Relances", icon: "notification_important" },
       { href: "/pricing", label: "Tarifs", icon: "sell" },
       { href: "/payroll", label: "Paie", icon: "payments" },
       { href: "/ocr", label: "OCR", icon: "document_scanner" },
@@ -83,6 +86,14 @@ const ALL_SECTIONS: NavSection[] = [
     ],
   },
   {
+    key: "conducteur",
+    label: "Conducteur",
+    icon: "badge",
+    items: [
+      { href: "/driver", label: "Mes Missions", icon: "local_shipping" },
+    ],
+  },
+  {
     key: "administration",
     label: "Administration",
     icon: "admin_panel_settings",
@@ -98,12 +109,13 @@ export default function Nav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const visibleSections = useMemo(() => {
+  const [visibleSections, setVisibleSections] = useState(ALL_SECTIONS);
+
+  useEffect(() => {
     const config = getDashboardConfig();
-    if (!config || !config.sidebar_sections || config.sidebar_sections.length === 0) {
-      return ALL_SECTIONS;
+    if (config?.sidebar_sections?.length) {
+      setVisibleSections(ALL_SECTIONS.filter((s) => config.sidebar_sections.includes(s.key)));
     }
-    return ALL_SECTIONS.filter((s) => config.sidebar_sections.includes(s.key));
   }, []);
 
   // Poll notification count every 30s

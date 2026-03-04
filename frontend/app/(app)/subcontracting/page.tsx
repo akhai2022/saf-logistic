@@ -93,7 +93,7 @@ export default function SubcontractingPage() {
         job_id: form.job_id,
         subcontractor_id: form.subcontractor_id,
         montant_propose: parseFloat(form.montant_propose),
-        date_limite: form.date_limite || undefined,
+        date_limite_reponse: form.date_limite || undefined,
       });
       setShowCreate(false);
       setForm({ job_id: "", subcontractor_id: "", montant_propose: "", date_limite: "" });
@@ -109,7 +109,7 @@ export default function SubcontractingPage() {
   };
 
   const handleReject = async (offerId: string) => {
-    await apiPost(`/v1/subcontracting/offers/${offerId}/reject`);
+    await apiPost(`/v1/subcontracting/offers/${offerId}/reject`, {});
     fetchOffers();
   };
 

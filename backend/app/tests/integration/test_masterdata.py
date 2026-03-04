@@ -282,7 +282,7 @@ async def test_client_crud_lifecycle(client: AsyncClient):
     assert client_data["code"] is not None  # auto-generated
 
     # List
-    resp = await client.get("/v1/masterdata/clients")
+    resp = await client.get("/v1/masterdata/clients?limit=200")
     assert resp.status_code == 200
     clients = resp.json()
     assert any(c["id"] == client_id for c in clients)

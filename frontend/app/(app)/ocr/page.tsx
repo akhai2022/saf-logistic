@@ -1,14 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
 import { uploadFile, getDownloadUrl } from "@/lib/upload";
 import { useAuth } from "@/lib/auth";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { OcrJob } from "@/lib/types";
 import Card from "@/components/Card";
 import FilePicker from "@/components/FilePicker";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 import { usePolling } from "@/lib/polling";
 
 // ── Doc type helpers ────────────────────────────────────────────
@@ -241,10 +244,15 @@ function JobDetail2({ job }: { job: OcrJob }) {
 
 export default function OcrPage() {
   const { user } = useAuth();
-  const [jobs, setJobs] = useState<OcrJob[]>([]);
   const [uploading, setUploading] = useState(false);
   const [pollingId, setPollingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const filters: Record<string, string> = {};
+
+  const { items: jobs, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } = usePaginatedFetch<OcrJob>(
+    "/v1/ocr/jobs", filters, { defaultSort: "created_at", defaultOrder: "desc" }
+  );
 
   const { data: polledJob } = usePolling<OcrJob>(
     pollingId ? `/v1/ocr/jobs/${pollingId}` : null,
@@ -252,13 +260,9 @@ export default function OcrPage() {
   );
 
   useEffect(() => {
-    apiGet<OcrJob[]>("/v1/ocr/jobs").then(setJobs);
-  }, []);
-
-  useEffect(() => {
     if (polledJob && polledJob.status !== "pending" && polledJob.status !== "processing") {
       setPollingId(null);
-      setJobs((prev) => prev.map((j) => (j.id === polledJob.id ? polledJob : j)));
+      refresh();
     }
   }, [polledJob]);
 
@@ -267,8 +271,8 @@ export default function OcrPage() {
     try {
       const key = await uploadFile(file, "ocr");
       const job = await apiPost<OcrJob>("/v1/ocr/jobs", { s3_key: key, file_name: file.name });
-      setJobs([job, ...jobs]);
       setPollingId(job.id);
+      refresh();
     } finally {
       setUploading(false);
     }
@@ -309,7 +313,7 @@ export default function OcrPage() {
               <th>Confiance</th>
               <th>Résumé</th>
               <th>Détail</th>
-              <th>Date</th>
+              <SortableHeader label="Date" field="created_at" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>Actions</th>
             </tr>
           </thead>
@@ -419,9 +423,10 @@ export default function OcrPage() {
             })}
           </tbody>
         </table>
-        {jobs.length === 0 && (
+        {jobs.length === 0 && !loading && (
           <EmptyState icon="document_scanner" title="Aucun scan OCR" description="Scannez votre premier document (facture, RIB, KBIS, etc.)" />
         )}
+        <Pagination offset={offset} limit={limit} currentCount={jobs.length} onPrev={onPrev} onNext={onNext} />
       </Card>
     </div>
   );

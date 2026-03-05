@@ -41,10 +41,11 @@
     <div class="box box-half">
       <div class="box-label">1. Expediteur (nom, adresse, pays)</div>
       <div class="box-content">
-        <strong>{{ customer.name if customer else 'N/A' }}</strong><br>
-        {% if customer and customer.address %}{{ customer.address }}<br>{% endif %}
-        {% if customer and customer.ville %}{{ customer.code_postal if customer.code_postal else '' }} {{ customer.ville }}<br>{% endif %}
-        {% if customer and customer.pays %}{{ customer.pays }}{% endif %}
+        <strong>{{ customer.raison_sociale if customer.raison_sociale else customer.name if customer else 'N/A' }}</strong><br>
+        {% if customer and customer.adresse_facturation_ligne1 %}{{ customer.adresse_facturation_ligne1 }}<br>{% endif %}
+        {% if customer and customer.address and not customer.adresse_facturation_ligne1 %}{{ customer.address }}<br>{% endif %}
+        {% if customer and customer.adresse_facturation_ville %}{{ customer.adresse_facturation_cp if customer.adresse_facturation_cp else '' }} {{ customer.adresse_facturation_ville }}<br>{% endif %}
+        {% if customer and customer.adresse_facturation_pays %}{{ customer.adresse_facturation_pays }}{% endif %}
         {% if customer and customer.siren %}<br>SIREN: {{ customer.siren }}{% endif %}
       </div>
     </div>
@@ -151,10 +152,10 @@
       {% if goods and goods|length > 0 %}
       <tr style="font-weight:bold; border-top:2px solid #1e40af;">
         <td colspan="3">TOTAL</td>
-        <td class="text-right">{{ goods|sum(attribute='quantite', default=0) }}</td>
+        <td class="text-right">{{ goods|sum(attribute='quantite') }}</td>
         <td></td>
-        <td class="text-right">{{ "%.2f"|format(goods|sum(attribute='poids_kg', default=0)) }}</td>
-        <td class="text-right">{{ "%.2f"|format(goods|sum(attribute='volume_m3', default=0)) }}</td>
+        <td class="text-right">{{ "%.2f"|format(goods|sum(attribute='poids_kg')) }}</td>
+        <td class="text-right">{{ "%.2f"|format(goods|sum(attribute='volume_m3')) }}</td>
       </tr>
       {% endif %}
     </tbody>

@@ -304,13 +304,21 @@ async def list_invoices(
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     status: str | None = Query(None),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    sort_by: str | None = Query(None),
+    order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
     q = "SELECT * FROM invoices WHERE tenant_id = :tid"
     params: dict = {"tid": str(tenant.tenant_id)}
     if status:
         q += " AND status = :status"
         params["status"] = status
-    q += " ORDER BY created_at DESC"
+    allowed_sorts = {"created_at", "total_ht", "total_ttc", "due_date", "invoice_number"}
+    sort_col = sort_by if sort_by in allowed_sorts else "created_at"
+    q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
+    params["lim"] = limit
+    params["off"] = offset
     rows = await db.execute(text(q), params)
     return [InvoiceOut(
         id=str(r.id), invoice_number=r.invoice_number,
@@ -513,13 +521,21 @@ async def list_credit_notes(
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     status: str | None = Query(None),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    sort_by: str | None = Query(None),
+    order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
     q = "SELECT * FROM credit_notes WHERE tenant_id = :tid"
     params: dict = {"tid": str(tenant.tenant_id)}
     if status:
         q += " AND status = :status"
         params["status"] = status
-    q += " ORDER BY created_at DESC"
+    allowed_sorts = {"created_at", "total_ht", "total_ttc"}
+    sort_col = sort_by if sort_by in allowed_sorts else "created_at"
+    q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
+    params["lim"] = limit
+    params["off"] = offset
     rows = (await db.execute(text(q), params)).fetchall()
     return [_cn_from_row(r) for r in rows]
 
@@ -592,13 +608,21 @@ async def list_supplier_invoices(
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     status: str | None = Query(None),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    sort_by: str | None = Query(None),
+    order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
     q = "SELECT * FROM supplier_invoices WHERE tenant_id = :tid"
     params: dict = {"tid": str(tenant.tenant_id)}
     if status:
         q += " AND status = :status"
         params["status"] = status
-    q += " ORDER BY created_at DESC"
+    allowed_sorts = {"created_at", "total_ht", "total_ttc", "invoice_date"}
+    sort_col = sort_by if sort_by in allowed_sorts else "created_at"
+    q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
+    params["lim"] = limit
+    params["off"] = offset
     rows = await db.execute(text(q), params)
     return [SupplierInvoiceOut(
         id=str(r.id), supplier_id=str(r.supplier_id) if r.supplier_id else None,

@@ -1,32 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { apiGet } from "@/lib/api";
+import { useState } from "react";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { AuditLog } from "@/lib/types";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 export default function AuditPage() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [filters, setFilters] = useState({
+  const [filterInputs, setFilterInputs] = useState({
     entity_type: "",
     action: "",
     date_from: "",
     date_to: "",
   });
+  const [appliedFilters, setAppliedFilters] = useState<Record<string, string>>({});
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const fetchLogs = () => {
-    const params = new URLSearchParams();
-    if (filters.entity_type) params.set("entity_type", filters.entity_type);
-    if (filters.action) params.set("action", filters.action);
-    if (filters.date_from) params.set("date_from", filters.date_from);
-    if (filters.date_to) params.set("date_to", filters.date_to);
-    const qs = params.toString();
-    apiGet<AuditLog[]>(`/v1/audit-logs${qs ? `?${qs}` : ""}`).then(setLogs);
-  };
+  const { items: logs, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext } = usePaginatedFetch<AuditLog>(
+    "/v1/audit-logs", appliedFilters, { defaultSort: "created_at", defaultOrder: "desc" }
+  );
 
-  useEffect(() => { fetchLogs(); }, []);
+  const applyFilters = () => {
+    const f: Record<string, string> = {};
+    if (filterInputs.entity_type) f.entity_type = filterInputs.entity_type;
+    if (filterInputs.action) f.action = filterInputs.action;
+    if (filterInputs.date_from) f.date_from = filterInputs.date_from;
+    if (filterInputs.date_to) f.date_to = filterInputs.date_to;
+    setAppliedFilters(f);
+  };
 
   return (
     <div className="space-y-6">
@@ -36,30 +39,30 @@ export default function AuditPage() {
         <div className="flex flex-wrap gap-3 mb-4">
           <input
             placeholder="Type entite"
-            value={filters.entity_type}
-            onChange={(e) => setFilters({ ...filters, entity_type: e.target.value })}
+            value={filterInputs.entity_type}
+            onChange={(e) => setFilterInputs({ ...filterInputs, entity_type: e.target.value })}
             className="border rounded px-3 py-2 text-sm"
           />
           <input
             placeholder="Action"
-            value={filters.action}
-            onChange={(e) => setFilters({ ...filters, action: e.target.value })}
+            value={filterInputs.action}
+            onChange={(e) => setFilterInputs({ ...filterInputs, action: e.target.value })}
             className="border rounded px-3 py-2 text-sm"
           />
           <input
             type="date"
-            value={filters.date_from}
-            onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
+            value={filterInputs.date_from}
+            onChange={(e) => setFilterInputs({ ...filterInputs, date_from: e.target.value })}
             className="border rounded px-3 py-2 text-sm"
           />
           <input
             type="date"
-            value={filters.date_to}
-            onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
+            value={filterInputs.date_to}
+            onChange={(e) => setFilterInputs({ ...filterInputs, date_to: e.target.value })}
             className="border rounded px-3 py-2 text-sm"
           />
           <button
-            onClick={fetchLogs}
+            onClick={applyFilters}
             className="bg-primary text-white px-4 py-2 rounded text-sm hover:bg-primary/90"
           >
             Filtrer
@@ -69,7 +72,7 @@ export default function AuditPage() {
         <table className="w-full text-sm">
           <thead className="table-header">
             <tr>
-              <th>Date</th>
+              <SortableHeader label="Date" field="created_at" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>Utilisateur</th>
               <th>Action</th>
               <th>Entite</th>
@@ -129,9 +132,10 @@ export default function AuditPage() {
           );
         })()}
 
-        {logs.length === 0 && (
+        {logs.length === 0 && !loading && (
           <div className="text-center py-8 text-gray-400">Aucun enregistrement d'audit</div>
         )}
+        <Pagination offset={offset} limit={limit} currentCount={logs.length} onPrev={onPrev} onNext={onNext} />
       </Card>
     </div>
   );

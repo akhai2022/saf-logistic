@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { apiGet } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 interface SupplierInvoice {
   id: string;
@@ -21,11 +22,12 @@ interface SupplierInvoice {
 
 export default function SupplierInvoicesPage() {
   const { user } = useAuth();
-  const [invoices, setInvoices] = useState<SupplierInvoice[]>([]);
 
-  useEffect(() => {
-    apiGet<SupplierInvoice[]>("/v1/billing/supplier-invoices").then(setInvoices).catch(() => setInvoices([]));
-  }, []);
+  const filters: Record<string, string> = {};
+
+  const { items: invoices, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext } = usePaginatedFetch<SupplierInvoice>(
+    "/v1/billing/supplier-invoices", filters, { defaultSort: "created_at", defaultOrder: "desc" }
+  );
 
   return (
     <div className="space-y-6">
@@ -39,10 +41,10 @@ export default function SupplierInvoicesPage() {
           <thead className="table-header">
             <tr>
               <th>N° Facture</th>
-              <th>Date</th>
-              <th>Total HT</th>
+              <SortableHeader label="Date" field="invoice_date" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+              <SortableHeader label="Total HT" field="total_ht" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>TVA</th>
-              <th>Total TTC</th>
+              <SortableHeader label="Total TTC" field="total_ttc" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>Statut</th>
             </tr>
           </thead>
@@ -64,9 +66,10 @@ export default function SupplierInvoicesPage() {
             ))}
           </tbody>
         </table>
-        {invoices.length === 0 && (
+        {invoices.length === 0 && !loading && (
           <EmptyState icon="inventory_2" title="Aucune facture fournisseur" description="Les factures apparaîtront après validation OCR" />
         )}
+        <Pagination offset={offset} limit={limit} currentCount={invoices.length} onPrev={onPrev} onNext={onNext} />
       </Card>
     </div>
   );

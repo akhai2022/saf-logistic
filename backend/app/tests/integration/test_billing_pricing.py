@@ -14,12 +14,17 @@ TID = "00000000-0000-0000-0000-000000000001"
 @pytest_asyncio.fixture(autouse=True)
 async def clean_billing_data(db):
     """Clean up billing/pricing data before each test."""
+    # Delete in FK dependency order
+    await db.execute(text("DELETE FROM subcontractor_offers WHERE tenant_id = :tid"), {"tid": TID})
+    await db.execute(text("DELETE FROM dunning_actions WHERE tenant_id = :tid"), {"tid": TID})
+    await db.execute(text("DELETE FROM tasks WHERE tenant_id = :tid"), {"tid": TID})
+    await db.execute(text("DELETE FROM dispute_attachments WHERE tenant_id = :tid"), {"tid": TID})
+    await db.execute(text("DELETE FROM disputes WHERE tenant_id = :tid"), {"tid": TID})
     await db.execute(text(
         "DELETE FROM invoice_lines WHERE invoice_id IN (SELECT id FROM invoices WHERE tenant_id = :tid)"
     ), {"tid": TID})
     await db.execute(text("DELETE FROM invoices WHERE tenant_id = :tid"), {"tid": TID})
     await db.execute(text("DELETE FROM pricing_rules WHERE tenant_id = :tid"), {"tid": TID})
-    await db.execute(text("DELETE FROM disputes WHERE tenant_id = :tid"), {"tid": TID})
     await db.execute(text("DELETE FROM jobs WHERE tenant_id = :tid"), {"tid": TID})
     await db.commit()
     yield

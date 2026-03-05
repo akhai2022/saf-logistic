@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import StatusBadge from "@/components/StatusBadge";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 /* ---------- Types ---------- */
 
@@ -48,9 +51,14 @@ const STATUS_TABS = [
 export default function SubcontractingPage() {
   const { user } = useAuth();
 
-  const [offers, setOffers] = useState<Offer[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  const filters: Record<string, string> = {};
+  if (statusFilter) filters.statut = statusFilter;
+
+  const { items: offers, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } = usePaginatedFetch<Offer>(
+    "/v1/subcontracting/offers", filters, { defaultSort: "created_at", defaultOrder: "desc" }
+  );
 
   // Create modal
   const [showCreate, setShowCreate] = useState(false);
@@ -63,20 +71,6 @@ export default function SubcontractingPage() {
     date_limite: "",
   });
   const [submitting, setSubmitting] = useState(false);
-
-  const fetchOffers = () => {
-    setLoading(true);
-    let url = "/v1/subcontracting/offers";
-    if (statusFilter) url += `?statut=${statusFilter}`;
-    apiGet<Offer[]>(url)
-      .then(setOffers)
-      .catch(() => setOffers([]))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    fetchOffers();
-  }, [statusFilter]);
 
   useEffect(() => {
     if (showCreate) {
@@ -97,7 +91,7 @@ export default function SubcontractingPage() {
       });
       setShowCreate(false);
       setForm({ job_id: "", subcontractor_id: "", montant_propose: "", date_limite: "" });
-      fetchOffers();
+      refresh();
     } finally {
       setSubmitting(false);
     }
@@ -105,17 +99,17 @@ export default function SubcontractingPage() {
 
   const handleAccept = async (offerId: string) => {
     await apiPost(`/v1/subcontracting/offers/${offerId}/accept`);
-    fetchOffers();
+    refresh();
   };
 
   const handleReject = async (offerId: string) => {
     await apiPost(`/v1/subcontracting/offers/${offerId}/reject`, {});
-    fetchOffers();
+    refresh();
   };
 
   const handleCancel = async (offerId: string) => {
     await apiPost(`/v1/subcontracting/offers/${offerId}/cancel`);
-    fetchOffers();
+    refresh();
   };
 
   const fmtDate = (d?: string) => (d ? d.split("T")[0] : "\u2014");
@@ -235,9 +229,9 @@ export default function SubcontractingPage() {
                   <tr>
                     <th>Mission</th>
                     <th>Sous-traitant</th>
-                    <th>Montant</th>
+                    <SortableHeader label="Montant" field="montant_propose" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
                     <th>Contre-offre</th>
-                    <th>Date</th>
+                    <SortableHeader label="Date" field="created_at" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
                     <th>Statut</th>
                     <th>Actions</th>
                   </tr>
@@ -286,13 +280,14 @@ export default function SubcontractingPage() {
                 </tbody>
               </table>
             </div>
-            {offers.length === 0 && (
+            {offers.length === 0 && !loading && (
               <EmptyState
                 icon="handshake"
                 title="Aucune offre"
                 description="Creez une offre pour sous-traiter une mission"
               />
             )}
+            <Pagination offset={offset} limit={limit} currentCount={offers.length} onPrev={onPrev} onNext={onNext} />
           </>
         )}
       </Card>

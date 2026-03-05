@@ -4,36 +4,45 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Invoice, Customer, Job, CreditNote } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 export default function InvoicesPage() {
   const { user } = useAuth();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState("");
+
+  const filters: Record<string, string> = {};
+  if (statusFilter) filters.status = statusFilter;
+
+  const { items: invoices, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } = usePaginatedFetch<Invoice>(
+    "/v1/billing/invoices", filters, { defaultSort: "created_at", defaultOrder: "desc" }
+  );
 
   useEffect(() => {
-    apiGet<Invoice[]>("/v1/billing/invoices").then(setInvoices);
     apiGet<Customer[]>("/v1/masterdata/customers").then(setCustomers);
     apiGet<Job[]>("/v1/jobs?status=closed").then(setJobs);
   }, []);
 
   const handleCreate = async () => {
     if (!selectedCustomer || selectedJobs.length === 0) return;
-    const inv = await apiPost<Invoice>("/v1/billing/invoices", {
+    await apiPost<Invoice>("/v1/billing/invoices", {
       customer_id: selectedCustomer,
       job_ids: selectedJobs,
     });
-    setInvoices([inv, ...invoices]);
     setShowCreate(false);
     setSelectedJobs([]);
+    refresh();
   };
 
   const customerJobs = jobs.filter((j) => j.customer_id === selectedCustomer);
@@ -92,12 +101,12 @@ export default function InvoicesPage() {
         <table className="w-full text-sm">
           <thead className="table-header">
             <tr>
-              <th>N° Facture</th>
+              <SortableHeader label="N° Facture" field="invoice_number" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>Client</th>
               <th>Statut</th>
-              <th>Total HT</th>
-              <th>Total TTC</th>
-              <th>Échéance</th>
+              <SortableHeader label="Total HT" field="total_ht" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+              <SortableHeader label="Total TTC" field="total_ttc" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+              <SortableHeader label="Échéance" field="due_date" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>Actions</th>
             </tr>
           </thead>
@@ -132,9 +141,10 @@ export default function InvoicesPage() {
             ))}
           </tbody>
         </table>
-        {invoices.length === 0 && (
+        {invoices.length === 0 && !loading && (
           <EmptyState icon="receipt_long" title="Aucune facture" description="Créez votre première facture" />
         )}
+        <Pagination offset={offset} limit={limit} currentCount={invoices.length} onPrev={onPrev} onNext={onNext} />
       </Card>
     </div>
   );

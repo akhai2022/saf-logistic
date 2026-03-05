@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Mission, Customer } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -11,6 +12,8 @@ import Input from "@/components/Input";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import StatusBadge from "@/components/StatusBadge";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 const STATUS_TABS = [
   { key: "", label: "Tous" },
@@ -27,13 +30,19 @@ const PRIORITES = ["BASSE", "NORMALE", "HAUTE", "URGENTE"];
 
 export default function JobsPage() {
   const { user } = useAuth();
-  const [missions, setMissions] = useState<Mission[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [showCreate, setShowCreate] = useState(false);
-  const [offset, setOffset] = useState(0);
-  const limit = 50;
+
+  const filters: Record<string, string> = {};
+  if (statusFilter) filters.statut = statusFilter;
+  if (search) filters.search = search;
+
+  const { items: missions, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh, setOffset } = usePaginatedFetch<Mission>(
+    "/v1/jobs", filters, { defaultSort: "created_at", defaultOrder: "desc" }
+  );
 
   const [form, setForm] = useState({
     client_id: "", reference_client: "", type_mission: "LOT_COMPLET",
@@ -42,22 +51,13 @@ export default function JobsPage() {
     distance_estimee_km: "", montant_vente_ht: "",
   });
 
-  const fetchMissions = () => {
-    let url = `/v1/jobs?limit=${limit}&offset=${offset}`;
-    if (statusFilter) url += `&statut=${statusFilter}`;
-    if (search) url += `&search=${encodeURIComponent(search)}`;
-    apiGet<Mission[]>(url).then(setMissions);
-  };
-
   useEffect(() => {
-    fetchMissions();
     apiGet<Customer[]>("/v1/masterdata/customers").then(setCustomers);
-  }, [statusFilter, offset]);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setOffset(0);
-    fetchMissions();
+    setSearch(searchInput);
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -76,7 +76,7 @@ export default function JobsPage() {
     });
     setShowCreate(false);
     setForm({ client_id: "", reference_client: "", type_mission: "LOT_COMPLET", priorite: "NORMALE", date_chargement_prevue: "", date_livraison_prevue: "", adresse_chargement_contact: "", notes_exploitation: "", distance_estimee_km: "", montant_vente_ht: "" });
-    fetchMissions();
+    refresh();
   };
 
   const getStatut = (m: Mission) => m.statut || m.status || "BROUILLON";
@@ -131,8 +131,8 @@ export default function JobsPage() {
       {/* Search + filters */}
       <div className="flex items-center gap-4">
         <form onSubmit={handleSearch} className="flex gap-2 flex-1">
-          <Input placeholder="Recherche par numéro, client..." value={search}
-            onChange={(e) => setSearch(e.target.value)} icon="search" />
+          <Input placeholder="Recherche par numéro, client..." value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)} icon="search" />
           <Button type="submit" variant="secondary" size="sm" icon="search">Chercher</Button>
         </form>
       </div>
@@ -140,7 +140,7 @@ export default function JobsPage() {
       {/* Status tabs */}
       <div className="flex gap-1 border-b overflow-x-auto">
         {STATUS_TABS.map((t) => (
-          <button key={t.key} onClick={() => { setStatusFilter(t.key); setOffset(0); }}
+          <button key={t.key} onClick={() => setStatusFilter(t.key)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
               statusFilter === t.key ? "border-primary text-primary" : "border-transparent text-gray-500 hover:text-gray-700"
             }`}>
@@ -155,14 +155,14 @@ export default function JobsPage() {
           <table className="w-full text-sm">
             <thead className="table-header">
               <tr>
-                <th>Numéro</th>
+                <SortableHeader label="Numéro" field="numero" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
                 <th>Client</th>
                 <th>Type</th>
                 <th>Statut</th>
                 <th>Priorité</th>
-                <th>Chargement</th>
-                <th>Livraison</th>
-                <th>Montant HT</th>
+                <SortableHeader label="Chargement" field="date_chargement_prevue" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+                <SortableHeader label="Livraison" field="date_livraison_prevue" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+                <SortableHeader label="Montant HT" field="montant_vente_ht" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               </tr>
             </thead>
             <tbody className="table-body">
@@ -188,17 +188,11 @@ export default function JobsPage() {
               ))}
             </tbody>
           </table>
-          {missions.length === 0 && (
+          {missions.length === 0 && !loading && (
             <EmptyState icon="local_shipping" title="Aucune mission" description="Créez votre première mission de transport" />
           )}
         </div>
-        {missions.length >= limit && (
-          <div className="flex justify-between items-center pt-4 border-t mt-4">
-            <Button variant="ghost" size="sm" onClick={() => setOffset(Math.max(0, offset - limit))} disabled={offset === 0} icon="chevron_left">Précédent</Button>
-            <span className="text-sm text-gray-500">Page {Math.floor(offset / limit) + 1}</span>
-            <Button variant="ghost" size="sm" onClick={() => setOffset(offset + limit)} icon="chevron_right">Suivant</Button>
-          </div>
-        )}
+        <Pagination offset={offset} limit={limit} currentCount={missions.length} onPrev={onPrev} onNext={onNext} />
       </Card>
     </div>
   );

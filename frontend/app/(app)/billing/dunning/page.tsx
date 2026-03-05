@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import Input from "@/components/Input";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -81,9 +84,17 @@ export default function DunningPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overdue");
 
-  // ── Overdue state ──────────────────────────────────────────────
-  const [overdueList, setOverdueList] = useState<OverdueInvoice[]>([]);
-  const [loadingOverdue, setLoadingOverdue] = useState(false);
+  // ── Overdue state (paginated) ──────────────────────────────────
+  const {
+    items: overdueList, loading: loadingOverdue,
+    offset: overdueOffset, limit: overdueLimit,
+    sortBy: overdueSortBy, order: overdueOrder,
+    handleSort: overdueHandleSort,
+    onPrev: overdueOnPrev, onNext: overdueOnNext,
+    refresh: refreshOverdue,
+  } = usePaginatedFetch<OverdueInvoice>(
+    "/v1/billing/dunning/overdue", {}, { defaultSort: "due_date", defaultOrder: "asc" }
+  );
 
   // ── Relance modal state ────────────────────────────────────────
   const [showRelanceModal, setShowRelanceModal] = useState(false);
@@ -95,11 +106,26 @@ export default function DunningPage() {
   });
   const [submittingRelance, setSubmittingRelance] = useState(false);
 
-  // ── History state ──────────────────────────────────────────────
-  const [actions, setActions] = useState<DunningAction[]>([]);
+  // ── History state (paginated) ──────────────────────────────────
   const [historyDateFrom, setHistoryDateFrom] = useState("");
   const [historyDateTo, setHistoryDateTo] = useState("");
   const [historyCustomer, setHistoryCustomer] = useState("");
+
+  const historyFilters: Record<string, string> = {};
+  if (historyDateFrom) historyFilters.date_from = historyDateFrom;
+  if (historyDateTo) historyFilters.date_to = historyDateTo;
+  if (historyCustomer) historyFilters.customer = historyCustomer;
+
+  const {
+    items: actions, loading: loadingHistory,
+    offset: historyOffset, limit: historyLimit,
+    sortBy: historySortBy, order: historyOrder,
+    handleSort: historyHandleSort,
+    onPrev: historyOnPrev, onNext: historyOnNext,
+    refresh: refreshHistory,
+  } = usePaginatedFetch<DunningAction>(
+    "/v1/billing/dunning/actions", historyFilters, { defaultSort: "date_relance", defaultOrder: "desc" }
+  );
 
   // ── Config state ───────────────────────────────────────────────
   const [levels, setLevels] = useState<DunningLevel[]>([]);
@@ -113,27 +139,7 @@ export default function DunningPage() {
   });
   const [submittingLevel, setSubmittingLevel] = useState(false);
 
-  // ── Data fetching ──────────────────────────────────────────────
-
-  const fetchOverdue = () => {
-    setLoadingOverdue(true);
-    apiGet<OverdueInvoice[]>("/v1/billing/dunning/overdue")
-      .then(setOverdueList)
-      .catch(() => setOverdueList([]))
-      .finally(() => setLoadingOverdue(false));
-  };
-
-  const fetchHistory = () => {
-    let url = "/v1/billing/dunning/actions";
-    const params: string[] = [];
-    if (historyDateFrom) params.push(`date_from=${historyDateFrom}`);
-    if (historyDateTo) params.push(`date_to=${historyDateTo}`);
-    if (historyCustomer) params.push(`customer=${encodeURIComponent(historyCustomer)}`);
-    if (params.length) url += `?${params.join("&")}`;
-    apiGet<DunningAction[]>(url)
-      .then(setActions)
-      .catch(() => setActions([]));
-  };
+  // ── Data fetching (config only — overdue & history use usePaginatedFetch) ──
 
   const fetchLevels = () => {
     apiGet<DunningLevel[]>("/v1/billing/dunning/levels")
@@ -142,8 +148,6 @@ export default function DunningPage() {
   };
 
   useEffect(() => {
-    if (activeTab === "overdue") fetchOverdue();
-    if (activeTab === "history") fetchHistory();
     if (activeTab === "config") fetchLevels();
   }, [activeTab]);
 
@@ -168,7 +172,7 @@ export default function DunningPage() {
       });
       setShowRelanceModal(false);
       setRelanceTarget(null);
-      fetchOverdue();
+      refreshOverdue();
     } finally {
       setSubmittingRelance(false);
     }
@@ -249,8 +253,8 @@ export default function DunningPage() {
                 <tr>
                   <th>N&#176; facture</th>
                   <th>Client</th>
-                  <th className="text-right">Montant TTC</th>
-                  <th>Date echeance</th>
+                  <SortableHeader label="Montant TTC" field="total_ttc" currentSort={overdueSortBy} currentOrder={overdueOrder} onSort={overdueHandleSort} />
+                  <SortableHeader label="Date echeance" field="due_date" currentSort={overdueSortBy} currentOrder={overdueOrder} onSort={overdueHandleSort} />
                   <th className="text-right">Jours retard</th>
                   <th>Derniere relance</th>
                   <th>Niveau</th>
@@ -306,6 +310,7 @@ export default function DunningPage() {
               <div className="py-8 text-center text-gray-400">Chargement...</div>
             )}
           </div>
+          <Pagination offset={overdueOffset} limit={overdueLimit} currentCount={overdueList.length} onPrev={overdueOnPrev} onNext={overdueOnNext} />
         </Card>
       )}
 
@@ -334,7 +339,7 @@ export default function DunningPage() {
                 value={historyCustomer}
                 onChange={(e) => setHistoryCustomer(e.target.value)}
               />
-              <Button size="sm" variant="secondary" icon="search" onClick={fetchHistory}>
+              <Button size="sm" variant="secondary" icon="search" onClick={refreshHistory}>
                 Filtrer
               </Button>
             </div>
@@ -345,7 +350,7 @@ export default function DunningPage() {
               <table className="w-full text-sm">
                 <thead className="table-header">
                   <tr>
-                    <th>Date</th>
+                    <SortableHeader label="Date" field="date_relance" currentSort={historySortBy} currentOrder={historyOrder} onSort={historyHandleSort} />
                     <th>N&#176; facture</th>
                     <th>Client</th>
                     <th>Niveau</th>
@@ -384,7 +389,7 @@ export default function DunningPage() {
                   ))}
                 </tbody>
               </table>
-              {actions.length === 0 && (
+              {actions.length === 0 && !loadingHistory && (
                 <EmptyState
                   icon="history"
                   title="Aucune relance"
@@ -392,6 +397,7 @@ export default function DunningPage() {
                 />
               )}
             </div>
+            <Pagination offset={historyOffset} limit={historyLimit} currentCount={actions.length} onPrev={historyOnPrev} onNext={historyOnNext} />
           </Card>
         </>
       )}

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Driver } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -11,35 +12,38 @@ import Input from "@/components/Input";
 import StatusBadge from "@/components/StatusBadge";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 const STATUTS = ["", "ACTIF", "INACTIF", "SUSPENDU"];
 const TYPES_CONTRAT = ["CDI", "CDD", "INTERIM", "APPRENTISSAGE"];
 
 export default function DriversPage() {
   const { user } = useAuth();
-  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statut, setStatut] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const filters: Record<string, string> = {};
+  if (statut) filters.statut = statut;
+  if (search) filters.search = search;
+
+  const { items: drivers, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } = usePaginatedFetch<Driver>(
+    "/v1/masterdata/drivers", filters, { defaultSort: "nom", defaultOrder: "asc" }
+  );
+
   const [form, setForm] = useState({
     matricule: "", civilite: "M", nom: "", prenom: "",
     date_naissance: "", telephone_mobile: "", email: "",
     statut_emploi: "SALARIE", type_contrat: "CDI",
     date_entree: "", poste: "",
   });
-
-  const fetchDrivers = () => {
-    const params = new URLSearchParams();
-    if (statut) params.set("statut", statut);
-    if (search) params.set("search", search);
-    const qs = params.toString();
-    apiGet<Driver[]>(`/v1/masterdata/drivers${qs ? `?${qs}` : ""}`).then(setDrivers);
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(fetchDrivers, 300);
-    return () => clearTimeout(timer);
-  }, [search, statut]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,8 +52,8 @@ export default function DriversPage() {
       date_naissance: form.date_naissance || null,
       date_entree: form.date_entree || null,
     });
-    setDrivers([...drivers, d]);
     setShowCreate(false);
+    refresh();
     setForm({ matricule: "", civilite: "M", nom: "", prenom: "", date_naissance: "", telephone_mobile: "", email: "", statut_emploi: "SALARIE", type_contrat: "CDI", date_entree: "", poste: "" });
   };
 
@@ -62,7 +66,7 @@ export default function DriversPage() {
       </PageHeader>
 
       <div className="flex gap-4">
-        <Input placeholder="Rechercher..." icon="search" value={search} onChange={(e) => setSearch(e.target.value)} className="w-64" />
+        <Input placeholder="Rechercher..." icon="search" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="w-64" />
         <select value={statut} onChange={(e) => setStatut(e.target.value)}>
           <option value="">Tous les statuts</option>
           {STATUTS.filter(Boolean).map((s) => <option key={s} value={s}>{s}</option>)}
@@ -109,13 +113,13 @@ export default function DriversPage() {
         <table className="w-full text-sm">
           <thead className="table-header">
             <tr>
-              <th>Matricule</th>
-              <th>Nom</th>
-              <th>Prénom</th>
+              <SortableHeader label="Matricule" field="matricule" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+              <SortableHeader label="Nom" field="nom" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+              <SortableHeader label="Prénom" field="prenom" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>Poste</th>
               <th>Type contrat</th>
               <th>Conformité</th>
-              <th>Statut</th>
+              <SortableHeader label="Statut" field="statut" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
             </tr>
           </thead>
           <tbody className="table-body">
@@ -134,9 +138,10 @@ export default function DriversPage() {
             ))}
           </tbody>
         </table>
-        {drivers.length === 0 && (
+        {drivers.length === 0 && !loading && (
           <EmptyState icon="person" title="Aucun conducteur" description="Ajoutez votre premier conducteur" />
         )}
+        <Pagination offset={offset} limit={limit} currentCount={drivers.length} onPrev={onPrev} onNext={onNext} />
       </Card>
     </div>
   );

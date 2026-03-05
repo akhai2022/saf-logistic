@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { apiGet, apiPost, apiPatch } from "@/lib/api";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { VehicleClaim, Vehicle, Driver } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 const STATUTS = ["", "DECLARE", "EN_EXPERTISE", "EN_REPARATION", "CLOS", "REMBOURSE"];
 const TYPES_SINISTRE = [
@@ -26,12 +29,21 @@ const NEXT_STATUS: Record<string, string[]> = {
 export default function ClaimsListPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [claims, setClaims] = useState<VehicleClaim[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedVehicle, setSelectedVehicle] = useState("");
   const [statut, setStatut] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  const filters: Record<string, string> = {};
+  if (statut) filters.statut = statut;
+
+  const basePath = selectedVehicle
+    ? `/v1/fleet/vehicles/${selectedVehicle}/claims`
+    : "/v1/fleet/claims";
+
+  const { items: claims, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } = usePaginatedFetch<VehicleClaim>(
+    basePath, filters, { defaultSort: "date_sinistre", defaultOrder: "desc" }
+  );
 
   const [form, setForm] = useState({
     vehicle_id: "", date_sinistre: new Date().toISOString().split("T")[0],
@@ -46,28 +58,6 @@ export default function ClaimsListPage() {
     apiGet<Vehicle[]>("/v1/masterdata/vehicles?limit=200").then(setVehicles).catch(() => {});
     apiGet<Driver[]>("/v1/masterdata/drivers?limit=200").then(setDrivers).catch(() => {});
   }, []);
-
-  const fetchClaims = useCallback(async () => {
-    setLoading(true);
-    try {
-      if (selectedVehicle) {
-        const q = statut ? `?statut=${statut}` : "";
-        const vc = await apiGet<VehicleClaim[]>(`/v1/fleet/vehicles/${selectedVehicle}/claims${q}`);
-        setClaims(vc);
-      } else {
-        // Use global claims endpoint (avoids N+1)
-        const q = statut ? `?statut=${statut}` : "";
-        const vc = await apiGet<VehicleClaim[]>(`/v1/fleet/claims${q}`);
-        setClaims(vc);
-      }
-    } catch {
-      setClaims([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedVehicle, statut]);
-
-  useEffect(() => { fetchClaims(); }, [fetchClaims]);
 
   const vehicleMap = new Map(vehicles.map((v) => [v.id, v.immatriculation || v.plate_number || v.id]));
   const driverMap = new Map(drivers.map((d) => [d.id, `${d.nom} ${d.prenom}`]));
@@ -93,15 +83,15 @@ export default function ClaimsListPage() {
     if (form.franchise) payload.franchise = parseFloat(form.franchise);
     if (form.notes) payload.notes = form.notes;
 
-    const created = await apiPost<VehicleClaim>(`/v1/fleet/vehicles/${form.vehicle_id}/claims`, payload);
-    setClaims([created, ...claims]);
+    await apiPost<VehicleClaim>(`/v1/fleet/vehicles/${form.vehicle_id}/claims`, payload);
     setShowCreate(false);
     setForm({ ...form, lieu: "", description: "", notes: "", cout_reparation_ht: "", franchise: "" });
+    refresh();
   };
 
   const handleStatusChange = async (claimId: string, newStatut: string) => {
-    const updated = await apiPatch<VehicleClaim>(`/v1/fleet/claims/${claimId}/status`, { statut: newStatut });
-    setClaims(claims.map((c) => (c.id === claimId ? updated : c)));
+    await apiPatch<VehicleClaim>(`/v1/fleet/claims/${claimId}/status`, { statut: newStatut });
+    refresh();
   };
 
   const inp = "border rounded-lg px-3 py-2 text-sm w-full bg-white";
@@ -205,41 +195,37 @@ export default function ClaimsListPage() {
       </div>
 
       {/* Table */}
-      {loading ? (
-        <div className="text-gray-500 p-8">Chargement...</div>
-      ) : claims.length === 0 ? (
-        <EmptyState icon="car_crash" title="Aucun sinistre" description="Aucun sinistre enregistre. Cliquez sur 'Declarer un sinistre' pour en creer un." />
-      ) : (
-        <div className="bg-white rounded-xl border overflow-x-auto">
+      <Card>
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-gray-500 bg-gray-50">
-                <th className="py-3 px-4">Numero</th>
-                <th className="py-3 px-4">Vehicule</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Type</th>
-                <th className="py-3 px-4">Conducteur</th>
-                <th className="py-3 px-4">Responsabilite</th>
-                <th className="py-3 px-4">Statut</th>
-                <th className="py-3 px-4 text-right">Cout reparation</th>
-                <th className="py-3 px-4">Actions</th>
+            <thead className="table-header">
+              <tr>
+                <th>Numero</th>
+                <th>Vehicule</th>
+                <SortableHeader label="Date" field="date_sinistre" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+                <th>Type</th>
+                <th>Conducteur</th>
+                <th>Responsabilite</th>
+                <th>Statut</th>
+                <SortableHeader label="Cout reparation" field="cout_reparation_ht" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+                <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="table-body">
               {claims.map((c) => (
                 <React.Fragment key={c.id}>
-                  <tr className="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onClick={() => setExpandedRow(expandedRow === c.id ? null : c.id)}>
-                    <td className="py-3 px-4 font-medium text-blue-700">{c.numero}</td>
-                    <td className="py-3 px-4">{vehicleMap.get(c.vehicle_id) || c.vehicle_id.slice(0, 8)}</td>
-                    <td className="py-3 px-4">{c.date_sinistre}</td>
-                    <td className="py-3 px-4">{c.type_sinistre.replace(/_/g, " ")}</td>
-                    <td className="py-3 px-4 text-gray-500">{c.driver_id ? driverMap.get(c.driver_id) || "—" : "—"}</td>
-                    <td className="py-3 px-4"><StatusBadge statut={c.responsabilite} /></td>
-                    <td className="py-3 px-4"><StatusBadge statut={c.statut} /></td>
-                    <td className="py-3 px-4 text-right">
-                      {c.cout_reparation_ht != null ? Number(c.cout_reparation_ht).toLocaleString("fr-FR", { style: "currency", currency: "EUR" }) : "—"}
+                  <tr className="hover:bg-gray-50 cursor-pointer" onClick={() => setExpandedRow(expandedRow === c.id ? null : c.id)}>
+                    <td className="font-medium text-blue-700">{c.numero}</td>
+                    <td>{vehicleMap.get(c.vehicle_id) || c.vehicle_id.slice(0, 8)}</td>
+                    <td>{c.date_sinistre}</td>
+                    <td>{c.type_sinistre.replace(/_/g, " ")}</td>
+                    <td className="text-gray-500">{c.driver_id ? driverMap.get(c.driver_id) || "\u2014" : "\u2014"}</td>
+                    <td><StatusBadge statut={c.responsabilite} /></td>
+                    <td><StatusBadge statut={c.statut} /></td>
+                    <td className="text-right">
+                      {c.cout_reparation_ht != null ? Number(c.cout_reparation_ht).toLocaleString("fr-FR", { style: "currency", currency: "EUR" }) : "\u2014"}
                     </td>
-                    <td className="py-3 px-4">
+                    <td>
                       <div className="flex gap-1">
                         {(NEXT_STATUS[c.statut] || []).map((ns) => (
                           <button key={ns} onClick={(e) => { e.stopPropagation(); handleStatusChange(c.id, ns); }}
@@ -254,12 +240,12 @@ export default function ClaimsListPage() {
                     <tr key={`${c.id}-detail`} className="bg-gray-50">
                       <td colSpan={9} className="px-4 py-3">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                          <div><span className="text-gray-500">Lieu:</span> {c.lieu || "—"}</div>
-                          <div><span className="text-gray-500">Heure:</span> {c.heure_sinistre || "—"}</div>
-                          <div><span className="text-gray-500">Franchise:</span> {c.franchise != null ? `${c.franchise} EUR` : "—"}</div>
-                          <div><span className="text-gray-500">Indemnisation:</span> {c.indemnisation_recue != null ? `${c.indemnisation_recue} EUR` : "—"}</div>
-                          <div><span className="text-gray-500">Jours immob.:</span> {c.jours_immobilisation ?? "—"}</div>
-                          <div><span className="text-gray-500">Assurance ref:</span> {c.assurance_ref || "—"}</div>
+                          <div><span className="text-gray-500">Lieu:</span> {c.lieu || "\u2014"}</div>
+                          <div><span className="text-gray-500">Heure:</span> {c.heure_sinistre || "\u2014"}</div>
+                          <div><span className="text-gray-500">Franchise:</span> {c.franchise != null ? `${c.franchise} EUR` : "\u2014"}</div>
+                          <div><span className="text-gray-500">Indemnisation:</span> {c.indemnisation_recue != null ? `${c.indemnisation_recue} EUR` : "\u2014"}</div>
+                          <div><span className="text-gray-500">Jours immob.:</span> {c.jours_immobilisation ?? "\u2014"}</div>
+                          <div><span className="text-gray-500">Assurance ref:</span> {c.assurance_ref || "\u2014"}</div>
                           {c.tiers_implique && <div><span className="text-gray-500">Tiers:</span> {c.tiers_nom} ({c.tiers_immatriculation})</div>}
                           {c.description && <div className="col-span-2"><span className="text-gray-500">Description:</span> {c.description}</div>}
                           {c.notes && <div className="col-span-2"><span className="text-gray-500">Notes:</span> {c.notes}</div>}
@@ -271,8 +257,12 @@ export default function ClaimsListPage() {
               ))}
             </tbody>
           </table>
+          {claims.length === 0 && !loading && (
+            <EmptyState icon="car_crash" title="Aucun sinistre" description="Aucun sinistre enregistre. Cliquez sur 'Declarer un sinistre' pour en creer un." />
+          )}
         </div>
-      )}
+        <Pagination offset={offset} limit={limit} currentCount={claims.length} onPrev={onPrev} onNext={onNext} />
+      </Card>
     </div>
   );
 }

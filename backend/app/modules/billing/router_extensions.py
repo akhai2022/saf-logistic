@@ -350,10 +350,16 @@ async def list_overdue_invoices(
     tenant: TenantContext = Depends(get_tenant),
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    sort_by: str | None = Query(None),
+    order: str = Query("asc", pattern="^(asc|desc)$"),
 ):
     tid = str(tenant.tenant_id)
     today = date.today()
-    rows = (await db.execute(text("""
+    allowed_sorts = {"due_date": "i.due_date", "total_ttc": "i.total_ttc"}
+    sort_col = allowed_sorts.get(sort_by, "i.due_date") if sort_by else "i.due_date"
+    rows = (await db.execute(text(f"""
         SELECT i.id as invoice_id, i.invoice_number,
                COALESCE(c.raison_sociale, c.name) as customer_name,
                i.total_ttc, i.due_date,
@@ -366,8 +372,8 @@ async def list_overdue_invoices(
         FROM invoices i
         JOIN customers c ON c.id = i.customer_id
         WHERE i.tenant_id = :tid AND i.status = 'validated' AND i.due_date < :today
-        ORDER BY i.due_date
-    """), {"tid": tid, "today": today})).fetchall()
+        ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off
+    """), {"tid": tid, "today": today, "lim": limit, "off": offset})).fetchall()
 
     return [OverdueInvoiceItem(
         invoice_id=str(r.invoice_id), invoice_number=r.invoice_number or "",
@@ -388,6 +394,10 @@ async def list_dunning_actions(
     db: AsyncSession = Depends(get_db),
     customer_id: str | None = Query(None),
     invoice_id: str | None = Query(None),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    sort_by: str | None = Query(None),
+    order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
     tid = str(tenant.tenant_id)
     q = """
@@ -407,7 +417,11 @@ async def list_dunning_actions(
     if invoice_id:
         q += " AND da.invoice_id = :iid"
         params["iid"] = invoice_id
-    q += " ORDER BY da.date_relance DESC"
+    allowed_sorts = {"date_relance": "da.date_relance", "created_at": "da.created_at"}
+    sort_col = allowed_sorts.get(sort_by, "da.date_relance") if sort_by else "da.date_relance"
+    q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
+    params["lim"] = limit
+    params["off"] = offset
 
     rows = (await db.execute(text(q), params)).fetchall()
     return [DunningActionOut(

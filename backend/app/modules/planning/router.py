@@ -103,7 +103,7 @@ async def driver_planning(
 
     # Get missions for the date range
     missions = (await db.execute(text("""
-        SELECT j.id as job_id, j.numero, j.statut, j.type_mission, j.is_subcontracted,
+        SELECT j.id as job_id, j.numero, j.status, j.type_mission, j.is_subcontracted,
                j.driver_id, j.date_chargement_prevue, j.date_livraison_prevue,
                c.raison_sociale as client_name
         FROM jobs j
@@ -112,7 +112,7 @@ async def driver_planning(
           AND j.driver_id IS NOT NULL
           AND j.date_chargement_prevue < :end_date
           AND j.date_livraison_prevue > :start_date
-          AND COALESCE(j.statut, j.status) NOT IN ('ANNULEE', 'BROUILLON')
+          AND j.status NOT IN ('ANNULEE', 'BROUILLON')
     """), {"tid": tid, "start_date": start, "end_date": end})).fetchall()
 
     # Group missions by driver
@@ -124,7 +124,7 @@ async def driver_planning(
         driver_missions[did].append(TimeBlock(
             job_id=str(m.job_id), numero=m.numero,
             client_name=m.client_name,
-            statut=m.statut or "BROUILLON",
+            statut=m.status or "BROUILLON",
             start=str(m.date_chargement_prevue) if m.date_chargement_prevue else "",
             end=str(m.date_livraison_prevue) if m.date_livraison_prevue else "",
             type_mission=m.type_mission,
@@ -166,7 +166,7 @@ async def vehicle_planning(
     vehicles_rows = (await db.execute(text(vq), vparams)).fetchall()
 
     missions = (await db.execute(text("""
-        SELECT j.id as job_id, j.numero, j.statut, j.type_mission, j.is_subcontracted,
+        SELECT j.id as job_id, j.numero, j.status, j.type_mission, j.is_subcontracted,
                j.vehicle_id, j.date_chargement_prevue, j.date_livraison_prevue,
                c.raison_sociale as client_name
         FROM jobs j
@@ -175,7 +175,7 @@ async def vehicle_planning(
           AND j.vehicle_id IS NOT NULL
           AND j.date_chargement_prevue < :end_date
           AND j.date_livraison_prevue > :start_date
-          AND COALESCE(j.statut, j.status) NOT IN ('ANNULEE', 'BROUILLON')
+          AND j.status NOT IN ('ANNULEE', 'BROUILLON')
     """), {"tid": tid, "start_date": start, "end_date": end})).fetchall()
 
     vehicle_missions: dict[str, list] = {}
@@ -186,7 +186,7 @@ async def vehicle_planning(
         vehicle_missions[vid].append(TimeBlock(
             job_id=str(m.job_id), numero=m.numero,
             client_name=m.client_name,
-            statut=m.statut or "BROUILLON",
+            statut=m.status or "BROUILLON",
             start=str(m.date_chargement_prevue) if m.date_chargement_prevue else "",
             end=str(m.date_livraison_prevue) if m.date_livraison_prevue else "",
             type_mission=m.type_mission,
@@ -212,41 +212,45 @@ async def check_availability(
     tid = str(tenant.tenant_id)
     conflicts: list[TimeBlock] = []
 
+    # Convert string dates to date objects for asyncpg compatibility
+    start_date = date.fromisoformat(body.start) if isinstance(body.start, str) else body.start
+    end_date = date.fromisoformat(body.end) if isinstance(body.end, str) else body.end
+
     if body.driver_id:
         rows = (await db.execute(text("""
-            SELECT j.id, j.numero, j.statut, j.type_mission,
+            SELECT j.id, j.numero, j.status, j.type_mission,
                    j.date_chargement_prevue, j.date_livraison_prevue,
                    c.raison_sociale as client_name
             FROM jobs j
             LEFT JOIN customers c ON c.id = j.customer_id
             WHERE j.tenant_id = :tid AND j.driver_id = :did
-              AND COALESCE(j.statut, j.status) NOT IN ('ANNULEE', 'BROUILLON', 'CLOTUREE')
+              AND j.status NOT IN ('ANNULEE', 'BROUILLON', 'CLOTUREE')
               AND j.date_chargement_prevue < :end_date
               AND j.date_livraison_prevue > :start_date
-        """), {"tid": tid, "did": body.driver_id, "start_date": body.start, "end_date": body.end})).fetchall()
+        """), {"tid": tid, "did": body.driver_id, "start_date": start_date, "end_date": end_date})).fetchall()
         for r in rows:
             conflicts.append(TimeBlock(
                 job_id=str(r.id), numero=r.numero, client_name=r.client_name,
-                statut=r.statut, start=str(r.date_chargement_prevue), end=str(r.date_livraison_prevue),
+                statut=r.status, start=str(r.date_chargement_prevue), end=str(r.date_livraison_prevue),
                 type_mission=r.type_mission,
             ))
 
     if body.vehicle_id:
         rows = (await db.execute(text("""
-            SELECT j.id, j.numero, j.statut, j.type_mission,
+            SELECT j.id, j.numero, j.status, j.type_mission,
                    j.date_chargement_prevue, j.date_livraison_prevue,
                    c.raison_sociale as client_name
             FROM jobs j
             LEFT JOIN customers c ON c.id = j.customer_id
             WHERE j.tenant_id = :tid AND j.vehicle_id = :vid
-              AND COALESCE(j.statut, j.status) NOT IN ('ANNULEE', 'BROUILLON', 'CLOTUREE')
+              AND j.status NOT IN ('ANNULEE', 'BROUILLON', 'CLOTUREE')
               AND j.date_chargement_prevue < :end_date
               AND j.date_livraison_prevue > :start_date
-        """), {"tid": tid, "vid": body.vehicle_id, "start_date": body.start, "end_date": body.end})).fetchall()
+        """), {"tid": tid, "vid": body.vehicle_id, "start_date": start_date, "end_date": end_date})).fetchall()
         for r in rows:
             conflicts.append(TimeBlock(
                 job_id=str(r.id), numero=r.numero, client_name=r.client_name,
-                statut=r.statut, start=str(r.date_chargement_prevue), end=str(r.date_livraison_prevue),
+                statut=r.status, start=str(r.date_chargement_prevue), end=str(r.date_livraison_prevue),
                 type_mission=r.type_mission,
             ))
 

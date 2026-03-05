@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Vehicle } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -11,6 +12,8 @@ import Input from "@/components/Input";
 import StatusBadge from "@/components/StatusBadge";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 const STATUTS = ["", "ACTIF", "INACTIF", "EN_MAINTENANCE", "IMMOBILISE", "VENDU", "RESTITUE"];
 const CATEGORIES = ["", "VL", "PL_3_5T_19T", "PL_PLUS_19T", "SPL", "REMORQUE", "SEMI_REMORQUE", "TRACTEUR"];
@@ -19,31 +22,32 @@ const PROPRIETAIRES = ["PROPRE", "LOCATION_LONGUE_DUREE", "CREDIT_BAIL", "LOCATI
 
 export default function VehiclesPage() {
   const { user } = useAuth();
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statut, setStatut] = useState("");
   const [categorie, setCategorie] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const filters: Record<string, string> = {};
+  if (statut) filters.statut = statut;
+  if (categorie) filters.categorie = categorie;
+  if (search) filters.search = search;
+
+  const { items: vehicles, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } = usePaginatedFetch<Vehicle>(
+    "/v1/masterdata/vehicles", filters, { defaultSort: "immatriculation", defaultOrder: "asc" }
+  );
+
   const [form, setForm] = useState({
     immatriculation: "", type_entity: "VEHICULE", categorie: "PL_PLUS_19T",
     marque: "", modele: "", annee_mise_en_circulation: "",
     carrosserie: "BACHE", ptac_kg: "", charge_utile_kg: "",
     proprietaire: "PROPRE",
   });
-
-  const fetchVehicles = () => {
-    const params = new URLSearchParams();
-    if (statut) params.set("statut", statut);
-    if (categorie) params.set("categorie", categorie);
-    if (search) params.set("search", search);
-    const qs = params.toString();
-    apiGet<Vehicle[]>(`/v1/masterdata/vehicles${qs ? `?${qs}` : ""}`).then(setVehicles);
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(fetchVehicles, 300);
-    return () => clearTimeout(timer);
-  }, [search, statut, categorie]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,8 +57,8 @@ export default function VehiclesPage() {
       ptac_kg: form.ptac_kg ? parseInt(form.ptac_kg) : null,
       charge_utile_kg: form.charge_utile_kg ? parseInt(form.charge_utile_kg) : null,
     });
-    setVehicles([...vehicles, v]);
     setShowCreate(false);
+    refresh();
     setForm({ immatriculation: "", type_entity: "VEHICULE", categorie: "PL_PLUS_19T", marque: "", modele: "", annee_mise_en_circulation: "", carrosserie: "BACHE", ptac_kg: "", charge_utile_kg: "", proprietaire: "PROPRE" });
   };
 
@@ -67,7 +71,7 @@ export default function VehiclesPage() {
       </PageHeader>
 
       <div className="flex gap-4">
-        <Input placeholder="Rechercher..." icon="search" value={search} onChange={(e) => setSearch(e.target.value)} className="w-64" />
+        <Input placeholder="Rechercher..." icon="search" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="w-64" />
         <select value={statut} onChange={(e) => setStatut(e.target.value)}>
           <option value="">Tous les statuts</option>
           {STATUTS.filter(Boolean).map((s) => <option key={s} value={s}>{s}</option>)}
@@ -122,12 +126,12 @@ export default function VehiclesPage() {
         <table className="w-full text-sm">
           <thead className="table-header">
             <tr>
-              <th>Immatriculation</th>
-              <th>Catégorie</th>
-              <th>Marque</th>
+              <SortableHeader label="Immatriculation" field="immatriculation" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+              <SortableHeader label="Catégorie" field="categorie" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+              <SortableHeader label="Marque" field="marque" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>Modèle</th>
               <th>Conformité</th>
-              <th>Statut</th>
+              <SortableHeader label="Statut" field="statut" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
             </tr>
           </thead>
           <tbody className="table-body">
@@ -145,9 +149,10 @@ export default function VehiclesPage() {
             ))}
           </tbody>
         </table>
-        {vehicles.length === 0 && (
+        {vehicles.length === 0 && !loading && (
           <EmptyState icon="directions_car" title="Aucun véhicule" description="Ajoutez votre premier véhicule" />
         )}
+        <Pagination offset={offset} limit={limit} currentCount={vehicles.length} onPrev={onPrev} onNext={onNext} />
       </Card>
     </div>
   );

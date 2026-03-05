@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Client } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -11,16 +12,32 @@ import Input from "@/components/Input";
 import StatusBadge from "@/components/StatusBadge";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 const STATUTS = ["", "ACTIF", "INACTIF", "PROSPECT", "BLOQUE"];
 const MODES_PAIEMENT = ["VIREMENT", "CHEQUE", "PRELEVEMENT", "LCR", "TRAITE"];
 
 export default function CustomersPage() {
   const { user } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statut, setStatut] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const filters: Record<string, string> = {};
+  if (statut) filters.statut = statut;
+  if (search) filters.search = search;
+
+  const { items: clients, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } = usePaginatedFetch<Client>(
+    "/v1/masterdata/clients", filters, { defaultSort: "raison_sociale", defaultOrder: "asc" }
+  );
+
   const [form, setForm] = useState({
     raison_sociale: "", siret: "", adresse_facturation_ligne1: "",
     adresse_facturation_cp: "", adresse_facturation_ville: "",
@@ -28,27 +45,14 @@ export default function CustomersPage() {
     mode_paiement: "VIREMENT", statut: "PROSPECT",
   });
 
-  const fetchClients = () => {
-    const params = new URLSearchParams();
-    if (statut) params.set("statut", statut);
-    if (search) params.set("search", search);
-    const qs = params.toString();
-    apiGet<Client[]>(`/v1/masterdata/clients${qs ? `?${qs}` : ""}`).then(setClients);
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(fetchClients, 300);
-    return () => clearTimeout(timer);
-  }, [search, statut]);
-
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const c = await apiPost<Client>("/v1/masterdata/clients", {
       ...form,
       delai_paiement_jours: parseInt(form.delai_paiement_jours) || 30,
     });
-    setClients([...clients, c]);
     setShowCreate(false);
+    refresh();
     setForm({
       raison_sociale: "", siret: "", adresse_facturation_ligne1: "",
       adresse_facturation_cp: "", adresse_facturation_ville: "",
@@ -66,7 +70,7 @@ export default function CustomersPage() {
       </PageHeader>
 
       <div className="flex gap-4">
-        <Input placeholder="Rechercher..." icon="search" value={search} onChange={(e) => setSearch(e.target.value)} className="w-64" />
+        <Input placeholder="Rechercher..." icon="search" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="w-64" />
         <select value={statut} onChange={(e) => setStatut(e.target.value)}>
           <option value="">Tous les statuts</option>
           {STATUTS.filter(Boolean).map((s) => <option key={s} value={s}>{s}</option>)}
@@ -106,11 +110,11 @@ export default function CustomersPage() {
         <table className="w-full text-sm">
           <thead className="table-header">
             <tr>
-              <th>Code</th>
-              <th>Raison sociale</th>
+              <SortableHeader label="Code" field="code" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+              <SortableHeader label="Raison sociale" field="raison_sociale" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>SIRET</th>
               <th>Ville</th>
-              <th>Statut</th>
+              <SortableHeader label="Statut" field="statut" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>Délai paiement</th>
             </tr>
           </thead>
@@ -131,9 +135,10 @@ export default function CustomersPage() {
             ))}
           </tbody>
         </table>
-        {clients.length === 0 && (
+        {clients.length === 0 && !loading && (
           <EmptyState icon="business" title="Aucun client" description="Ajoutez votre premier client" />
         )}
+        <Pagination offset={offset} limit={limit} currentCount={clients.length} onPrev={onPrev} onNext={onNext} />
       </Card>
     </div>
   );

@@ -5,7 +5,7 @@ import csv
 import io
 import uuid
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
@@ -15,7 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
-from app.core.security import get_current_user, require_permission
+from app.core.security import decode_token, get_current_user, require_permission
 from app.core.tenant import TenantContext, get_tenant
 
 router = APIRouter(prefix="/v1/payroll", tags=["payroll"])
@@ -43,10 +43,12 @@ async def list_periods(
     tenant: TenantContext = Depends(get_tenant),
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
 ):
     rows = await db.execute(
-        text("SELECT * FROM payroll_periods WHERE tenant_id = :tid ORDER BY year DESC, month DESC"),
-        {"tid": str(tenant.tenant_id)},
+        text("SELECT * FROM payroll_periods WHERE tenant_id = :tid ORDER BY year DESC, month DESC LIMIT :lim OFFSET :off"),
+        {"tid": str(tenant.tenant_id), "lim": limit, "off": offset},
     )
     return [PeriodOut(id=str(r.id), year=r.year, month=r.month, status=r.status,
                       created_at=str(r.created_at) if r.created_at else None) for r in rows.fetchall()]
@@ -177,11 +179,23 @@ async def import_csv(
 @router.get("/periods/{period_id}/export-silae")
 async def export_silae(
     period_id: str,
-    tenant: TenantContext = Depends(get_tenant),
-    user: dict = Depends(get_current_user),
+    _token: str = Query(..., description="JWT token for browser-based download"),
+    _tenant: str = Query(..., description="Tenant ID for browser-based download"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Export payroll data in SILAE CSV format."""
+    """Export payroll data in SILAE CSV format. Auth via query params (browser opens new tab)."""
+    # Authenticate from query param
+    payload = decode_token(_token)
+    if not payload.get("sub"):
+        raise HTTPException(401, "Invalid token")
+
+    # Resolve tenant from query param
+    try:
+        tid = uuid.UUID(_tenant)
+    except ValueError:
+        raise HTTPException(400, "Invalid _tenant param")
+    tenant = TenantContext(tenant_id=tid)
+
     period = (await db.execute(
         text("SELECT * FROM payroll_periods WHERE id = :id AND tenant_id = :tid"),
         {"id": period_id, "tid": str(tenant.tenant_id)},
@@ -326,8 +340,8 @@ async def compute_from_missions(
     month = period.month
     # Compute period date range
     _, last_day = calendar.monthrange(year, month)
-    period_start = f"{year}-{month:02d}-01"
-    period_end = f"{year}-{month:02d}-{last_day}"
+    period_start = date(year, month, 1)
+    period_end = date(year, month, last_day)
 
     # 2. Find all closed missions for this tenant in the period
     missions = (await db.execute(text("""
@@ -419,10 +433,12 @@ async def compute_from_missions(
         })
 
     await db.commit()
+    total_variables = sum(len(d["variables"]) for d in summary)
     return {
         "period_id": period_id,
         "year": year,
         "month": month,
-        "drivers_computed": len(summary),
+        "drivers_processed": len(summary),
+        "variables_created": total_variables,
         "drivers": summary,
     }

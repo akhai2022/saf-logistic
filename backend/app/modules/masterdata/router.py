@@ -94,6 +94,8 @@ async def list_clients(
     active_only: bool = Query(False),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    sort_by: str | None = Query(None),
+    order: str = Query("asc", pattern="^(asc|desc)$"),
 ):
     q = "SELECT * FROM customers WHERE tenant_id = :tid"
     params: dict = {"tid": str(tenant.tenant_id)}
@@ -108,7 +110,9 @@ async def list_clients(
     if agency_id:
         q += " AND agency_ids @> CAST(:agency_id AS jsonb)"
         params["agency_id"] = json.dumps([agency_id])
-    q += " ORDER BY COALESCE(raison_sociale, name) LIMIT :lim OFFSET :off"
+    allowed_sorts = {"raison_sociale": "COALESCE(raison_sociale, name)", "created_at": "created_at", "code": "code", "statut": "statut"}
+    sort_col = allowed_sorts.get(sort_by, "COALESCE(raison_sociale, name)") if sort_by else "COALESCE(raison_sociale, name)"
+    q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
     params["lim"] = limit
     params["off"] = offset
     rows = await db.execute(text(q), params)
@@ -544,6 +548,8 @@ async def list_subcontractors(
     search: str | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    sort_by: str | None = Query(None),
+    order: str = Query("asc", pattern="^(asc|desc)$"),
 ):
     q = "SELECT * FROM subcontractors WHERE tenant_id = :tid"
     params: dict = {"tid": str(tenant.tenant_id)}
@@ -553,7 +559,9 @@ async def list_subcontractors(
     if search:
         q += " AND (raison_sociale ILIKE :search OR code ILIKE :search OR siret ILIKE :search)"
         params["search"] = f"%{search}%"
-    q += " ORDER BY raison_sociale LIMIT :lim OFFSET :off"
+    allowed_sorts = {"raison_sociale": "raison_sociale", "created_at": "created_at", "code": "code", "statut": "statut"}
+    sort_col = allowed_sorts.get(sort_by, "raison_sociale") if sort_by else "raison_sociale"
+    q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
     params["lim"] = limit
     params["off"] = offset
     rows = await db.execute(text(q), params)
@@ -869,6 +877,8 @@ async def list_drivers(
     agency_id: str | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    sort_by: str | None = Query(None),
+    order: str = Query("asc", pattern="^(asc|desc)$"),
 ):
     q = "SELECT * FROM drivers WHERE tenant_id = :tid"
     params: dict = {"tid": str(tenant.tenant_id)}
@@ -881,7 +891,9 @@ async def list_drivers(
     if agency_id:
         q += " AND agency_id = :agency_id"
         params["agency_id"] = agency_id
-    q += " ORDER BY COALESCE(nom, last_name), COALESCE(prenom, first_name) LIMIT :lim OFFSET :off"
+    allowed_sorts = {"nom": "COALESCE(nom, last_name)", "prenom": "COALESCE(prenom, first_name)", "created_at": "created_at", "statut": "statut", "matricule": "matricule"}
+    sort_col = allowed_sorts.get(sort_by, "COALESCE(nom, last_name)") if sort_by else "COALESCE(nom, last_name)"
+    q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
     params["lim"] = limit
     params["off"] = offset
     rows = await db.execute(text(q), params)
@@ -1149,6 +1161,8 @@ async def list_vehicles(
     agency_id: str | None = Query(None),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    sort_by: str | None = Query(None),
+    order: str = Query("asc", pattern="^(asc|desc)$"),
 ):
     q = "SELECT * FROM vehicles WHERE tenant_id = :tid"
     params: dict = {"tid": str(tenant.tenant_id)}
@@ -1164,7 +1178,9 @@ async def list_vehicles(
     if agency_id:
         q += " AND agency_id = :agency_id"
         params["agency_id"] = agency_id
-    q += " ORDER BY COALESCE(immatriculation, plate_number) LIMIT :lim OFFSET :off"
+    allowed_sorts = {"immatriculation": "COALESCE(immatriculation, plate_number)", "created_at": "created_at", "categorie": "categorie", "statut": "statut", "marque": "marque"}
+    sort_col = allowed_sorts.get(sort_by, "COALESCE(immatriculation, plate_number)") if sort_by else "COALESCE(immatriculation, plate_number)"
+    q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
     params["lim"] = limit
     params["off"] = offset
     rows = await db.execute(text(q), params)

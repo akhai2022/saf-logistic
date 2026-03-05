@@ -22,12 +22,17 @@ os.environ.setdefault("CELERY_BROKER_URL", "redis://localhost:6379/1")
 os.environ.setdefault("CELERY_RESULT_BACKEND", "redis://localhost:6379/2")
 os.environ.setdefault("APP_SECRET_KEY", "test-secret")
 os.environ.setdefault("OCR_PROVIDER", "MOCK")
-os.environ.setdefault("S3_ENDPOINT_URL", "")
-os.environ.setdefault("S3_ACCESS_KEY", "test")
-os.environ.setdefault("S3_SECRET_KEY", "test")
-os.environ.setdefault("S3_BUCKET", "test")
+os.environ.setdefault("S3_ENDPOINT_URL", "http://minio:9000")
+os.environ.setdefault("S3_PUBLIC_ENDPOINT_URL", "http://localhost:9002")
+os.environ.setdefault("S3_ACCESS_KEY", "minio")
+os.environ.setdefault("S3_SECRET_KEY", "minio12345")
+os.environ.setdefault("S3_BUCKET", "saf-docs")
 os.environ.setdefault("S3_REGION", "eu-west-3")
 os.environ.setdefault("S3_USE_PATH_STYLE", "true")
+
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
 
 from app.core.db import get_db
 from app.core.security import create_access_token, hash_password
@@ -41,6 +46,24 @@ READONLY_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000101")
 # ---- Tenant B (isolation testing) ----
 TENANT_B_ID = uuid.UUID("00000000-0000-0000-0000-000000000002")
 ADMIN_B_ID = uuid.UUID("00000000-0000-0000-0000-000000000200")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_s3_bucket():
+    """Create S3 test bucket in MinIO if it doesn't exist."""
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=os.environ["S3_ENDPOINT_URL"],
+        aws_access_key_id=os.environ["S3_ACCESS_KEY"],
+        aws_secret_access_key=os.environ["S3_SECRET_KEY"],
+        region_name=os.environ.get("S3_REGION", "eu-west-3"),
+        config=Config(s3={"addressing_style": "path"}),
+    )
+    bucket = os.environ["S3_BUCKET"]
+    try:
+        s3.head_bucket(Bucket=bucket)
+    except ClientError:
+        s3.create_bucket(Bucket=bucket)
 
 
 @pytest.fixture(scope="session")

@@ -221,6 +221,8 @@ async def list_missions(
     search: str | None = Query(None),
     limit: int = Query(50, le=200),
     offset: int = Query(0),
+    sort_by: str | None = Query(None),
+    order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
     q = "SELECT * FROM jobs WHERE tenant_id = :tid"
     params: dict = {"tid": str(tenant.tenant_id)}
@@ -241,11 +243,51 @@ async def list_missions(
         q += " AND (reference ILIKE :search OR numero ILIKE :search OR reference_client ILIKE :search OR client_raison_sociale ILIKE :search)"
         params["search"] = f"%{search}%"
 
-    q += " ORDER BY created_at DESC LIMIT :lim OFFSET :off"
+    allowed_sorts = {"created_at", "numero", "montant_vente_ht", "date_chargement_prevue", "date_livraison_prevue"}
+    sort_col = sort_by if sort_by in allowed_sorts else "created_at"
+    q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
     params["lim"] = limit
     params["off"] = offset
     rows = await db.execute(text(q), params)
     return [_mission_from_row(r) for r in rows.fetchall()]
+
+
+# Cross-mission disputes listing (must be before /{job_id} to avoid route conflict)
+@router.get("/disputes", response_model=list[DisputeOut])
+async def list_all_disputes(
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    statut: str | None = Query(None),
+    limit: int = Query(100, le=500),
+    offset: int = Query(0),
+):
+    q = "SELECT * FROM disputes WHERE tenant_id = :tid"
+    params: dict = {"tid": str(tenant.tenant_id)}
+    if statut:
+        q += " AND statut = :statut"
+        params["statut"] = statut
+    q += " ORDER BY created_at DESC LIMIT :lim OFFSET :off"
+    params["lim"] = limit
+    params["off"] = offset
+    rows = await db.execute(text(q), params)
+    return [_dispute_from_row(r) for r in rows.fetchall()]
+
+
+# Standalone dispute endpoint (must be before /{job_id} to avoid route conflict)
+@router.get("/disputes/{dispute_id}", response_model=DisputeOut, include_in_schema=False)
+async def get_dispute_standalone(
+    dispute_id: str,
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    row = (await db.execute(text(
+        "SELECT * FROM disputes WHERE id = :id AND tenant_id = :tid"
+    ), {"id": dispute_id, "tid": str(tenant.tenant_id)})).first()
+    if not row:
+        raise HTTPException(404, "Litige non trouve")
+    return _dispute_from_row(row)
 
 
 @router.get("/{job_id}", response_model=MissionDetail)
@@ -965,44 +1007,6 @@ async def create_dispute(
     })
     await db.commit()
     row = (await db.execute(text("SELECT * FROM disputes WHERE id = :id"), {"id": str(did)})).first()
-    return _dispute_from_row(row)
-
-
-# Cross-mission disputes listing
-@router.get("/disputes", response_model=list[DisputeOut])
-async def list_all_disputes(
-    tenant: TenantContext = Depends(get_tenant),
-    user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-    statut: str | None = Query(None),
-    limit: int = Query(100, le=500),
-    offset: int = Query(0),
-):
-    q = "SELECT * FROM disputes WHERE tenant_id = :tid"
-    params: dict = {"tid": str(tenant.tenant_id)}
-    if statut:
-        q += " AND statut = :statut"
-        params["statut"] = statut
-    q += " ORDER BY created_at DESC LIMIT :lim OFFSET :off"
-    params["lim"] = limit
-    params["off"] = offset
-    rows = await db.execute(text(q), params)
-    return [_dispute_from_row(r) for r in rows.fetchall()]
-
-
-# Standalone dispute endpoints
-@router.get("/disputes/{dispute_id}", response_model=DisputeOut, include_in_schema=False)
-async def get_dispute_standalone(
-    dispute_id: str,
-    tenant: TenantContext = Depends(get_tenant),
-    user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    row = (await db.execute(text(
-        "SELECT * FROM disputes WHERE id = :id AND tenant_id = :tid"
-    ), {"id": dispute_id, "tid": str(tenant.tenant_id)})).first()
-    if not row:
-        raise HTTPException(404, "Litige non trouve")
     return _dispute_from_row(row)
 
 

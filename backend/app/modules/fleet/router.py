@@ -734,10 +734,14 @@ async def change_claim_status(
 
 @router.get("/claims", response_model=list[ClaimOut])
 async def list_all_claims(
-    statut: str | None = None,
+    statut: str | None = Query(None),
     tenant: TenantContext = Depends(get_tenant),
     user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    sort_by: str | None = Query(None),
+    order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
     tid = str(tenant.tenant_id)
     q = "SELECT * FROM vehicle_claims WHERE tenant_id = :tid"
@@ -745,7 +749,11 @@ async def list_all_claims(
     if statut:
         q += " AND statut = :statut"
         params["statut"] = statut
-    q += " ORDER BY date_sinistre DESC LIMIT 200"
+    allowed_sorts = {"date_sinistre", "cout_reparation_ht", "created_at"}
+    sort_col = sort_by if sort_by in allowed_sorts else "date_sinistre"
+    q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
+    params["lim"] = limit
+    params["off"] = offset
     rows = (await db.execute(text(q), params)).fetchall()
     return [_claim_from_row(r) for r in rows]
 

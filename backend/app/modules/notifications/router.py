@@ -42,6 +42,7 @@ async def list_notifications(
     db: AsyncSession = Depends(get_db),
     read: bool | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
 ):
     uid = str(user["id"])
     q = "SELECT * FROM notifications WHERE user_id = :uid"
@@ -49,8 +50,9 @@ async def list_notifications(
     if read is not None:
         q += " AND read = :read"
         params["read"] = read
-    q += " ORDER BY created_at DESC LIMIT :lim"
+    q += " ORDER BY created_at DESC LIMIT :lim OFFSET :off"
     params["lim"] = limit
+    params["off"] = offset
     rows = (await db.execute(text(q), params)).fetchall()
     return [_notif_from_row(r) for r in rows]
 

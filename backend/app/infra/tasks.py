@@ -38,13 +38,12 @@ def compliance_scan_daily() -> dict:
             text("""
                 UPDATE documents
                 SET statut = 'EXPIRE',
-                    compliance_status = 'expired',
-                    updated_at = NOW()
+                    compliance_status = 'expired'
                 WHERE date_expiration IS NOT NULL
                   AND date_expiration < :today
                   AND COALESCE(statut, 'VALIDE') = 'VALIDE'
                 RETURNING id, tenant_id, entity_type, entity_id,
-                          type_document, doc_type, date_expiration
+                          doc_type, date_expiration
             """),
             {"today": today},
         ).fetchall()
@@ -104,7 +103,7 @@ def compliance_scan_daily() -> dict:
                 # Mark flag so we don't send again
                 db.execute(
                     text(f"""
-                        UPDATE documents SET {flag_col} = true, updated_at = NOW()
+                        UPDATE documents SET {flag_col} = true
                         WHERE id = :id
                     """),
                     {"id": str(doc.id)},
@@ -125,7 +124,7 @@ def compliance_scan_daily() -> dict:
                 {
                     "id": str(uuid.uuid4()),
                     "tid": str(doc.tenant_id),
-                    "title": f"Document {doc.type_document or doc.doc_type} expired {doc.date_expiration}",
+                    "title": f"Document {doc.doc_type} expired {doc.date_expiration}",
                     "etype": doc.entity_type,
                     "eid": str(doc.entity_id),
                     "due": doc.date_expiration,
@@ -181,7 +180,7 @@ def _recalculate_compliance_sync(
         doc = db.execute(text("""
             SELECT id, date_expiration, statut FROM documents
             WHERE tenant_id = :tid AND entity_type = :etype AND entity_id = :eid
-              AND (type_document = :dtype OR doc_type = :dtype)
+              AND doc_type = :dtype
               AND COALESCE(statut, 'VALIDE') NOT IN ('ARCHIVE', 'REJETE', 'BROUILLON')
             ORDER BY version DESC, created_at DESC LIMIT 1
         """), {

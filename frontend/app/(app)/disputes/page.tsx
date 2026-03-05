@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Dispute } from "@/lib/types";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import StatusBadge from "@/components/StatusBadge";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 const STATUS_TABS = [
   { key: "", label: "Tous" },
@@ -29,35 +32,25 @@ const NEXT_STATUS: Record<string, { label: string; value: string }[]> = {
 
 export default function DisputesPage() {
   const { user } = useAuth();
-  const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-  const fetchDisputes = () => {
-    apiGet<Dispute[]>(`/v1/jobs/disputes${statusFilter ? `?statut=${statusFilter}` : ""}`)
-      .then(setDisputes)
-      .catch(() => {
-        apiGet<{ disputes?: Dispute[] }[]>("/v1/jobs?limit=200").then((jobs) => {
-          const allDisputes: Dispute[] = [];
-          for (const job of jobs) {
-            if (job.disputes) allDisputes.push(...job.disputes);
-          }
-          setDisputes(statusFilter ? allDisputes.filter((d) => d.statut === statusFilter) : allDisputes);
-        });
-      });
-  };
+  const filters: Record<string, string> = {};
+  if (statusFilter) filters.statut = statusFilter;
 
-  useEffect(() => { fetchDisputes(); }, [statusFilter]);
+  const { items: disputes, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } = usePaginatedFetch<Dispute>(
+    "/v1/jobs/disputes", filters, { defaultSort: "created_at", defaultOrder: "desc" }
+  );
 
   const handleStatusChange = async (disputeId: string, missionId: string, newStatut: string) => {
     try {
       await apiPost(`/v1/jobs/${missionId}/disputes/${disputeId}/transition`, { statut: newStatut });
-      fetchDisputes();
+      refresh();
     } catch {
       // Fallback: try direct status update
       try {
         await apiPost(`/v1/jobs/disputes/${disputeId}/transition`, { statut: newStatut });
-        fetchDisputes();
+        refresh();
       } catch {
         alert("Erreur lors du changement de statut");
       }
@@ -99,7 +92,7 @@ export default function DisputesPage() {
                 <th>Montant estime</th>
                 <th>Montant retenu</th>
                 <th>Statut</th>
-                <th>Date ouverture</th>
+                <SortableHeader label="Date ouverture" field="created_at" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
                 <th>Actions</th>
               </tr>
             </thead>
@@ -146,10 +139,11 @@ export default function DisputesPage() {
               ))}
             </tbody>
           </table>
-          {disputes.length === 0 && (
+          {disputes.length === 0 && !loading && (
             <EmptyState icon="gavel" title="Aucun litige" description="Les litiges sont crees depuis la page de detail d'une mission." />
           )}
         </div>
+        <Pagination offset={offset} limit={limit} currentCount={disputes.length} onPrev={onPrev} onNext={onNext} />
       </Card>
     </div>
   );

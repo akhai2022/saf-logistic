@@ -74,13 +74,13 @@ async def create_offer(
     # Create a notification_dispatch task for the subcontractor
     task_id = uuid.uuid4()
     await db.execute(text("""
-        INSERT INTO tasks (id, tenant_id, task_type, related_entity_type,
-            related_entity_id, status, payload)
-        VALUES (:id, :tid, 'notification_dispatch', 'subcontractor_offer',
-            :eid, 'pending', :payload)
+        INSERT INTO tasks (id, tenant_id, category, title,
+            entity_type, entity_id, status)
+        VALUES (:id, :tid, 'notification_dispatch', :title,
+            'subcontractor_offer', :eid, 'open')
     """), {
         "id": str(task_id), "tid": tid, "eid": str(oid),
-        "payload": f'{{"offer_id": "{oid}", "subcontractor_id": "{body.subcontractor_id}"}}',
+        "title": f'Offer sent to subcontractor {body.subcontractor_id}',
     })
 
     await db.commit()
@@ -105,6 +105,10 @@ async def list_offers(
     job_id: str | None = Query(None),
     subcontractor_id: str | None = Query(None),
     statut: str | None = Query(None),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    sort_by: str | None = Query(None),
+    order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
     q = """
         SELECT o.*, j.numero AS job_numero, s.raison_sociale AS subcontractor_name
@@ -123,7 +127,11 @@ async def list_offers(
     if statut:
         q += " AND o.statut = :statut"
         params["statut"] = statut
-    q += " ORDER BY o.created_at DESC"
+    allowed_sorts = {"created_at": "o.created_at", "montant_propose": "o.montant_propose", "date_envoi": "o.date_envoi"}
+    sort_col = allowed_sorts.get(sort_by, "o.created_at") if sort_by else "o.created_at"
+    q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
+    params["lim"] = limit
+    params["off"] = offset
     rows = (await db.execute(text(q), params)).fetchall()
     return [_offer_from_row(r) for r in rows]
 

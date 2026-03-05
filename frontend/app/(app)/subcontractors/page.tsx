@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Subcontractor } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -11,33 +12,36 @@ import Input from "@/components/Input";
 import StatusBadge from "@/components/StatusBadge";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
+import Pagination from "@/components/Pagination";
+import SortableHeader from "@/components/SortableHeader";
 
 const STATUTS = ["", "ACTIF", "EN_COURS_VALIDATION", "INACTIF", "SUSPENDU", "BLOQUE"];
 
 export default function SubcontractorsPage() {
   const { user } = useAuth();
-  const [items, setItems] = useState<Subcontractor[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statut, setStatut] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const filters: Record<string, string> = {};
+  if (statut) filters.statut = statut;
+  if (search) filters.search = search;
+
+  const { items, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } = usePaginatedFetch<Subcontractor>(
+    "/v1/masterdata/subcontractors", filters, { defaultSort: "raison_sociale", defaultOrder: "asc" }
+  );
+
   const [form, setForm] = useState({
     code: "", raison_sociale: "", siret: "", email: "",
     adresse_ligne1: "", code_postal: "", ville: "",
     telephone: "", delai_paiement_jours: "45", mode_paiement: "VIREMENT",
   });
-
-  const fetchItems = () => {
-    const params = new URLSearchParams();
-    if (statut) params.set("statut", statut);
-    if (search) params.set("search", search);
-    const qs = params.toString();
-    apiGet<Subcontractor[]>(`/v1/masterdata/subcontractors${qs ? `?${qs}` : ""}`).then(setItems);
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(fetchItems, 300);
-    return () => clearTimeout(timer);
-  }, [search, statut]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,8 +49,8 @@ export default function SubcontractorsPage() {
       ...form,
       delai_paiement_jours: parseInt(form.delai_paiement_jours) || 45,
     });
-    setItems([...items, s]);
     setShowCreate(false);
+    refresh();
     setForm({ code: "", raison_sociale: "", siret: "", email: "", adresse_ligne1: "", code_postal: "", ville: "", telephone: "", delai_paiement_jours: "45", mode_paiement: "VIREMENT" });
   };
 
@@ -59,7 +63,7 @@ export default function SubcontractorsPage() {
       </PageHeader>
 
       <div className="flex gap-4">
-        <Input placeholder="Rechercher..." icon="search" value={search} onChange={(e) => setSearch(e.target.value)} className="w-64" />
+        <Input placeholder="Rechercher..." icon="search" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="w-64" />
         <select value={statut} onChange={(e) => setStatut(e.target.value)}>
           <option value="">Tous les statuts</option>
           {STATUTS.filter(Boolean).map((s) => <option key={s} value={s}>{s}</option>)}
@@ -87,12 +91,12 @@ export default function SubcontractorsPage() {
         <table className="w-full text-sm">
           <thead className="table-header">
             <tr>
-              <th>Code</th>
-              <th>Raison sociale</th>
+              <SortableHeader label="Code" field="code" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
+              <SortableHeader label="Raison sociale" field="raison_sociale" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>SIRET</th>
               <th>Ville</th>
               <th>Conformité</th>
-              <th>Statut</th>
+              <SortableHeader label="Statut" field="statut" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
             </tr>
           </thead>
           <tbody className="table-body">
@@ -110,9 +114,10 @@ export default function SubcontractorsPage() {
             ))}
           </tbody>
         </table>
-        {items.length === 0 && (
+        {items.length === 0 && !loading && (
           <EmptyState icon="handshake" title="Aucun sous-traitant" description="Ajoutez votre premier sous-traitant" />
         )}
+        <Pagination offset={offset} limit={limit} currentCount={items.length} onPrev={onPrev} onNext={onNext} />
       </Card>
     </div>
   );

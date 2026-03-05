@@ -281,16 +281,11 @@ async def test_client_crud_lifecycle(client: AsyncClient):
     assert client_data["raison_sociale"] == "Transport Durand SARL"
     assert client_data["code"] is not None  # auto-generated
 
-    # List
-    resp = await client.get("/v1/masterdata/clients?limit=200")
+    # List with search filter (using search to avoid pagination issues with large datasets)
+    resp = await client.get("/v1/masterdata/clients?search=Durand&limit=200")
     assert resp.status_code == 200
     clients = resp.json()
     assert any(c["id"] == client_id for c in clients)
-
-    # List with search filter
-    resp = await client.get("/v1/masterdata/clients?search=Durand")
-    assert resp.status_code == 200
-    assert any(c["id"] == client_id for c in resp.json())
 
     # Get detail
     resp = await client.get(f"/v1/masterdata/clients/{client_id}")
@@ -536,12 +531,12 @@ async def test_driver_crud_lifecycle(client: AsyncClient):
     assert driver["nom"] == "Dupont"
 
     # List
-    resp = await client.get("/v1/masterdata/drivers")
+    resp = await client.get("/v1/masterdata/drivers?limit=200")
     assert resp.status_code == 200
     assert any(d["id"] == driver_id for d in resp.json())
 
     # List with search
-    resp = await client.get("/v1/masterdata/drivers?search=Dupont")
+    resp = await client.get("/v1/masterdata/drivers?search=Dupont&limit=200")
     assert resp.status_code == 200
     assert any(d["id"] == driver_id for d in resp.json())
 

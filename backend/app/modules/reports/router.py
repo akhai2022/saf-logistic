@@ -85,7 +85,7 @@ async def _get_kpi_value(db: AsyncSession, tid: str, key: str) -> KpiCard:
     elif key == "missions_en_cours":
         val = (await db.execute(text("""
             SELECT COUNT(*) FROM jobs
-            WHERE tenant_id = :tid AND COALESCE(statut, status) IN ('EN_COURS', 'in_progress', 'AFFECTEE', 'assigned')
+            WHERE tenant_id = :tid AND status IN ('EN_COURS', 'in_progress', 'AFFECTEE', 'assigned')
         """), {"tid": tid})).scalar() or 0
         return KpiCard(key=key, label="Missions en cours", value=val)
 
@@ -290,12 +290,12 @@ async def operations_report(
 
     en_cours = (await db.execute(text("""
         SELECT COUNT(*) FROM jobs
-        WHERE tenant_id = :tid AND COALESCE(statut, status) IN ('EN_COURS', 'in_progress', 'AFFECTEE', 'assigned')
+        WHERE tenant_id = :tid AND status IN ('EN_COURS', 'in_progress', 'AFFECTEE', 'assigned')
     """), {"tid": tid})).scalar() or 0
 
     terminees = (await db.execute(text("""
         SELECT COUNT(*) FROM jobs
-        WHERE tenant_id = :tid AND COALESCE(statut, status) IN ('CLOTUREE', 'closed', 'LIVREE', 'delivered')
+        WHERE tenant_id = :tid AND status IN ('CLOTUREE', 'closed', 'LIVREE', 'delivered')
         AND updated_at >= :fom
     """), {"tid": tid, "fom": fom})).scalar() or 0
 

@@ -84,8 +84,14 @@ async def test_payroll_import_export(client: AsyncClient, db):
     variables = resp.json()
     assert len(variables) >= 2
 
-    # 4. Export SILAE
-    resp = await client.get(f"/v1/payroll/periods/{period_id}/export-silae")
+    # 4. Export SILAE (uses query param auth for browser download)
+    from app.core.security import create_access_token
+    token = create_access_token(
+        uuid.UUID("00000000-0000-0000-0000-000000000100"),
+        uuid.UUID(tid),
+        "admin",
+    )
+    resp = await client.get(f"/v1/payroll/periods/{period_id}/export-silae?_token={token}&_tenant={tid}")
     assert resp.status_code == 200
     export_content = resp.text
     assert "0100" in export_content  # heures_normales mapped code

@@ -130,7 +130,7 @@ async def recalculate_compliance(
             SELECT id, date_expiration, statut
             FROM documents
             WHERE tenant_id = :tid AND entity_type = :etype AND entity_id = :eid
-              AND (type_document = :dtype OR doc_type = :dtype)
+              AND doc_type = :dtype
               AND statut NOT IN ('ARCHIVE', 'REJETE', 'BROUILLON')
             ORDER BY version DESC, created_at DESC LIMIT 1
         """), {
@@ -270,7 +270,7 @@ async def list_documents(
         q += " AND entity_id = :eid"
         params["eid"] = entity_id
     if type_document:
-        q += " AND (type_document = :dtype OR doc_type = :dtype)"
+        q += " AND doc_type = :dtype"
         params["dtype"] = type_document
     if statut:
         q += " AND statut = :statut"
@@ -297,7 +297,7 @@ async def create_document(
     prev = (await db.execute(text("""
         SELECT id, version FROM documents
         WHERE tenant_id = :tid AND entity_type = :etype AND entity_id = :eid
-          AND (type_document = :dtype OR doc_type = :dtype)
+          AND doc_type = :dtype
           AND statut = 'VALIDE'
         ORDER BY version DESC LIMIT 1
     """), {
@@ -311,18 +311,27 @@ async def create_document(
         new_version = (prev.version or 1) + 1
         remplace_id = str(prev.id)
         await db.execute(text("""
-            UPDATE documents SET statut = 'ARCHIVE', updated_at = NOW()
+            UPDATE documents SET statut = 'ARCHIVE'
             WHERE id = :id
         """), {"id": str(prev.id)})
 
     tags_val = "{" + ",".join(body.tags) + "}" if body.tags else None
 
+    # Convert date strings to date objects for asyncpg compatibility
+    demission_val = (
+        date.fromisoformat(body.date_emission) if isinstance(body.date_emission, str) and body.date_emission
+        else body.date_emission
+    )
+    dexpiration_val = (
+        date.fromisoformat(body.date_expiration) if isinstance(body.date_expiration, str) and body.date_expiration
+        else body.date_expiration
+    )
+
     await db.execute(text("""
         INSERT INTO documents (
             id, tenant_id, entity_type, entity_id,
-            type_document, doc_type, sous_type,
+            doc_type, sous_type,
             s3_key, file_name,
-            fichier_s3_key, fichier_nom_original,
             fichier_taille_octets, fichier_mime_type,
             numero_document, date_emission, date_expiration,
             issue_date, expiry_date,
@@ -332,8 +341,7 @@ async def create_document(
             is_critical, uploaded_by, uploaded_by_role
         ) VALUES (
             :id, :tid, :etype, :eid,
-            :dtype, :dtype, :stype,
-            :s3k, :fname,
+            :dtype, :stype,
             :s3k, :fname,
             :fsize, :fmime,
             :numdoc, :demission, :dexpiration,
@@ -350,7 +358,7 @@ async def create_document(
         "s3k": body.fichier_s3_key, "fname": body.fichier_nom_original,
         "fsize": body.fichier_taille_octets, "fmime": body.fichier_mime_type,
         "numdoc": body.numero_document,
-        "demission": body.date_emission, "dexpiration": body.date_expiration,
+        "demission": demission_val, "dexpiration": dexpiration_val,
         "org": body.organisme_emetteur, "tags": tags_val, "notes": body.notes,
         "ver": new_version, "repl": remplace_id,
         "crit": body.is_critical, "uid": uid, "urole": "EXPLOITATION",
@@ -389,11 +397,11 @@ async def download_document(
     db: AsyncSession = Depends(get_db),
 ):
     row = (await db.execute(text(
-        "SELECT fichier_s3_key, s3_key FROM documents WHERE id = :id AND tenant_id = :tid"
+        "SELECT s3_key FROM documents WHERE id = :id AND tenant_id = :tid"
     ), {"id": doc_id, "tid": str(tenant.tenant_id)})).first()
     if not row:
         raise HTTPException(404, "Document not found")
-    s3_key = row.fichier_s3_key or row.s3_key
+    s3_key = row.s3_key
     if not s3_key:
         raise HTTPException(404, "No file associated")
     return {"s3_key": s3_key, "download_url": f"/v1/files/presign-download?s3_key={s3_key}"}
@@ -423,8 +431,7 @@ async def validate_document(
             validation_par = :uid,
             validation_date = NOW(),
             motif_rejet = :motif,
-            compliance_status = CASE WHEN :statut = 'VALIDE' THEN 'valid' ELSE 'rejected' END,
-            updated_at = NOW()
+            compliance_status = CASE WHEN :statut = 'VALIDE' THEN 'valid' ELSE 'rejected' END
         WHERE id = :id
     """), {
         "id": doc_id, "statut": body.statut,
@@ -787,7 +794,7 @@ async def legacy_compliance_dashboard(
                     FROM documents
                     WHERE tenant_id = :tid AND entity_type IN (:etype, :etype_low)
                       AND entity_id = :eid
-                      AND (doc_type = :dtype OR type_document = :dtype)
+                      AND doc_type = :dtype
                       AND COALESCE(statut, 'VALIDE') NOT IN ('ARCHIVE', 'REJETE')
                     ORDER BY created_at DESC LIMIT 1
                 """), {

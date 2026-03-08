@@ -1,0 +1,25 @@
+# Copy this file to terraform.tfvars and fill in the values
+# cp terraform.tfvars.example terraform.tfvars
+
+# ── Required ─────────────────────────────────────────────────────────────────
+
+db_password    = "CHANGE_ME_strong_password_here"
+app_secret_key = "CHANGE_ME_random_secret_key_here"
+
+# ── Optional overrides ──────────────────────────────────────────────────────
+
+# environment = "dev"
+# aws_region  = "eu-west-3"
+
+# domain_name = "saf-logistic.example.com"
+
+# db_instance_class = "db.t4g.small"      # upgrade for prod
+# redis_node_type   = "cache.t4g.small"   # upgrade for prod
+
+# api_desired_count      = 2
+# frontend_desired_count = 2
+
+# tags = {
+#   Team  = "platform"
+#   Owner = "devops"
+# }

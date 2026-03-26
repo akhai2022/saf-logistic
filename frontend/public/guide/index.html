@@ -309,36 +309,169 @@
 
   <p>Ajouter les collaborateurs avec le rôle adapté à leur fonction :</p>
 
-  <div class="role-grid">
-    <div class="role-card">
-      <h4>admin</h4>
-      <p>Dirigeant — accès complet</p>
-    </div>
-    <div class="role-card">
-      <h4>exploitation</h4>
-      <p>Exploitant — missions, planning, litiges</p>
-    </div>
-    <div class="role-card">
-      <h4>compta</h4>
-      <p>Comptable — factures, tarifs, OCR</p>
-    </div>
-    <div class="role-card">
-      <h4>rh_paie</h4>
-      <p>RH — paie, conducteurs, documents</p>
-    </div>
-    <div class="role-card">
-      <h4>flotte</h4>
-      <p>Fleet manager — véhicules, maintenance</p>
-    </div>
-    <div class="role-card">
-      <h4>lecture_seule</h4>
-      <p>Auditeur — lecture seule</p>
-    </div>
+  <h3>Profil 1 — Admin / Dirigeant</h3>
+  <div class="info">
+    <strong>Rôle : admin</strong> — Accès complet à tous les modules
+    <ul>
+      <li>Créer et gérer les missions de transport</li>
+      <li>Gérer les référentiels (clients, conducteurs, véhicules, sous-traitants)</li>
+      <li>Facturation : créer des factures, avoirs, gérer les tarifs</li>
+      <li>Gérer la flotte : maintenance, sinistres, tableau de bord</li>
+      <li>Consulter les rapports et KPI</li>
+      <li>Configurer les paramètres de l'entreprise (société, banque, TVA)</li>
+      <li>Gérer les utilisateurs et leurs rôles</li>
+      <li>Consulter le journal d'audit</li>
+      <li>Gérer la conformité documentaire</li>
+    </ul>
+    <p style="margin-top:8px"><strong>Sections du menu :</strong> Exploitation, Référentiels, Finance, Flotte, Pilotage, Paramétrage</p>
+  </div>
+
+  <h3>Profil 2 — Exploitant / Dispatcher</h3>
+  <div class="info">
+    <strong>Rôle : exploitation</strong> — Gestion opérationnelle des missions
+    <ul>
+      <li>Créer, modifier et suivre les missions (dossiers transport)</li>
+      <li>Affecter conducteurs et véhicules aux missions</li>
+      <li>Gérer les points de livraison et les marchandises</li>
+      <li>Suivre les preuves de livraison (POD)</li>
+      <li>Gérer les litiges</li>
+      <li>Consulter les référentiels (clients, conducteurs, véhicules)</li>
+      <li>Mettre à jour les données référentiels</li>
+      <li>Gérer les tâches opérationnelles</li>
+      <li>Télécharger des documents de conformité</li>
+    </ul>
+    <p style="margin-top:8px"><strong>Sections du menu :</strong> Exploitation, Référentiels</p>
   </div>
 
   <div class="screenshot">
     <img src="/guide/screenshots/18a-exploitant-sidebar.png" alt="Sidebar exploitant">
     <div class="screenshot-label">Vue du menu pour un Exploitant</div>
+  </div>
+
+  <h3>Profil 3 — Comptable</h3>
+  <div class="info">
+    <strong>Rôle : compta</strong> — Gestion financière et facturation
+    <ul>
+      <li>Créer et valider les factures</li>
+      <li>Créer et valider les avoirs (credit notes)</li>
+      <li>Gérer les règles de tarification</li>
+      <li>Scanner et traiter les documents par OCR</li>
+      <li>Valider les factures extraites par OCR</li>
+      <li>Consulter les missions (lecture seule)</li>
+      <li>Gérer les relances et le recouvrement</li>
+      <li>Consulter les rapports financiers</li>
+      <li>Gérer les factures fournisseurs</li>
+    </ul>
+    <p style="margin-top:8px"><strong>Sections du menu :</strong> Exploitation, Finance, Pilotage</p>
+  </div>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/18b-compta-sidebar.png" alt="Sidebar comptable">
+    <div class="screenshot-label">Vue du menu pour un Comptable</div>
+  </div>
+
+  <h3>Profil 4 — Responsable RH / Paie</h3>
+  <div class="info">
+    <strong>Rôle : rh_paie</strong> — Gestion des ressources humaines et paie
+    <ul>
+      <li>Saisir et gérer les variables de paie (heures, primes, absences)</li>
+      <li>Importer / exporter les données paie (format SILAE)</li>
+      <li>Soumettre et valider les périodes de paie</li>
+      <li>Gérer les fiches conducteurs (données personnelles, contrat)</li>
+      <li>Télécharger et suivre les documents conducteurs (permis, FIMO, visite médicale...)</li>
+      <li>Suivre les alertes de conformité conducteurs</li>
+      <li>Gérer les tâches RH</li>
+    </ul>
+    <p style="margin-top:8px"><strong>Sections du menu :</strong> Exploitation, Référentiels, Finance</p>
+  </div>
+
+  <h3>Profil 5 — Gestionnaire de Flotte</h3>
+  <div class="info">
+    <strong>Rôle : flotte</strong> — Gestion des véhicules et maintenance
+    <ul>
+      <li>Consulter le tableau de bord flotte (conformité, alertes)</li>
+      <li>Planifier et suivre les maintenances (préventives et curatives)</li>
+      <li>Déclarer et gérer les sinistres</li>
+      <li>Gérer les fiches véhicules (carte grise, contrôle technique, assurance)</li>
+      <li>Suivre les coûts véhicules</li>
+      <li>Télécharger les documents véhicules</li>
+      <li>Suivre les alertes de conformité véhicules</li>
+    </ul>
+    <p style="margin-top:8px"><strong>Sections du menu :</strong> Référentiels, Flotte</p>
+  </div>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/18c-flotte-sidebar.png" alt="Sidebar flotte">
+    <div class="screenshot-label">Vue du menu pour un Gestionnaire de Flotte</div>
+  </div>
+
+  <h3>Profil 6 — Auditeur / Lecture seule</h3>
+  <div class="info">
+    <strong>Rôle : lecture_seule</strong> — Consultation de tous les modules sans modification
+    <ul>
+      <li>Consulter les missions, clients, conducteurs, véhicules</li>
+      <li>Consulter les factures, tarifs, avoirs</li>
+      <li>Consulter les rapports et tableaux de bord</li>
+      <li>Consulter le journal d'audit</li>
+      <li>Consulter la conformité documentaire</li>
+      <li>Consulter la flotte et les maintenances</li>
+      <li><strong>Aucune modification possible</strong></li>
+    </ul>
+    <p style="margin-top:8px"><strong>Sections du menu :</strong> Exploitation, Référentiels, Finance, Flotte, Pilotage, Paramétrage</p>
+  </div>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/18d-auditeur-sidebar.png" alt="Sidebar auditeur">
+    <div class="screenshot-label">Vue du menu pour un Auditeur</div>
+  </div>
+
+  <h3>Profil 7 — Sous-traitant</h3>
+  <div class="info">
+    <strong>Rôle : soustraitant</strong> — Accès limité pour les partenaires externes
+    <ul>
+      <li>Consulter les missions qui lui sont affectées</li>
+      <li>Consulter et télécharger les documents associés</li>
+      <li><strong>Accès très restreint — lecture seule sur les missions et documents uniquement</strong></li>
+    </ul>
+    <p style="margin-top:8px"><strong>Sections du menu :</strong> Exploitation uniquement</p>
+  </div>
+
+  <h3>Tableau récapitulatif des accès</h3>
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr>
+        <th>Fonctionnalité</th>
+        <th>admin</th>
+        <th>exploitation</th>
+        <th>compta</th>
+        <th>rh_paie</th>
+        <th>flotte</th>
+        <th>lecture_seule</th>
+        <th>soustraitant</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Missions</strong> (créer/modifier)</td><td>&#10003;</td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>Missions</strong> (consulter)</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>—</td><td>—</td><td>&#10003;</td><td>&#10003;</td></tr>
+      <tr><td><strong>Affecter conducteur/véhicule</strong></td><td>&#10003;</td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>Clients</strong> (créer/modifier)</td><td>&#10003;</td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>Conducteurs</strong> (créer/modifier)</td><td>&#10003;</td><td>&#10003;</td><td>—</td><td>&#10003;</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>Véhicules</strong> (créer/modifier)</td><td>&#10003;</td><td>&#10003;</td><td>—</td><td>—</td><td>&#10003;</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>Factures</strong> (créer/valider)</td><td>&#10003;</td><td>—</td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>Avoirs</strong> (créer/valider)</td><td>&#10003;</td><td>—</td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>Tarifs</strong> (gérer)</td><td>&#10003;</td><td>—</td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>OCR</strong> (scanner/valider)</td><td>&#10003;</td><td>—</td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>Paie</strong> (saisir/exporter)</td><td>&#10003;</td><td>—</td><td>—</td><td>&#10003;</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>Flotte / Maintenance</strong></td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>&#10003;</td><td>&#10003;</td><td>—</td></tr>
+      <tr><td><strong>Sinistres</strong></td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>&#10003;</td><td>&#10003;</td><td>—</td></tr>
+      <tr><td><strong>Conformité documentaire</strong></td><td>&#10003;</td><td>&#10003;</td><td>—</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td></tr>
+      <tr><td><strong>Rapports / KPI</strong></td><td>&#10003;</td><td>—</td><td>&#10003;</td><td>—</td><td>—</td><td>&#10003;</td><td>—</td></tr>
+      <tr><td><strong>Paramètres entreprise</strong></td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>—</td><td>&#10003;</td><td>—</td></tr>
+      <tr><td><strong>Gestion utilisateurs</strong></td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>Journal d'audit</strong></td><td>&#10003;</td><td>—</td><td>—</td><td>—</td><td>—</td><td>&#10003;</td><td>—</td></tr>
+    </tbody>
+  </table>
   </div>
 </div>
 

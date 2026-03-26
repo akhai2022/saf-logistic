@@ -1,79 +1,58 @@
-# -----------------------------------------------------------------------------
+# ──────────────────────────────────────────────
 # Outputs
-# -----------------------------------------------------------------------------
+# ──────────────────────────────────────────────
 
-# ── Networking ───────────────────────────────────────────────────────────────
-
-output "vpc_id" {
-  description = "VPC ID"
-  value       = aws_vpc.main.id
+output "web_url" {
+  description = "Web frontend URL"
+  value       = "https://${local.web_fqdn}"
 }
 
-# ── Load Balancer ────────────────────────────────────────────────────────────
-
-output "alb_dns_name" {
-  description = "ALB DNS name — entry point for the application"
-  value       = aws_lb.main.dns_name
+output "api_url" {
+  description = "API URL"
+  value       = "https://${local.api_fqdn}"
 }
-
-output "app_url" {
-  description = "Application URL"
-  value       = var.domain_name != "" ? "https://${var.domain_name}" : "http://${aws_lb.main.dns_name}"
-}
-
-# ── Database ─────────────────────────────────────────────────────────────────
-
-output "rds_endpoint" {
-  description = "RDS PostgreSQL endpoint"
-  value       = aws_db_instance.postgres.endpoint
-}
-
-# ── Redis ────────────────────────────────────────────────────────────────────
-
-output "redis_endpoint" {
-  description = "ElastiCache Redis endpoint"
-  value       = "${aws_elasticache_cluster.redis.cache_nodes[0].address}:${aws_elasticache_cluster.redis.cache_nodes[0].port}"
-}
-
-# ── S3 ───────────────────────────────────────────────────────────────────────
-
-output "s3_bucket_name" {
-  description = "S3 bucket for document storage"
-  value       = aws_s3_bucket.docs.id
-}
-
-# ── ECR Repositories ────────────────────────────────────────────────────────
 
 output "ecr_api_url" {
-  description = "ECR repository URL for API image"
+  description = "ECR repository URL for the API image"
   value       = aws_ecr_repository.api.repository_url
 }
 
-output "ecr_worker_ocr_url" {
-  description = "ECR repository URL for OCR worker image"
-  value       = aws_ecr_repository.worker_ocr.repository_url
+output "ecr_web_url" {
+  description = "ECR repository URL for the Web image"
+  value       = aws_ecr_repository.web.repository_url
 }
 
-output "ecr_frontend_url" {
-  description = "ECR repository URL for frontend image"
-  value       = aws_ecr_repository.frontend.repository_url
+output "s3_bucket_name" {
+  description = "S3 bucket name for document storage"
+  value       = aws_s3_bucket.docs.id
 }
-
-# ── ECS ──────────────────────────────────────────────────────────────────────
 
 output "ecs_cluster_name" {
   description = "ECS cluster name"
-  value       = aws_ecs_cluster.main.name
+  value       = split("/", var.existing_ecs_cluster_arn)[1]
 }
 
-# ── DNS ──────────────────────────────────────────────────────────────────────
-
-output "route53_zone_id" {
-  description = "Route53 hosted zone ID (set NS records at your registrar)"
-  value       = var.domain_name != "" ? aws_route53_zone.main[0].zone_id : null
+output "api_service_name" {
+  description = "ECS API service name"
+  value       = aws_ecs_service.api.name
 }
 
-output "route53_name_servers" {
-  description = "Route53 name servers — configure these at your domain registrar"
-  value       = var.domain_name != "" ? aws_route53_zone.main[0].name_servers : []
+output "web_service_name" {
+  description = "ECS Web service name"
+  value       = aws_ecs_service.web.name
+}
+
+output "worker_service_name" {
+  description = "ECS Worker service name"
+  value       = aws_ecs_service.worker.name
+}
+
+output "migration_task_definition" {
+  description = "Migration task definition ARN"
+  value       = aws_ecs_task_definition.migration.arn
+}
+
+output "backend_security_group_id" {
+  description = "Security group ID for backend ECS tasks"
+  value       = aws_security_group.ecs_backend.id
 }

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAF Logistic — Guide de Création d'Entreprise</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b; line-height: 1.7; background: #f8fafc; }
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+  h2 { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+  h3 { font-size: 1.1rem; font-weight: 600; color: #334155; margin: 24px 0 12px; }
+  .subtitle { color: #64748b; font-size: 1rem; margin-bottom: 32px; }
+  .badge { display: inline-block; background: #3b82f6; color: white; font-size: 0.75rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; margin-bottom: 16px; }
+  p, li { color: #475569; }
+  ol, ul { padding-left: 24px; margin: 12px 0; }
+  li { margin: 6px 0; }
+  .step { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 28px; margin: 20px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .step-num { background: #3b82f6; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+  .step-title { font-size: 1.2rem; font-weight: 700; color: #0f172a; }
+  .who { display: inline-block; background: #f0f9ff; color: #0369a1; font-size: 0.8rem; font-weight: 500; padding: 2px 10px; border-radius: 6px; border: 1px solid #bae6fd; margin-bottom: 12px; }
+  .where { display: inline-block; background: #fef3c7; color: #92400e; font-size: 0.8rem; font-weight: 500; padding: 2px 10px; border-radius: 6px; border: 1px solid #fde68a; margin-bottom: 12px; margin-left: 6px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.9rem; }
+  th { background: #f1f5f9; color: #334155; font-weight: 600; padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
+  tr:hover td { background: #f8fafc; }
+  .screenshot { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin: 16px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .screenshot img { width: 100%; display: block; }
+  .screenshot-label { background: #f1f5f9; padding: 8px 12px; font-size: 0.8rem; color: #64748b; font-weight: 500; }
+  .important { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .important strong { color: #991b1b; }
+  .info { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .info strong { color: #1e40af; }
+  .success { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .success strong { color: #166534; }
+  .checklist { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 20px 0; }
+  .checklist-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+  .checklist-item:last-child { border-bottom: none; }
+  .check { color: #22c55e; font-size: 1.2rem; }
+  .uncheck { color: #d1d5db; font-size: 1.2rem; }
+  code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: #0f172a; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .toc { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 24px 0; }
+  .toc a { color: #3b82f6; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 6px 0; }
+  .role-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+  .role-card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+  .role-card h4 { font-size: 0.95rem; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+  .role-card p { font-size: 0.8rem; color: #64748b; }
+  @media print { .container { max-width: 100%; } .screenshot img { max-height: 400px; object-fit: contain; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<span class="badge">SAF Logistic v1.0</span>
+<h1>Guide de Création et Configuration d'une Entreprise</h1>
+<p class="subtitle">Document destiné aux responsables d'entreprise — Toutes les étapes pour démarrer sur la plateforme SAF Logistic</p>
+
+<div class="toc">
+  <strong>Sommaire</strong>
+  <ol>
+    <li><a href="#step1">Créer une nouvelle entreprise (Super Admin)</a></li>
+    <li><a href="#step2">Se connecter en tant qu'administrateur de l'entreprise</a></li>
+    <li><a href="#step3">Installer les données de référence (données démo)</a></li>
+    <li><a href="#step4">Configurer les paramètres de l'entreprise</a></li>
+    <li><a href="#step5">Créer les référentiels métier</a></li>
+    <li><a href="#step6">Créer les règles de tarification</a></li>
+    <li><a href="#step7">Ajouter des utilisateurs</a></li>
+    <li><a href="#step8">Vérifier que tout est prêt</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="step" id="step1">
+  <div class="step-header">
+    <div class="step-num">1</div>
+    <div class="step-title">Créer une nouvelle entreprise</div>
+  </div>
+  <span class="who">Qui : Super Administrateur</span>
+  <span class="where">Où : Administration → Entreprises</span>
+
+  <ol>
+    <li>Se connecter sur <strong><a href="https://saf.dataforgeai.fr/login">https://saf.dataforgeai.fr/login</a></strong> avec le compte Super Admin</li>
+    <li>Dans le menu latéral, cliquer sur <strong>Administration</strong> → <strong>Entreprises</strong></li>
+    <li>Cliquer sur le bouton <strong>« Créer une entreprise »</strong></li>
+    <li>Remplir le formulaire :</li>
+  </ol>
+
+  <table>
+    <thead><tr><th>Champ</th><th>Description</th><th>Exemple</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Nom de l'entreprise</strong></td><td>Raison sociale</td><td>Transport Express SARL</td></tr>
+      <tr><td><strong>SIREN</strong></td><td>Numéro SIREN (9 chiffres)</td><td>987654321</td></tr>
+      <tr><td><strong>Adresse</strong></td><td>Siège social</td><td>10 Rue de la Gare, 69001 Lyon</td></tr>
+      <tr><td><strong>Nom de l'agence</strong></td><td>Agence par défaut</td><td>Agence Lyon</td></tr>
+      <tr><td><strong>Code agence</strong></td><td>Code court</td><td>LYN</td></tr>
+      <tr><td><strong>Nom complet (admin)</strong></td><td>Administrateur de l'entreprise</td><td>Jean DURAND</td></tr>
+      <tr><td><strong>Email (admin)</strong></td><td>Email de connexion</td><td>admin@transport-express.fr</td></tr>
+      <tr><td><strong>Mot de passe (admin)</strong></td><td>Minimum 8 caractères</td><td>MotDePasse2026!</td></tr>
+    </tbody>
+  </table>
+
+  <ol start="5">
+    <li>Cliquer sur <strong>« Créer »</strong></li>
+    <li>Dans la liste, repérer la colonne <strong>« Tenant ID »</strong> de la nouvelle entreprise</li>
+    <li>Cliquer sur l'identifiant pour le <strong>copier</strong></li>
+  </ol>
+
+  <div class="important">
+    <strong>IMPORTANT :</strong> Transmettre au responsable de l'entreprise :
+    <ul>
+      <li>L'URL : <code>https://saf.dataforgeai.fr</code></li>
+      <li>Le <strong>Tenant ID</strong> (UUID copié depuis la liste)</li>
+      <li>L'<strong>email</strong> et le <strong>mot de passe</strong> de l'administrateur</li>
+    </ul>
+  </div>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/01a-login-page.png" alt="Page de connexion">
+    <div class="screenshot-label">Page de connexion SAF Logistic</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="step" id="step2">
+  <div class="step-header">
+    <div class="step-num">2</div>
+    <div class="step-title">Se connecter en tant qu'administrateur</div>
+  </div>
+  <span class="who">Qui : Administrateur de l'entreprise</span>
+  <span class="where">Où : Page de connexion</span>
+
+  <ol>
+    <li>Accéder à <a href="https://saf.dataforgeai.fr/login">https://saf.dataforgeai.fr/login</a></li>
+    <li>Remplir les 3 champs :
+      <ul>
+        <li><strong>Email</strong> : l'email fourni par le Super Admin</li>
+        <li><strong>Mot de passe</strong> : le mot de passe fourni</li>
+        <li><strong>Tenant ID</strong> : le UUID fourni (ex: <code>7c74c775-5c14-4aa1-9ef1-1cce6c5a1fa3</code>)</li>
+      </ul>
+    </li>
+    <li>Cliquer sur <strong>« Se connecter »</strong></li>
+  </ol>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/01b-login-filled.png" alt="Formulaire rempli">
+    <div class="screenshot-label">Formulaire de connexion avec les identifiants</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="step" id="step3">
+  <div class="step-header">
+    <div class="step-num">3</div>
+    <div class="step-title">Installer les données de référence</div>
+  </div>
+  <span class="who">Qui : Administrateur de l'entreprise</span>
+  <span class="where">Où : Exploitation → Configuration</span>
+
+  <p>Cette étape installe automatiquement toutes les données de base françaises.</p>
+
+  <ol>
+    <li>Dans le menu latéral, ouvrir <strong>« Exploitation »</strong></li>
+    <li>Cliquer sur <strong>« Configuration »</strong></li>
+    <li>La page affiche une checklist de 6 éléments</li>
+    <li>Dans la section <strong>« Démo rapide »</strong>, cliquer sur <strong>« Installer les données démo »</strong></li>
+    <li>Attendre la fin de l'installation (quelques secondes)</li>
+  </ol>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/19a-onboarding-page.png" alt="Page de configuration initiale">
+    <div class="screenshot-label">Page Configuration initiale — Exploitation → Configuration</div>
+  </div>
+
+  <div class="info">
+    <strong>Ce qui est installé automatiquement :</strong>
+    <ul>
+      <li><strong>Types de documents conducteur :</strong> Permis de conduire, FIMO, FCO, Visite médicale, Carte conducteur, ADR, Carte d'identité</li>
+      <li><strong>Types de documents véhicule :</strong> Carte grise, Contrôle technique, Assurance, Attestation de capacité</li>
+      <li><strong>Variables de paie :</strong> Heures normales, HS 25%, HS 50%, Heures nuit, Primes, Indemnités, Absences</li>
+      <li><strong>Taux de TVA :</strong> 20%, 10%, 5.5%, 2.1%</li>
+      <li><strong>Données de démo :</strong> 3 clients, 3 conducteurs, 3 véhicules, 1 sous-traitant</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="step" id="step4">
+  <div class="step-header">
+    <div class="step-num">4</div>
+    <div class="step-title">Configurer les paramètres de l'entreprise</div>
+  </div>
+  <span class="who">Qui : Administrateur de l'entreprise</span>
+  <span class="where">Où : Paramétrage → Paramètres</span>
+
+  <h3>4.1 — Informations de l'entreprise</h3>
+  <p>Onglet <strong>« Entreprise »</strong> — Remplir :</p>
+  <table>
+    <thead><tr><th>Champ</th><th>Obligatoire</th></tr></thead>
+    <tbody>
+      <tr><td>Raison sociale</td><td>Oui</td></tr>
+      <tr><td>SIREN (9 chiffres)</td><td>Oui</td></tr>
+      <tr><td>SIRET (14 chiffres)</td><td>Oui</td></tr>
+      <tr><td>TVA Intracommunautaire</td><td>Oui</td></tr>
+      <tr><td>Adresse, Code postal, Ville</td><td>Oui</td></tr>
+      <tr><td>Téléphone, Email</td><td>Recommandé</td></tr>
+      <tr><td>Licence de transport</td><td>Recommandé</td></tr>
+    </tbody>
+  </table>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/16a-settings-entreprise.png" alt="Paramètres entreprise">
+    <div class="screenshot-label">Paramétrage → Paramètres → Onglet Entreprise</div>
+  </div>
+
+  <h3>4.2 — Comptes bancaires</h3>
+  <div class="important">
+    <strong>Obligatoire pour générer des factures.</strong> Ajouter au moins 1 compte bancaire avec IBAN.
+  </div>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/16b-settings-banque.png" alt="Paramètres banque">
+    <div class="screenshot-label">Paramétrage → Paramètres → Onglet Banque</div>
+  </div>
+
+  <h3>4.3 — Vérifier les taux de TVA</h3>
+  <p>Si les données démo ont été installées, les 4 taux français sont déjà configurés. Vérifier que le taux 20% est <strong>par défaut</strong>.</p>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/16c-settings-tva.png" alt="Paramètres TVA">
+    <div class="screenshot-label">Paramétrage → Paramètres → Onglet TVA</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="step" id="step5">
+  <div class="step-header">
+    <div class="step-num">5</div>
+    <div class="step-title">Créer les référentiels métier</div>
+  </div>
+  <span class="who">Qui : Administrateur ou Exploitant</span>
+  <span class="where">Où : Référentiels</span>
+
+  <p>Si les données démo sont installées, des exemples existent déjà. Vous pouvez les modifier ou en ajouter.</p>
+
+  <h3>5.1 — Clients</h3>
+  <p>Menu → <strong>Référentiels → Clients</strong></p>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/03a-clients-list.png" alt="Liste clients">
+    <div class="screenshot-label">Liste des clients</div>
+  </div>
+  <div class="screenshot">
+    <img src="/guide/screenshots/03b-new-client-form.png" alt="Nouveau client">
+    <div class="screenshot-label">Formulaire de création d'un client</div>
+  </div>
+
+  <h3>5.2 — Conducteurs</h3>
+  <p>Menu → <strong>Référentiels → Conducteurs</strong></p>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/04a-conducteurs-list.png" alt="Liste conducteurs">
+    <div class="screenshot-label">Liste des conducteurs</div>
+  </div>
+
+  <h3>5.3 — Véhicules</h3>
+  <p>Menu → <strong>Référentiels → Véhicules</strong></p>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/04c-vehicules-list.png" alt="Liste véhicules">
+    <div class="screenshot-label">Liste des véhicules</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="step" id="step6">
+  <div class="step-header">
+    <div class="step-num">6</div>
+    <div class="step-title">Créer les règles de tarification</div>
+  </div>
+  <span class="who">Qui : Administrateur ou Comptable</span>
+  <span class="where">Où : Finance → Tarifs</span>
+
+  <div class="important">
+    <strong>Au moins une règle de tarification est nécessaire</strong> pour pouvoir générer des factures.
+  </div>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/11a-tarifs-list.png" alt="Liste tarifs">
+    <div class="screenshot-label">Finance → Tarifs</div>
+  </div>
+  <div class="screenshot">
+    <img src="/guide/screenshots/11b-new-tarif-form.png" alt="Nouveau tarif">
+    <div class="screenshot-label">Formulaire de création d'un tarif</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="step" id="step7">
+  <div class="step-header">
+    <div class="step-num">7</div>
+    <div class="step-title">Ajouter des utilisateurs</div>
+  </div>
+  <span class="who">Qui : Administrateur de l'entreprise</span>
+
+  <p>Ajouter les collaborateurs avec le rôle adapté à leur fonction :</p>
+
+  <div class="role-grid">
+    <div class="role-card">
+      <h4>admin</h4>
+      <p>Dirigeant — accès complet</p>
+    </div>
+    <div class="role-card">
+      <h4>exploitation</h4>
+      <p>Exploitant — missions, planning, litiges</p>
+    </div>
+    <div class="role-card">
+      <h4>compta</h4>
+      <p>Comptable — factures, tarifs, OCR</p>
+    </div>
+    <div class="role-card">
+      <h4>rh_paie</h4>
+      <p>RH — paie, conducteurs, documents</p>
+    </div>
+    <div class="role-card">
+      <h4>flotte</h4>
+      <p>Fleet manager — véhicules, maintenance</p>
+    </div>
+    <div class="role-card">
+      <h4>lecture_seule</h4>
+      <p>Auditeur — lecture seule</p>
+    </div>
+  </div>
+
+  <div class="screenshot">
+    <img src="/guide/screenshots/18a-exploitant-sidebar.png" alt="Sidebar exploitant">
+    <div class="screenshot-label">Vue du menu pour un Exploitant</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="step" id="step8">
+  <div class="step-header">
+    <div class="step-num">8</div>
+    <div class="step-title">Vérifier que tout est prêt</div>
+  </div>
+  <span class="where">Où : Exploitation → Configuration</span>
+
+  <p>Retourner sur la page <strong>Configuration</strong> et vérifier que les 6 éléments sont cochés en vert :</p>
+
+  <div class="checklist">
+    <div class="checklist-item"><span class="check">&#10003;</span> Clients</div>
+    <div class="checklist-item"><span class="check">&#10003;</span> Conducteurs</div>
+    <div class="checklist-item"><span class="check">&#10003;</span> Véhicules</div>
+    <div class="checklist-item"><span class="check">&#10003;</span> Types de documents FR</div>
+    <div class="checklist-item"><span class="check">&#10003;</span> Règles de tarification</div>
+    <div class="checklist-item"><span class="check">&#10003;</span> Variables de paie FR</div>
+  </div>
+
+  <div class="success">
+    <strong>Configuration terminée !</strong> L'entreprise est prête. Vous pouvez maintenant créer des missions, affecter des conducteurs, générer des factures et gérer votre flotte.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Checklist rapide</h2>
+
+<div class="checklist">
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 1</strong> — Super Admin : créer l'entreprise + copier le Tenant ID</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 2</strong> — Se connecter (email + mot de passe + Tenant ID)</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 3</strong> — Installer les données démo (Exploitation → Configuration)</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 4a</strong> — Paramètres → Entreprise : remplir SIREN, SIRET, TVA, adresse</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 4b</strong> — Paramètres → Banque : ajouter au moins 1 compte (IBAN)</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 4c</strong> — Paramètres → TVA : vérifier les taux</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 5</strong> — Référentiels : vérifier clients, conducteurs, véhicules</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 6</strong> — Finance → Tarifs : créer au moins 1 règle de tarification</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 7</strong> — Ajouter les utilisateurs avec les bons rôles</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 8</strong> — Vérifier : les 6 éléments sont vert sur la page Configuration</div>
+</div>
+
+<p style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin-top: 48px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+  SAF Logistic v1.0 — Document généré le 26/03/2026<br>
+  <a href="https://saf.dataforgeai.fr" style="color: #3b82f6;">https://saf.dataforgeai.fr</a>
+</p>
+
+</div>
+</body>
+</html>

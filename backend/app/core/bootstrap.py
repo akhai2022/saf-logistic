@@ -12,12 +12,12 @@ logger = logging.getLogger(__name__)
 
 def ensure_s3_bucket() -> None:
     """Create the S3/MinIO bucket if it does not exist."""
-    client_kwargs: dict = {
-        "endpoint_url": settings.S3_ENDPOINT_URL or None,
-        "aws_access_key_id": settings.S3_ACCESS_KEY,
-        "aws_secret_access_key": settings.S3_SECRET_KEY,
-        "region_name": settings.S3_REGION,
-    }
+    client_kwargs: dict = {"region_name": settings.S3_REGION}
+    if settings.S3_ENDPOINT_URL:
+        client_kwargs["endpoint_url"] = settings.S3_ENDPOINT_URL
+    if settings.S3_ACCESS_KEY and settings.S3_SECRET_KEY:
+        client_kwargs["aws_access_key_id"] = settings.S3_ACCESS_KEY
+        client_kwargs["aws_secret_access_key"] = settings.S3_SECRET_KEY
     if settings.S3_USE_PATH_STYLE:
         from botocore.config import Config
         client_kwargs["config"] = Config(s3={"addressing_style": "path"})

@@ -102,6 +102,7 @@ export default function TenantsPage() {
           <thead className="table-header">
             <tr>
               <th>Nom</th>
+              <th>Tenant ID</th>
               <th>SIREN</th>
               <th>Utilisateurs</th>
               <th>Date de creation</th>
@@ -112,6 +113,17 @@ export default function TenantsPage() {
             {tenants.map((t) => (
               <tr key={t.id}>
                 <td className="font-medium">{t.name}</td>
+                <td>
+                  <button
+                    type="button"
+                    onClick={() => { navigator.clipboard.writeText(t.id); }}
+                    className="font-mono text-xs text-gray-500 hover:text-primary-600 cursor-pointer flex items-center gap-1"
+                    title="Cliquer pour copier"
+                  >
+                    {t.id.slice(0, 8)}...
+                    <span className="material-symbols-outlined text-xs" style={{ fontSize: 14 }}>content_copy</span>
+                  </button>
+                </td>
                 <td className="font-mono text-xs">{t.siren || "-"}</td>
                 <td>{t.user_count}</td>
                 <td className="text-xs text-gray-500">
@@ -129,7 +141,7 @@ export default function TenantsPage() {
             ))}
             {tenants.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-center text-gray-400 py-8">
+                <td colSpan={6} className="text-center text-gray-400 py-8">
                   Aucune entreprise
                 </td>
               </tr>

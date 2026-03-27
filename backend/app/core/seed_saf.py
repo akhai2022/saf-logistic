@@ -445,7 +445,71 @@ async def seed_saf(db: AsyncSession) -> None:
         """), {"id": str(nid), "tid": tid, "et": event_type,
                "ch": channels, "rr": roles_list})
 
-    # ── 11. Drivers ──────────────────────────────────────────────────
+    # ── 11. Company settings ───────────────────────────────────────
+    await db.execute(text("""
+        INSERT INTO company_settings (id, tenant_id, raison_sociale, siren, siret, tva_intracom,
+            adresse_ligne1, code_postal, ville, pays, telephone, email, licence_transport)
+        VALUES (:id, :tid, :rs, :siren, :siret, :tva,
+            :addr, :cp, :ville, :pays, :tel, :email, :lic)
+        ON CONFLICT ON CONSTRAINT uq_company_settings_tenant DO UPDATE
+            SET raison_sociale = EXCLUDED.raison_sociale, siren = EXCLUDED.siren
+    """), {
+        "id": str(uuid.uuid4()), "tid": tid,
+        "rs": "SAF LOGISTIQUE", "siren": "820904084", "siret": "82090408400015",
+        "tva": "FR12820904084",
+        "addr": "Zone Industrielle", "cp": "95190", "ville": "Fontenay-en-Parisis", "pays": "FR",
+        "tel": "", "email": "contact@saf-logistique.fr",
+        "lic": "",
+    })
+
+    # ── 12. Bank account ─────────────────────────────────────────────
+    await db.execute(text("""
+        INSERT INTO bank_accounts (id, tenant_id, label, iban, bic, bank_name, is_default)
+        VALUES (:id, :tid, :label, :iban, :bic, :bank, true)
+        ON CONFLICT DO NOTHING
+    """), {
+        "id": str(uuid.uuid4()), "tid": tid,
+        "label": "Compte principal SAF", "iban": "FR7630003000700000000000000",
+        "bic": "SOGEFRPP", "bank": "Societe Generale",
+    })
+
+    # ── 13. Compliance templates (from FR doc types) ─────────────────
+    order = 1
+    for entity_type, code, label, validity_months, mandatory in FR_DOC_TYPES:
+        ctid = uuid.uuid4()
+        validity_days = (validity_months * 30) if validity_months else None
+        await db.execute(text("""
+            INSERT INTO compliance_templates (id, tenant_id, entity_type, type_document,
+                libelle, obligatoire, bloquant, duree_validite_defaut_jours,
+                alertes_jours, ordre_affichage)
+            VALUES (:id, :tid, :et, :td, :label, :oblig, :bloq, :duree, :alertes, :ordre)
+            ON CONFLICT DO NOTHING
+        """), {
+            "id": str(ctid), "tid": tid, "et": entity_type.upper(), "td": code,
+            "label": label, "oblig": mandatory, "bloq": mandatory,
+            "duree": validity_days,
+            "alertes": [90, 60, 30, 15] if mandatory else [60, 30],
+            "ordre": order,
+        })
+        order += 1
+
+    # ── 14. Pricing rules (one per client) ───────────────────────────
+    # Get customer IDs
+    cust_rows = (await db.execute(text(
+        "SELECT id, code FROM customers WHERE tenant_id = :tid"
+    ), {"tid": tid})).all()
+    for crow in cust_rows:
+        prid = uuid.uuid4()
+        await db.execute(text("""
+            INSERT INTO pricing_rules (id, tenant_id, customer_id, label, rule_type, rate, is_active)
+            VALUES (:id, :tid, :cid, :label, :type, :rate, true)
+            ON CONFLICT DO NOTHING
+        """), {
+            "id": str(prid), "tid": tid, "cid": str(crow.id),
+            "label": f"Tarif standard - {crow.code}", "type": "km", "rate": 1.85,
+        })
+
+    # ── 15. Drivers ──────────────────────────────────────────────────
     matricule_counter = 1
     for d in DRIVERS:
         did = uuid.uuid4()

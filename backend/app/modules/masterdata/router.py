@@ -855,6 +855,7 @@ def _driver_from_row(r) -> DriverOut:
         qualification_adr=getattr(r, "qualification_adr", None),
         conformite_statut=getattr(r, "conformite_statut", None),
         statut=getattr(r, "statut", None) or ("ACTIF" if r.is_active else "INACTIF"),
+        site_affectation=getattr(r, "site_affectation", None),
         agency_id=str(r.agency_id) if r.agency_id else None,
         notes=getattr(r, "notes", None),
         created_at=getattr(r, "created_at", None),
@@ -934,6 +935,14 @@ async def get_driver(
         qualification_adr_classes=getattr(row, "qualification_adr_classes", None),
         carte_conducteur_numero=getattr(row, "carte_conducteur_numero", None),
         photo_s3_key=getattr(row, "photo_s3_key", None),
+        # New fields (migration 0010)
+        carte_gazoil_ref=getattr(row, "carte_gazoil_ref", None),
+        carte_gazoil_enseigne=getattr(row, "carte_gazoil_enseigne", None),
+        medecine_travail_dernier_rdv=getattr(row, "medecine_travail_dernier_rdv", None),
+        medecine_travail_prochain_rdv=getattr(row, "medecine_travail_prochain_rdv", None),
+        licence_intracom_numero=getattr(row, "licence_intracom_numero", None),
+        email_personnel=getattr(row, "email_personnel", None),
+        permis_numero=getattr(row, "permis_numero", None),
     )
 
 
@@ -1136,6 +1145,7 @@ def _vehicle_from_row(r) -> VehicleOut:
         km_compteur_actuel=getattr(r, "km_compteur_actuel", None),
         conformite_statut=getattr(r, "conformite_statut", None),
         statut=getattr(r, "statut", None) or ("ACTIF" if r.is_active else "INACTIF"),
+        assurance_compagnie=getattr(r, "assurance_compagnie", None),
         agency_id=str(r.agency_id) if r.agency_id else None,
         notes=getattr(r, "notes", None),
         created_at=getattr(r, "created_at", None),
@@ -1219,6 +1229,20 @@ async def get_vehicle(
         contrat_location_ref=getattr(row, "contrat_location_ref", None),
         date_fin_contrat_location=getattr(row, "date_fin_contrat_location", None),
         date_dernier_releve_km=getattr(row, "date_dernier_releve_km", None),
+        # New fields (migration 0010)
+        nombre_places=getattr(row, "nombre_places", None),
+        mode_achat=getattr(row, "mode_achat", None),
+        valeur_assuree_ht=getattr(row, "valeur_assuree_ht", None),
+        telematique=getattr(row, "telematique", None),
+        reference_client=getattr(row, "reference_client", None),
+        date_entree_flotte=getattr(row, "date_entree_flotte", None),
+        date_sortie_flotte=getattr(row, "date_sortie_flotte", None),
+        presence_matiere_dangereuse=getattr(row, "presence_matiere_dangereuse", None),
+        assurance_numero_police=getattr(row, "assurance_numero_police", None),
+        controle_technique_date=getattr(row, "controle_technique_date", None),
+        limiteur_vitesse_date=getattr(row, "limiteur_vitesse_date", None),
+        tachygraphe_date=getattr(row, "tachygraphe_date", None),
+        siren_proprietaire=getattr(row, "siren_proprietaire", None),
     )
 
 

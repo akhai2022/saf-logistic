@@ -26,6 +26,7 @@ const ALL_SECTIONS: NavSection[] = [
     icon: "route",
     items: [
       { href: "/jobs", label: "Missions", icon: "local_shipping" },
+      { href: "/routes", label: "Tournees", icon: "route" },
       { href: "/planning", label: "Planning", icon: "calendar_month" },
       { href: "/disputes", label: "Litiges", icon: "gavel" },
       { href: "/subcontracting", label: "Affrètement", icon: "swap_horiz" },

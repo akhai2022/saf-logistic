@@ -38,11 +38,14 @@ export default function DriverDetailPage() {
           adresse_ligne1: d.adresse_ligne1 || "", adresse_ligne2: d.adresse_ligne2 || "",
           code_postal: d.code_postal || "", ville: d.ville || "",
           telephone_mobile: d.telephone_mobile || d.phone || "", email: d.email || "",
+          email_personnel: d.email_personnel || "",
           statut_emploi: d.statut_emploi || "SALARIE",
           agence_interim_nom: d.agence_interim_nom || "",
           type_contrat: d.type_contrat || "CDI",
           date_entree: d.date_entree || "", date_sortie: d.date_sortie || "",
           motif_sortie: d.motif_sortie || "", poste: d.poste || "",
+          site_affectation: d.site_affectation || "",
+          permis_numero: d.permis_numero || "",
           coefficient: d.coefficient || "", groupe: d.groupe || "",
           salaire_base_mensuel: String(d.salaire_base_mensuel || ""),
           taux_horaire: String(d.taux_horaire || ""),
@@ -51,6 +54,11 @@ export default function DriverDetailPage() {
           qualification_fco: d.qualification_fco || false,
           qualification_adr: d.qualification_adr || false,
           carte_conducteur_numero: d.carte_conducteur_numero || "",
+          carte_gazoil_ref: d.carte_gazoil_ref || "",
+          carte_gazoil_enseigne: d.carte_gazoil_enseigne || "",
+          licence_intracom_numero: d.licence_intracom_numero || "",
+          medecine_travail_dernier_rdv: d.medecine_travail_dernier_rdv || "",
+          medecine_travail_prochain_rdv: d.medecine_travail_prochain_rdv || "",
           notes: d.notes || "",
         });
       });
@@ -68,6 +76,8 @@ export default function DriverDetailPage() {
         motif_sortie: (form.motif_sortie as string) || null,
         salaire_base_mensuel: form.salaire_base_mensuel ? parseFloat(form.salaire_base_mensuel as string) : null,
         taux_horaire: form.taux_horaire ? parseFloat(form.taux_horaire as string) : null,
+        medecine_travail_dernier_rdv: (form.medecine_travail_dernier_rdv as string) || null,
+        medecine_travail_prochain_rdv: (form.medecine_travail_prochain_rdv as string) || null,
       });
       apiGet<DriverDetail>(`/v1/masterdata/drivers/${id}`).then(setDriver);
     } finally { setSaving(false); }
@@ -140,6 +150,13 @@ export default function DriverDetailPage() {
               <Input label="Ville" value={form.ville as string} onChange={(e) => setForm({ ...form, ville: e.target.value })} />
               <Input label="Tél. mobile" value={form.telephone_mobile as string} onChange={(e) => setForm({ ...form, telephone_mobile: e.target.value })} />
               <Input label="Email" value={form.email as string} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <Input label="Email personnel" value={form.email_personnel as string} onChange={(e) => setForm({ ...form, email_personnel: e.target.value })} />
+            </div>
+          </Card>
+          <Card title="Médecine du travail" icon="medical_services">
+            <div className="grid grid-cols-3 gap-4">
+              <Input label="Dernier RDV" type="date" value={form.medecine_travail_dernier_rdv as string} onChange={(e) => setForm({ ...form, medecine_travail_dernier_rdv: e.target.value })} />
+              <Input label="Prochain RDV" type="date" value={form.medecine_travail_prochain_rdv as string} onChange={(e) => setForm({ ...form, medecine_travail_prochain_rdv: e.target.value })} />
             </div>
           </Card>
         </div>
@@ -167,6 +184,8 @@ export default function DriverDetailPage() {
               <Input label="Date d'entrée" type="date" value={form.date_entree as string} onChange={(e) => setForm({ ...form, date_entree: e.target.value })} />
               <Input label="Date de sortie" type="date" value={form.date_sortie as string} onChange={(e) => setForm({ ...form, date_sortie: e.target.value })} />
               <Input label="Poste" value={form.poste as string} onChange={(e) => setForm({ ...form, poste: e.target.value })} />
+              <Input label="Site d'affectation" value={form.site_affectation as string} onChange={(e) => setForm({ ...form, site_affectation: e.target.value })} />
+              <Input label="N° Permis" value={form.permis_numero as string} onChange={(e) => setForm({ ...form, permis_numero: e.target.value })} />
             </div>
           </Card>
           <Card title="Rémunération" icon="euro">
@@ -210,6 +229,13 @@ export default function DriverDetailPage() {
           </Card>
           <Card title="Carte conducteur" icon="credit_card">
             <Input label="Numéro carte conducteur" value={form.carte_conducteur_numero as string} onChange={(e) => setForm({ ...form, carte_conducteur_numero: e.target.value })} />
+          </Card>
+          <Card title="Carte gazoil & Licences" icon="local_gas_station">
+            <div className="grid grid-cols-3 gap-4">
+              <Input label="Réf. carte gazoil" value={form.carte_gazoil_ref as string} onChange={(e) => setForm({ ...form, carte_gazoil_ref: e.target.value })} />
+              <Input label="Enseigne gazoil" value={form.carte_gazoil_enseigne as string} onChange={(e) => setForm({ ...form, carte_gazoil_enseigne: e.target.value })} />
+              <Input label="N° Licence intracom" value={form.licence_intracom_numero as string} onChange={(e) => setForm({ ...form, licence_intracom_numero: e.target.value })} />
+            </div>
           </Card>
         </div>
       )}

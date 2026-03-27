@@ -235,6 +235,7 @@ export interface Driver {
   date_entree?: string;
   date_sortie?: string;
   poste?: string;
+  site_affectation?: string;
   categorie_permis?: string[];
   qualification_fimo?: boolean;
   qualification_fco?: boolean;
@@ -261,6 +262,7 @@ export interface DriverDetail extends Driver {
   code_postal?: string;
   ville?: string;
   pays?: string;
+  email_personnel?: string;
   agence_interim_nom?: string;
   agence_interim_contact?: string;
   motif_sortie?: string;
@@ -268,8 +270,14 @@ export interface DriverDetail extends Driver {
   groupe?: string;
   salaire_base_mensuel?: number;
   taux_horaire?: number;
+  permis_numero?: string;
   qualification_adr_classes?: string[];
   carte_conducteur_numero?: string;
+  carte_gazoil_ref?: string;
+  carte_gazoil_enseigne?: string;
+  licence_intracom_numero?: string;
+  medecine_travail_dernier_rdv?: string;
+  medecine_travail_prochain_rdv?: string;
   photo_s3_key?: string;
 }
 
@@ -301,6 +309,7 @@ export interface Vehicle {
   model?: string;
   vehicle_type?: string;
   payload_kg?: number;
+  assurance_compagnie?: string;
   is_active: boolean;
 }
 
@@ -321,6 +330,19 @@ export interface VehicleDetail extends Vehicle {
   contrat_location_ref?: string;
   date_fin_contrat_location?: string;
   date_dernier_releve_km?: string;
+  nombre_places?: number;
+  mode_achat?: string;
+  valeur_assuree_ht?: number;
+  telematique?: boolean;
+  reference_client?: string;
+  date_entree_flotte?: string;
+  date_sortie_flotte?: string;
+  presence_matiere_dangereuse?: boolean;
+  assurance_numero_police?: string;
+  controle_technique_date?: string;
+  limiteur_vitesse_date?: string;
+  tachygraphe_date?: string;
+  siren_proprietaire?: string;
 }
 
 // ── Mission (Module C — expanded Job) ────────────────────────────

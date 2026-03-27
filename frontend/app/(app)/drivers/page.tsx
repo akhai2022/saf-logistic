@@ -117,6 +117,7 @@ export default function DriversPage() {
               <SortableHeader label="Nom" field="nom" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <SortableHeader label="Prénom" field="prenom" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>Poste</th>
+              <th>Site</th>
               <th>Type contrat</th>
               <th>Conformité</th>
               <SortableHeader label="Statut" field="statut" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
@@ -131,6 +132,7 @@ export default function DriversPage() {
                 </td>
                 <td className="text-gray-600">{d.prenom || d.first_name}</td>
                 <td className="text-gray-600">{d.poste || "—"}</td>
+                <td className="text-gray-600">{d.site_affectation || "—"}</td>
                 <td className="text-gray-600">{d.type_contrat || "—"}</td>
                 <td><StatusBadge statut={d.conformite_statut} /></td>
                 <td><StatusBadge statut={d.statut} /></td>

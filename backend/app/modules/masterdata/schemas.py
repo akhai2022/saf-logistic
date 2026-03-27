@@ -405,6 +405,15 @@ class DriverCreate(BaseModel):
     qualification_adr: bool = False
     qualification_adr_classes: list[str] | None = None
     carte_conducteur_numero: str | None = None
+    # New fields (migration 0010)
+    carte_gazoil_ref: str | None = None
+    carte_gazoil_enseigne: str | None = None
+    medecine_travail_dernier_rdv: date | None = None
+    medecine_travail_prochain_rdv: date | None = None
+    site_affectation: str | None = None
+    licence_intracom_numero: str | None = None
+    email_personnel: str | None = None
+    permis_numero: str | None = None
     agency_id: str | None = None
     notes: str | None = None
     # Legacy compat
@@ -491,6 +500,7 @@ class DriverOut(BaseModel):
     qualification_adr: bool | None = None
     conformite_statut: str | None = None
     statut: str | None = None
+    site_affectation: str | None = None
     agency_id: str | None = None
     notes: str | None = None
     created_at: datetime | None = None
@@ -521,6 +531,14 @@ class DriverDetail(DriverOut):
     qualification_adr_classes: list[str] | None = None
     carte_conducteur_numero: str | None = None
     photo_s3_key: str | None = None
+    # New fields (migration 0010)
+    carte_gazoil_ref: str | None = None
+    carte_gazoil_enseigne: str | None = None
+    medecine_travail_dernier_rdv: date | None = None
+    medecine_travail_prochain_rdv: date | None = None
+    licence_intracom_numero: str | None = None
+    email_personnel: str | None = None
+    permis_numero: str | None = None
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -557,6 +575,21 @@ class VehicleCreate(BaseModel):
     date_fin_contrat_location: date | None = None
     km_compteur_actuel: int | None = None
     date_dernier_releve_km: date | None = None
+    # New fields (migration 0010)
+    nombre_places: int | None = None
+    mode_achat: str | None = None
+    valeur_assuree_ht: Decimal | None = None
+    telematique: bool = False
+    reference_client: str | None = None
+    date_entree_flotte: date | None = None
+    date_sortie_flotte: date | None = None
+    presence_matiere_dangereuse: bool = False
+    assurance_compagnie: str | None = None
+    assurance_numero_police: str | None = None
+    controle_technique_date: date | None = None
+    limiteur_vitesse_date: date | None = None
+    tachygraphe_date: date | None = None
+    siren_proprietaire: str | None = None
     agency_id: str | None = None
     notes: str | None = None
     # Legacy compat
@@ -655,6 +688,7 @@ class VehicleOut(BaseModel):
     km_compteur_actuel: int | None = None
     conformite_statut: str | None = None
     statut: str | None = None
+    assurance_compagnie: str | None = None
     agency_id: str | None = None
     notes: str | None = None
     created_at: datetime | None = None
@@ -685,6 +719,20 @@ class VehicleDetail(VehicleOut):
     contrat_location_ref: str | None = None
     date_fin_contrat_location: date | None = None
     date_dernier_releve_km: date | None = None
+    # New fields (migration 0010)
+    nombre_places: int | None = None
+    mode_achat: str | None = None
+    valeur_assuree_ht: Decimal | None = None
+    telematique: bool | None = None
+    reference_client: str | None = None
+    date_entree_flotte: date | None = None
+    date_sortie_flotte: date | None = None
+    presence_matiere_dangereuse: bool | None = None
+    assurance_numero_police: str | None = None
+    controle_technique_date: date | None = None
+    limiteur_vitesse_date: date | None = None
+    tachygraphe_date: date | None = None
+    siren_proprietaire: str | None = None
 
 
 # ══════════════════════════════════════════════════════════════════

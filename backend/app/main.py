@@ -27,6 +27,7 @@ from app.modules.planning.router import router as planning_router
 from app.modules.billing.router_extensions import router as billing_ext_router
 from app.modules.subcontracting.router import router as subcontracting_router
 from app.modules.driver_mobile.router import router as driver_mobile_router
+from app.modules.routes.router import router as routes_router
 
 
 @asynccontextmanager
@@ -93,6 +94,7 @@ app.include_router(planning_router)
 app.include_router(billing_ext_router)
 app.include_router(subcontracting_router)
 app.include_router(driver_mobile_router)
+app.include_router(routes_router)
 
 
 @app.get("/health")

@@ -130,6 +130,7 @@ export default function VehiclesPage() {
               <SortableHeader label="Catégorie" field="categorie" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <SortableHeader label="Marque" field="marque" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
               <th>Modèle</th>
+              <th>Assurance</th>
               <th>Conformité</th>
               <SortableHeader label="Statut" field="statut" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
             </tr>
@@ -143,6 +144,7 @@ export default function VehiclesPage() {
                 <td className="text-gray-600">{v.categorie || v.vehicle_type || "—"}</td>
                 <td className="text-gray-600">{v.marque || v.brand || "—"}</td>
                 <td className="text-gray-600">{v.modele || v.model || "—"}</td>
+                <td className="text-gray-600">{v.assurance_compagnie || "—"}</td>
                 <td><StatusBadge statut={v.conformite_statut} /></td>
                 <td><StatusBadge statut={v.statut} /></td>
               </tr>

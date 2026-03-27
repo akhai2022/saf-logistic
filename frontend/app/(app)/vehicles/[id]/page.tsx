@@ -75,6 +75,20 @@ export default function VehicleDetailPage() {
           km_compteur_actuel: String(v.km_compteur_actuel || ""),
           date_dernier_releve_km: v.date_dernier_releve_km || "",
           notes: v.notes || "",
+          nombre_places: String(v.nombre_places || ""),
+          mode_achat: v.mode_achat || "",
+          valeur_assuree_ht: String(v.valeur_assuree_ht || ""),
+          telematique: v.telematique ? "true" : "",
+          reference_client: v.reference_client || "",
+          date_entree_flotte: v.date_entree_flotte || "",
+          date_sortie_flotte: v.date_sortie_flotte || "",
+          presence_matiere_dangereuse: v.presence_matiere_dangereuse ? "true" : "",
+          assurance_compagnie: v.assurance_compagnie || "",
+          assurance_numero_police: v.assurance_numero_police || "",
+          controle_technique_date: v.controle_technique_date || "",
+          limiteur_vitesse_date: v.limiteur_vitesse_date || "",
+          tachygraphe_date: v.tachygraphe_date || "",
+          siren_proprietaire: v.siren_proprietaire || "",
         });
       });
     }
@@ -119,6 +133,20 @@ export default function VehicleDetailPage() {
         norme_euro: form.norme_euro || null,
         carrosserie: form.carrosserie || null,
         categorie: form.categorie || null,
+        nombre_places: toIntOrNull(form.nombre_places),
+        mode_achat: form.mode_achat || null,
+        valeur_assuree_ht: toFloatOrNull(form.valeur_assuree_ht),
+        telematique: form.telematique === "true" ? true : false,
+        reference_client: form.reference_client || null,
+        date_entree_flotte: form.date_entree_flotte || null,
+        date_sortie_flotte: form.date_sortie_flotte || null,
+        presence_matiere_dangereuse: form.presence_matiere_dangereuse === "true" ? true : false,
+        assurance_compagnie: form.assurance_compagnie || null,
+        assurance_numero_police: form.assurance_numero_police || null,
+        controle_technique_date: form.controle_technique_date || null,
+        limiteur_vitesse_date: form.limiteur_vitesse_date || null,
+        tachygraphe_date: form.tachygraphe_date || null,
+        siren_proprietaire: form.siren_proprietaire || null,
       });
       apiGet<VehicleDetail>(`/v1/masterdata/vehicles/${id}`).then(setVehicle);
     } finally { setSaving(false); }
@@ -216,6 +244,21 @@ export default function VehicleDetailPage() {
               <Input label="Loueur" value={form.loueur_nom} onChange={(e) => setForm({ ...form, loueur_nom: e.target.value })} />
               <Input label="Réf. contrat" value={form.contrat_location_ref} onChange={(e) => setForm({ ...form, contrat_location_ref: e.target.value })} />
               <Input label="Fin contrat" type="date" value={form.date_fin_contrat_location} onChange={(e) => setForm({ ...form, date_fin_contrat_location: e.target.value })} />
+              <Input label="SIREN propriétaire" value={form.siren_proprietaire} onChange={(e) => setForm({ ...form, siren_proprietaire: e.target.value })} />
+            </div>
+          </Card>
+          <Card title="Flotte" icon="local_shipping">
+            <div className="grid grid-cols-3 gap-4">
+              <Input label="Date entrée flotte" type="date" value={form.date_entree_flotte} onChange={(e) => setForm({ ...form, date_entree_flotte: e.target.value })} />
+              <Input label="Date sortie flotte" type="date" value={form.date_sortie_flotte} onChange={(e) => setForm({ ...form, date_sortie_flotte: e.target.value })} />
+              <Input label="Référence client" value={form.reference_client} onChange={(e) => setForm({ ...form, reference_client: e.target.value })} />
+            </div>
+          </Card>
+          <Card title="Assurance" icon="shield">
+            <div className="grid grid-cols-3 gap-4">
+              <Input label="Compagnie d'assurance" value={form.assurance_compagnie} onChange={(e) => setForm({ ...form, assurance_compagnie: e.target.value })} />
+              <Input label="N° Police" value={form.assurance_numero_police} onChange={(e) => setForm({ ...form, assurance_numero_police: e.target.value })} />
+              <Input label="Valeur assurée HT" type="number" step="0.01" value={form.valeur_assuree_ht} onChange={(e) => setForm({ ...form, valeur_assuree_ht: e.target.value })} />
             </div>
           </Card>
         </div>
@@ -274,6 +317,32 @@ export default function VehicleDetailPage() {
             <div className="grid grid-cols-3 gap-4">
               <Input label="Km compteur" type="number" value={form.km_compteur_actuel} onChange={(e) => setForm({ ...form, km_compteur_actuel: e.target.value })} />
               <Input label="Date relevé" type="date" value={form.date_dernier_releve_km} onChange={(e) => setForm({ ...form, date_dernier_releve_km: e.target.value })} />
+              <Input label="Nombre de places" type="number" value={form.nombre_places} onChange={(e) => setForm({ ...form, nombre_places: e.target.value })} />
+            </div>
+          </Card>
+          <Card title="Contrôles réglementaires" icon="fact_check">
+            <div className="grid grid-cols-3 gap-4">
+              <Input label="Contrôle technique" type="date" value={form.controle_technique_date} onChange={(e) => setForm({ ...form, controle_technique_date: e.target.value })} />
+              <Input label="Limiteur de vitesse" type="date" value={form.limiteur_vitesse_date} onChange={(e) => setForm({ ...form, limiteur_vitesse_date: e.target.value })} />
+              <Input label="Tachygraphe" type="date" value={form.tachygraphe_date} onChange={(e) => setForm({ ...form, tachygraphe_date: e.target.value })} />
+            </div>
+          </Card>
+          <Card title="Équipements & réglementation" icon="settings">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">Matière dangereuse ADR</label>
+                <label className="flex items-center gap-2 mt-1">
+                  <input type="checkbox" checked={form.presence_matiere_dangereuse === "true"} onChange={(e) => setForm({ ...form, presence_matiere_dangereuse: e.target.checked ? "true" : "" })} className="rounded border-gray-300" />
+                  <span className="text-sm text-gray-600">Présence de matière dangereuse</span>
+                </label>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">Télématique</label>
+                <label className="flex items-center gap-2 mt-1">
+                  <input type="checkbox" checked={form.telematique === "true"} onChange={(e) => setForm({ ...form, telematique: e.target.checked ? "true" : "" })} className="rounded border-gray-300" />
+                  <span className="text-sm text-gray-600">Équipé télématique</span>
+                </label>
+              </div>
             </div>
           </Card>
         </div>

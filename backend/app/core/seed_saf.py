@@ -627,6 +627,38 @@ async def seed_saf(db: AsyncSession) -> None:
             "statut": c["statut"],
         })
 
+    # ── 16. Routes (tournées) from SAF planning data ───────────────
+    ROUTES = [
+        {"numero": "1029", "libelle": "Tournée 1029 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
+        {"numero": "1013", "libelle": "Tournée 1013 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
+        {"numero": "1016", "libelle": "Tournée 1016 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
+        {"numero": "1017", "libelle": "Tournée 1017 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
+        {"numero": "1012", "libelle": "Tournée 1012 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
+        {"numero": "095174", "libelle": "Tournée 95174 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
+        {"numero": "095237", "libelle": "Tournée 95237 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
+        {"numero": "095238", "libelle": "Tournée 95238 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
+        {"numero": "174", "libelle": "Tournée 174 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
+        {"numero": "1406", "libelle": "Tournée 1406 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
+    ]
+    # Build customer code→id lookup
+    cust_lookup = {}
+    for crow in (await db.execute(text("SELECT id, code FROM customers WHERE tenant_id = :tid"), {"tid": tid})).fetchall():
+        cust_lookup[crow.code] = str(crow.id)
+
+    for rt in ROUTES:
+        rtid = uuid.uuid4()
+        await db.execute(text("""
+            INSERT INTO routes (id, tenant_id, numero, libelle, client_id, site, recurrence,
+                date_debut, type_mission, statut)
+            VALUES (:id, :tid, :num, :lib, :cid, :site, :rec, :debut, :type, 'ACTIF')
+            ON CONFLICT ON CONSTRAINT uq_routes_tenant_numero DO NOTHING
+        """), {
+            "id": str(rtid), "tid": tid, "num": rt["numero"], "lib": rt["libelle"],
+            "cid": cust_lookup.get(rt["client_code"]),
+            "site": rt["site"], "rec": rt["recurrence"],
+            "debut": date(2025, 12, 1), "type": "LOT_COMPLET",
+        })
+
     await db.commit()
     print("=" * 60)
     print("SAF Logistique production seed completed successfully.")

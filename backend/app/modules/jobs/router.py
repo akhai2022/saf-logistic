@@ -229,12 +229,9 @@ async def list_missions(
     sort_by: str | None = Query(None),
     order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
-    q = """SELECT j.*,
-           rt.code AS source_template_code, rr.code AS source_run_code
-           FROM jobs j
-           LEFT JOIN route_templates rt ON j.source_route_template_id = rt.id
-           LEFT JOIN route_runs rr ON j.source_route_run_id = rr.id
-           WHERE j.tenant_id = :tid"""
+    q = """SELECT j.*, rt.code AS source_template_code, rt.code AS route_numero, rr.code AS source_run_code
+           FROM jobs j LEFT JOIN route_templates rt ON j.source_route_template_id = rt.id
+           LEFT JOIN route_runs rr ON j.source_route_run_id = rr.id WHERE j.tenant_id = :tid"""
     params: dict = {"tid": str(tenant.tenant_id)}
 
     effective_status = statut or status
@@ -320,10 +317,8 @@ async def get_mission(
     db: AsyncSession = Depends(get_db),
 ):
     row = (await db.execute(text("""
-        SELECT j.*,
-               rt.code AS source_template_code, rr.code AS source_run_code
-        FROM jobs j
-        LEFT JOIN route_templates rt ON j.source_route_template_id = rt.id
+        SELECT j.*, rt.code AS source_template_code, rt.code AS route_numero, rr.code AS source_run_code
+        FROM jobs j LEFT JOIN route_templates rt ON j.source_route_template_id = rt.id
         LEFT JOIN route_runs rr ON j.source_route_run_id = rr.id
         WHERE j.id = :id AND j.tenant_id = :tid
     """), {"id": job_id, "tid": str(tenant.tenant_id)})).first()

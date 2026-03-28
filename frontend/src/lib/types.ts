@@ -387,10 +387,7 @@ export interface Mission {
   updated_by?: string;
   created_at?: string;
   updated_at?: string;
-  // Tournée link (legacy)
-  route_id?: string;
-  route_numero?: string;
-  // Source tracking (new model)
+  // Source tracking (route template / run)
   source_type?: string;
   source_route_template_id?: string;
   source_route_template_code?: string;

@@ -8,6 +8,16 @@ import PageHeader from "@/components/PageHeader";
 import Card from "@/components/Card";
 import StatusBadge from "@/components/StatusBadge";
 
+interface ExpirationItem {
+  entity_type: string;
+  entity_id: string;
+  entity_label?: string;
+  type_document: string;
+  date_expiration: string;
+  jours_restants: number;
+  urgency: string;
+}
+
 interface VehicleAssignment {
   vehicle_id: string;
   immatriculation: string;
@@ -32,6 +42,7 @@ export default function FleetDashboardPage() {
   const [stats, setStats] = useState<FleetDashboardStats | null>(null);
   const [upcoming, setUpcoming] = useState<MaintenanceRecord[]>([]);
   const [assignments, setAssignments] = useState<VehicleAssignment[]>([]);
+  const [expirations, setExpirations] = useState<ExpirationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,11 +50,13 @@ export default function FleetDashboardPage() {
       apiGet<FleetDashboardStats>("/v1/fleet/dashboard"),
       apiGet<MaintenanceRecord[]>("/v1/fleet/maintenance/upcoming?days=30"),
       apiGet<VehicleAssignment[]>("/v1/fleet/assignments"),
+      apiGet<ExpirationItem[]>("/v1/compliance/upcoming-expirations?days=60"),
     ])
-      .then(([s, u, a]) => {
+      .then(([s, u, a, exp]) => {
         setStats(s);
         setUpcoming(u);
         setAssignments(a);
+        setExpirations(exp);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -131,6 +144,40 @@ export default function FleetDashboardPage() {
         )}
       </Card>
 
+      {/* Upcoming expirations */}
+      <Card title="Expirations a venir (60j)" icon="warning" className="mt-6">
+        {expirations.length === 0 ? (
+          <p className="text-sm text-gray-500">Aucune expiration dans les 60 prochains jours</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-gray-500">
+                  <th className="py-2 pr-4">Document</th>
+                  <th className="py-2 pr-4">Entite</th>
+                  <th className="py-2 pr-4">Expiration</th>
+                  <th className="py-2 pr-4">Jours restants</th>
+                  <th className="py-2 pr-4">Urgence</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expirations.map((exp, idx) => (
+                  <tr key={idx} className="border-b last:border-0 hover:bg-gray-50">
+                    <td className="py-2 pr-4 font-medium">{exp.type_document}</td>
+                    <td className="py-2 pr-4 text-gray-600">{exp.entity_label || `${exp.entity_type} ${exp.entity_id.slice(0, 8)}`}</td>
+                    <td className="py-2 pr-4 text-gray-600">{exp.date_expiration}</td>
+                    <td className="py-2 pr-4 text-gray-600">{exp.jours_restants}</td>
+                    <td className={`py-2 pr-4 font-semibold ${exp.urgency === "EXPIRED" ? "text-red-600" : "text-amber-600"}`}>
+                      {exp.urgency === "EXPIRED" ? "Expiré" : "Bientôt"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
       {/* Vehicle assignments */}
       <Card title="Affectations vehicules" icon="pin_drop" className="mt-6">
         {assignments.length === 0 ? (
@@ -158,7 +205,7 @@ export default function FleetDashboardPage() {
                     <td className="py-2 pr-4 text-gray-600">{a.marque} {a.modele}</td>
                     <td className="py-2 pr-4">
                       {a.route_numero ? (
-                        <Link href={`/routes/${a.route_id}`} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline">{a.route_numero}</Link>
+                        <Link href={`/route-templates/${a.route_id}`} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline">{a.route_numero}</Link>
                       ) : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="py-2 pr-4 text-xs">{a.route_site || "—"}</td>

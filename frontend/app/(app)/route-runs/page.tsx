@@ -15,11 +15,12 @@ interface RouteRun {
   id: string;
   code: string;
   service_date: string;
-  template_numero?: string;
-  template_id?: string;
+  route_template_id?: string;
+  template_code?: string;
+  template_label?: string;
   assigned_driver_name?: string;
   assigned_vehicle_plate?: string;
-  mission_count: number;
+  nb_missions: number;
   aggregated_sale_amount_ht?: number;
   status: string;
 }
@@ -239,15 +240,15 @@ export default function RouteRunsPage() {
                   </td>
                   <td className="text-xs">{fmtDate(r.service_date)}</td>
                   <td className="text-xs">
-                    {r.template_id ? (
-                      <Link href={`/routes/${r.template_id}`} className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline">
-                        {r.template_numero || "Modele"}
+                    {r.route_template_id ? (
+                      <Link href={`/route-templates/${r.route_template_id}`} className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline">
+                        {r.template_code || "Modele"}
                       </Link>
                     ) : "—"}
                   </td>
                   <td className="text-xs">{r.assigned_driver_name || "—"}</td>
                   <td className="font-mono text-xs">{r.assigned_vehicle_plate || "—"}</td>
-                  <td><span className="text-xs font-medium">{r.mission_count}</span></td>
+                  <td><span className="text-xs font-medium">{r.nb_missions}</span></td>
                   <td className="text-xs font-medium">{fmtAmount(r.aggregated_sale_amount_ht)}</td>
                   <td><StatusBadge statut={r.status} /></td>
                   <td>

@@ -14,8 +14,8 @@ interface RouteRunDetail {
   code: string;
   service_date: string;
   status: string;
-  template_id?: string;
-  template_numero?: string;
+  route_template_id?: string;
+  template_code?: string;
   assigned_driver_name?: string;
   assigned_vehicle_plate?: string;
   planned_start_at?: string;
@@ -169,9 +169,9 @@ export default function RouteRunDetailPage() {
               <div><span className="text-gray-500">Statut:</span> <StatusBadge statut={detail.status} /></div>
               <div>
                 <span className="text-gray-500">Modele:</span>{" "}
-                {detail.template_id ? (
-                  <Link href={`/routes/${detail.template_id}`} className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline text-xs font-medium">
-                    {detail.template_numero || "Voir modele"}
+                {detail.route_template_id ? (
+                  <Link href={`/route-templates/${detail.route_template_id}`} className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline text-xs font-medium">
+                    {detail.template_code || "Voir modele"}
                   </Link>
                 ) : "—"}
               </div>

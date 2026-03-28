@@ -7,6 +7,7 @@ import { apiGet, apiPost, apiPut, apiPatch } from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
 import FilePicker from "@/components/FilePicker";
 import ComplianceTab from "@/components/ComplianceTab";
+import ComplianceAlertBanner from "@/components/ComplianceAlertBanner";
 import { useAuth } from "@/lib/auth";
 import type { DriverDetail, ComplianceChecklist } from "@/lib/types";
 import Button from "@/components/Button";
@@ -114,6 +115,8 @@ export default function DriverDetailPage() {
         <StatusBadge statut={driver.conformite_statut} size="md" />
         <span className="text-sm text-gray-500">{driver.matricule}</span>
       </div>
+
+      <ComplianceAlertBanner entityType="driver" entityId={id} />
 
       <div className="flex gap-1 border-b">
         {TABS.map((t) => (

@@ -11,6 +11,7 @@ import Card from "@/components/Card";
 import Input from "@/components/Input";
 import StatusBadge from "@/components/StatusBadge";
 import ComplianceTab from "@/components/ComplianceTab";
+import ComplianceAlertBanner from "@/components/ComplianceAlertBanner";
 
 const TABS = ["Général", "Caractéristiques", "Technique", "Maintenance", "Coûts", "Conformité"] as const;
 const STATUTS = ["ACTIF", "INACTIF", "EN_MAINTENANCE", "IMMOBILISE", "VENDU", "RESTITUE"];
@@ -197,6 +198,8 @@ export default function VehicleDetailPage() {
         <StatusBadge statut={vehicle.conformite_statut} size="md" />
         <span className="text-sm text-gray-500">{vehicle.marque || vehicle.brand} {vehicle.modele || vehicle.model}</span>
       </div>
+
+      <ComplianceAlertBanner entityType="vehicle" entityId={id} />
 
       <div className="flex gap-1 border-b overflow-x-auto">
         {TABS.map((t) => (

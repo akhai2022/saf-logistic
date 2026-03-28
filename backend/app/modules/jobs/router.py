@@ -116,8 +116,6 @@ def _mission_from_row(r) -> MissionOut:
         pod_s3_key=r.pod_s3_key,
         created_at=_ts(r.created_at),
         agency_id=str(r.agency_id) if r.agency_id else None,
-        route_id=str(r.route_id) if getattr(r, "route_id", None) else None,
-        route_numero=getattr(r, "route_numero", None),
         source_type=getattr(r, "source_type", None),
         source_route_template_id=str(r.source_route_template_id) if getattr(r, "source_route_template_id", None) else None,
         source_route_template_code=getattr(r, "source_template_code", None),
@@ -231,23 +229,34 @@ async def list_missions(
     sort_by: str | None = Query(None),
     order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
-    q = """SELECT j.*, rt.numero AS route_numero,
-           rt_new.code AS source_template_code, rr.code AS source_run_code
+    q = """SELECT j.*,
+           rt.code AS source_template_code, rr.code AS source_run_code
            FROM jobs j
-           LEFT JOIN routes rt ON j.route_id = rt.id
-           LEFT JOIN route_templates rt_new ON j.source_route_template_id = rt_new.id
+           LEFT JOIN route_templates rt ON j.source_route_template_id = rt.id
            LEFT JOIN route_runs rr ON j.source_route_run_id = rr.id
            WHERE j.tenant_id = :tid"""
     params: dict = {"tid": str(tenant.tenant_id)}
 
     effective_status = statut or status
     if effective_status:
-        # Support both legacy and new status names
+        # Match both legacy lowercase and new uppercase status values in DB
         new_to_legacy = {"BROUILLON": "draft", "PLANIFIEE": "planned", "AFFECTEE": "assigned",
                          "EN_COURS": "in_progress", "LIVREE": "delivered", "CLOTUREE": "closed"}
-        legacy_val = new_to_legacy.get(effective_status, effective_status)
-        q += " AND j.status = :status"
-        params["status"] = legacy_val
+        legacy_to_new = {v: k for k, v in new_to_legacy.items()}
+        if effective_status in new_to_legacy:
+            # Caller sent uppercase → match both uppercase and legacy lowercase
+            q += " AND j.status IN (:st1, :st2)"
+            params["st1"] = effective_status
+            params["st2"] = new_to_legacy[effective_status]
+        elif effective_status in legacy_to_new:
+            # Caller sent lowercase → match both lowercase and new uppercase
+            q += " AND j.status IN (:st1, :st2)"
+            params["st1"] = effective_status
+            params["st2"] = legacy_to_new[effective_status]
+        else:
+            # Unknown status (e.g. FACTUREE, ANNULEE) — exact match
+            q += " AND j.status = :status"
+            params["status"] = effective_status
 
     if client_id:
         q += " AND j.customer_id = :cid"
@@ -311,11 +320,10 @@ async def get_mission(
     db: AsyncSession = Depends(get_db),
 ):
     row = (await db.execute(text("""
-        SELECT j.*, rt.numero AS route_numero,
-               rt_new.code AS source_template_code, rr.code AS source_run_code
+        SELECT j.*,
+               rt.code AS source_template_code, rr.code AS source_run_code
         FROM jobs j
-        LEFT JOIN routes rt ON j.route_id = rt.id
-        LEFT JOIN route_templates rt_new ON j.source_route_template_id = rt_new.id
+        LEFT JOIN route_templates rt ON j.source_route_template_id = rt.id
         LEFT JOIN route_runs rr ON j.source_route_run_id = rr.id
         WHERE j.id = :id AND j.tenant_id = :tid
     """), {"id": job_id, "tid": str(tenant.tenant_id)})).first()

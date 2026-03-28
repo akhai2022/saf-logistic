@@ -394,7 +394,7 @@ async def generate_runs(
                     :sale, :purchase,
                     :notes, 'GENERATED_FROM_TEMPLATE',
                     :rtid, :rrid,
-                    'planned', :uid
+                    'PLANIFIEE', :uid
                 )
             """), {
                 "id": str(mission_id), "tid": tid, "num": mission_code,

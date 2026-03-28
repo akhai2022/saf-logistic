@@ -421,10 +421,7 @@ class MissionOut(BaseModel):
     pod_s3_key: str | None = None
     created_at: str | None = None
     agency_id: str | None = None
-    # Tournée link (legacy)
-    route_id: str | None = None
-    route_numero: str | None = None
-    # New source tracking
+    # Source tracking (route template / run)
     source_type: str | None = None
     source_route_template_id: str | None = None
     source_route_template_code: str | None = None

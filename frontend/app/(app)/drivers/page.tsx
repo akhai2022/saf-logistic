@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiPost } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Driver } from "@/lib/types";
@@ -37,6 +37,14 @@ export default function DriversPage() {
   const { items: drivers, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } = usePaginatedFetch<Driver>(
     "/v1/masterdata/drivers", filters, { defaultSort: "nom", defaultOrder: "asc" }
   );
+
+  const [complianceMap, setComplianceMap] = useState<Record<string, { statut_global: string }>>({});
+
+  useEffect(() => {
+    apiGet<Record<string, { statut_global: string }>>("/v1/compliance/entity-statuses?entity_type=driver")
+      .then(setComplianceMap)
+      .catch(() => {});
+  }, []);
 
   const [form, setForm] = useState({
     matricule: "", civilite: "M", nom: "", prenom: "",
@@ -125,7 +133,7 @@ export default function DriversPage() {
           </thead>
           <tbody className="table-body">
             {drivers.map((d) => (
-              <tr key={d.id}>
+              <tr key={d.id} className={complianceMap[d.id]?.statut_global === "BLOQUANT" ? "bg-red-50" : complianceMap[d.id]?.statut_global === "A_REGULARISER" ? "bg-amber-50" : undefined}>
                 <td className="text-gray-600">{d.matricule || "—"}</td>
                 <td className="font-medium">
                   <Link href={`/drivers/${d.id}`} className="text-primary hover:underline">{d.nom || d.last_name}</Link>

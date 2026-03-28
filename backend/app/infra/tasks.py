@@ -110,6 +110,18 @@ def compliance_scan_daily() -> dict:
                 )
                 stats["alerts_created"] += 1
 
+                # Dispatch notification (async — non-blocking)
+                try:
+                    notification_dispatch.delay(
+                        tenant_id=str(doc.tenant_id),
+                        event_type="compliance_alert",
+                        title=f"Document {doc.doc_type} — expiration {alert_type.replace('EXPIRATION_', '')}",
+                        message=f"Le document {doc.doc_type} ({doc.entity_type} {doc.entity_id}) expire le {doc.date_expiration}",
+                        link=f"/compliance/{doc.entity_type}/{doc.entity_id}",
+                    )
+                except Exception:
+                    pass  # notification failure should not break compliance scan
+
         # Also create legacy tasks for backward compat
         for doc in expired_rows:
             db.execute(

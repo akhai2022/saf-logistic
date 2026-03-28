@@ -822,3 +822,90 @@ async def legacy_compliance_dashboard(
                     })
 
     return items
+
+
+# ── New compliance endpoints for UI banners/widgets ──────────────
+
+@router.get("/v1/compliance/upcoming-expirations")
+async def upcoming_expirations(
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    days: int = Query(90, ge=1, le=365),
+):
+    """Documents expiring within N days — for dashboard widgets and alert banners."""
+    tid = str(tenant.tenant_id)
+    rows = (await db.execute(text("""
+        SELECT d.id, d.entity_type, d.entity_id, d.doc_type, d.date_expiration,
+               d.statut, d.is_critical,
+               CASE
+                   WHEN d.date_expiration < CURRENT_DATE THEN 'EXPIRED'
+                   WHEN d.date_expiration <= CURRENT_DATE + :days * INTERVAL '1 day' THEN 'EXPIRING'
+                   ELSE 'OK'
+               END AS urgency,
+               (d.date_expiration - CURRENT_DATE) AS days_remaining,
+               CASE d.entity_type
+                   WHEN 'driver' THEN (SELECT COALESCE(nom, last_name, '') || ' ' || COALESCE(prenom, first_name, '') FROM drivers WHERE id = d.entity_id)
+                   WHEN 'vehicle' THEN (SELECT COALESCE(immatriculation, plate_number, '') FROM vehicles WHERE id = d.entity_id)
+                   ELSE ''
+               END AS entity_name
+        FROM documents d
+        WHERE d.tenant_id = :tid
+          AND d.date_expiration IS NOT NULL
+          AND d.date_expiration <= CURRENT_DATE + :days * INTERVAL '1 day'
+          AND COALESCE(d.statut, 'VALIDE') NOT IN ('ARCHIVE', 'REJETE', 'BROUILLON')
+        ORDER BY d.date_expiration ASC
+    """), {"tid": tid, "days": days})).fetchall()
+
+    return [
+        {
+            "id": str(r.id),
+            "entity_type": r.entity_type,
+            "entity_id": str(r.entity_id),
+            "entity_name": r.entity_name,
+            "doc_type": r.doc_type,
+            "date_expiration": r.date_expiration.isoformat() if r.date_expiration else None,
+            "urgency": r.urgency,
+            "days_remaining": r.days_remaining,
+            "is_critical": r.is_critical,
+            "statut": r.statut,
+        }
+        for r in rows
+    ]
+
+
+@router.get("/v1/compliance/entity-statuses")
+async def entity_compliance_statuses(
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    entity_type: str | None = Query(None),
+):
+    """Compliance status per entity — for list page row highlighting.
+    Returns a map of entity_id → {statut_global, nb_expired, nb_expiring, next_expiry}.
+    """
+    tid = str(tenant.tenant_id)
+    etype_filter = ""
+    params: dict = {"tid": tid}
+    if entity_type:
+        etype_filter = "AND entity_type = :etype"
+        params["etype"] = entity_type.lower()
+
+    rows = (await db.execute(text(f"""
+        SELECT entity_type, entity_id, statut_global,
+               nb_documents_expires, nb_documents_expirant_bientot,
+               nb_documents_manquants, taux_conformite_pourcent
+        FROM compliance_checklists
+        WHERE tenant_id = :tid {etype_filter}
+    """), params)).fetchall()
+
+    return {
+        str(r.entity_id): {
+            "statut_global": r.statut_global,
+            "nb_expired": r.nb_documents_expires,
+            "nb_expiring": r.nb_documents_expirant_bientot,
+            "nb_missing": r.nb_documents_manquants,
+            "taux_conformite": float(r.taux_conformite_pourcent) if r.taux_conformite_pourcent else 100,
+        }
+        for r in rows
+    }

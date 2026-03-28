@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiPost } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Vehicle } from "@/lib/types";
@@ -41,6 +41,14 @@ export default function VehiclesPage() {
   const { items: vehicles, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } = usePaginatedFetch<Vehicle>(
     "/v1/masterdata/vehicles", filters, { defaultSort: "immatriculation", defaultOrder: "asc" }
   );
+
+  const [complianceMap, setComplianceMap] = useState<Record<string, { statut_global: string }>>({});
+
+  useEffect(() => {
+    apiGet<Record<string, { statut_global: string }>>("/v1/compliance/entity-statuses?entity_type=vehicle")
+      .then(setComplianceMap)
+      .catch(() => {});
+  }, []);
 
   const [form, setForm] = useState({
     immatriculation: "", type_entity: "VEHICULE", categorie: "PL_PLUS_19T",
@@ -137,7 +145,7 @@ export default function VehiclesPage() {
           </thead>
           <tbody className="table-body">
             {vehicles.map((v) => (
-              <tr key={v.id}>
+              <tr key={v.id} className={complianceMap[v.id]?.statut_global === "BLOQUANT" ? "bg-red-50" : complianceMap[v.id]?.statut_global === "A_REGULARISER" ? "bg-amber-50" : undefined}>
                 <td className="font-medium">
                   <Link href={`/vehicles/${v.id}`} className="text-primary hover:underline">{v.immatriculation || v.plate_number}</Link>
                 </td>

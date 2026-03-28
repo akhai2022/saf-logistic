@@ -75,6 +75,8 @@
     <li><a href="#admin">Profil Administrateur — Dirigeant / DSI</a></li>
     <li><a href="#lecture">Profil Lecture seule — Auditeur / Consultant</a></li>
     <li><a href="#conducteur">Profil Conducteur / Sous-traitant</a></li>
+    <li><a href="#conformite">Conformite et documents reglementaires</a></li>
+    <li><a href="#notifications">Notifications et alertes</a></li>
     <li><a href="#statuts">Reference : Statuts et transitions</a></li>
   </ol>
 </div>
@@ -206,6 +208,92 @@
     <li>Renseigner : type (avarie, perte, retard…), description, responsabilite, montant estime</li>
     <li>Le litige est cree en statut <strong>Ouvert</strong></li>
   </ol>
+
+  <h3>Tournees — Workflow complet detaille</h3>
+
+  <h4>H. Remplir un modele de tournee (tous les champs)</h4>
+  <p>Lors de la creation d'un modele de tournee, voici tous les champs disponibles :</p>
+  <table>
+    <thead><tr><th>Champ</th><th>Obligatoire</th><th>Description</th><th>Exemple</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Code</strong></td><td>Oui</td><td>Identifiant unique du modele</td><td>TPL-1406</td></tr>
+      <tr><td><strong>Libelle</strong></td><td>Oui</td><td>Nom lisible de la tournee</td><td>Tournee K+N Epone LUN-VEN</td></tr>
+      <tr><td><strong>Client</strong></td><td>Non</td><td>Client associe (liste deroulante)</td><td>Kuehne+Nagel</td></tr>
+      <tr><td><strong>Site</strong></td><td>Non</td><td>Site ou zone geographique</td><td>Epone, Garonor</td></tr>
+      <tr><td><strong>Recurrence</strong></td><td>Oui</td><td>Frequence de repetition</td><td>LUN_VEN</td></tr>
+      <tr><td><strong>Date debut validite</strong></td><td>Oui</td><td>Debut de la periode de validite</td><td>2026-01-01</td></tr>
+      <tr><td><strong>Date fin validite</strong></td><td>Non</td><td>Fin de la periode (vide = indefinie)</td><td>2026-12-31</td></tr>
+      <tr><td><strong>Conducteur par defaut</strong></td><td>Non</td><td>Conducteur assigne par defaut aux executions</td><td>Jean DUPONT</td></tr>
+      <tr><td><strong>Vehicule par defaut</strong></td><td>Non</td><td>Vehicule assigne par defaut</td><td>AB-123-CD</td></tr>
+      <tr><td><strong>Montant vente HT defaut</strong></td><td>Non</td><td>Prix par defaut des missions generees</td><td>450.00 €</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Types de recurrence disponibles :</strong></p>
+  <table>
+    <thead><tr><th>Valeur</th><th>Signification</th><th>Jours generes</th></tr></thead>
+    <tbody>
+      <tr><td>QUOTIDIENNE</td><td>Tous les jours</td><td>Lundi au dimanche</td></tr>
+      <tr><td>LUN_VEN</td><td>Lundi au vendredi</td><td>Jours ouvrables</td></tr>
+      <tr><td>LUN_SAM</td><td>Lundi au samedi</td><td>6 jours/semaine</td></tr>
+      <tr><td>HEBDOMADAIRE</td><td>Une fois par semaine</td><td>Chaque lundi</td></tr>
+      <tr><td>BIMENSUELLE</td><td>Toutes les 2 semaines</td><td>Un lundi sur deux</td></tr>
+      <tr><td>MENSUELLE</td><td>Une fois par mois</td><td>Meme jour que la date de debut</td></tr>
+    </tbody>
+  </table>
+
+  <h4>I. Ajouter les arrets du modele</h4>
+  <ol>
+    <li>Ouvrir le detail du modele → onglet <strong>Arrets</strong></li>
+    <li>Pour chaque point de passage, renseigner :</li>
+  </ol>
+  <table>
+    <thead><tr><th>Champ</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Sequence</strong></td><td>Ordre de passage (1, 2, 3…)</td></tr>
+      <tr><td><strong>Type</strong></td><td>PICKUP (chargement), DELIVERY (livraison), ou RELAY (relais)</td></tr>
+      <tr><td><strong>Adresse</strong></td><td>Adresse complete de l'arret</td></tr>
+      <tr><td><strong>Ville / Code postal</strong></td><td>Complement d'adresse</td></tr>
+      <tr><td><strong>Contact</strong></td><td>Nom de la personne sur place</td></tr>
+      <tr><td><strong>Telephone</strong></td><td>Numero du contact</td></tr>
+      <tr><td><strong>Instructions</strong></td><td>Instructions speciales (quai, horaires, etc.)</td></tr>
+    </tbody>
+  </table>
+
+  <h4>J. Piloter une execution (tournee du jour)</h4>
+  <p>Une fois les executions generees, voici le cycle de vie complet :</p>
+  <div class="status-flow">
+    <span class="status-pill s-brouillon">Brouillon</span> <span class="arrow">→</span>
+    <span class="status-pill s-planifiee">Planifiee</span> <span class="arrow">→</span>
+    <span class="status-pill s-affectee">Dispatchee</span> <span class="arrow">→</span>
+    <span class="status-pill s-encours">En cours</span> <span class="arrow">→</span>
+    <span class="status-pill s-livree">Terminee</span>
+  </div>
+  <ol>
+    <li><strong>Generer :</strong> Depuis le modele, onglet Executions → choisir les dates → « Generer »</li>
+    <li><strong>Verifier l'affectation :</strong> Ouvrir l'execution, verifier conducteur et vehicule</li>
+    <li><strong>Affecter des missions :</strong> Onglet Missions → « Affecter une mission » → saisir l'ID</li>
+    <li><strong>Reordonner :</strong> Les missions ont un numero de sequence dans l'execution</li>
+    <li><strong>Dispatcher :</strong> Cliquer sur « Dispatcher » pour envoyer au conducteur</li>
+    <li><strong>Demarrer :</strong> Cliquer sur « Demarrer » quand le conducteur part</li>
+    <li><strong>Terminer :</strong> Cliquer sur « Terminer » — le systeme calcule automatiquement les totaux financiers</li>
+  </ol>
+
+  <div class="info">
+    <strong>Retirer une mission :</strong> Dans l'onglet Missions de l'execution, cliquer sur « Retirer » pour desassocier une mission sans la supprimer.
+  </div>
+
+  <h4>K. Informations affichees sur une execution</h4>
+  <table>
+    <thead><tr><th>Carte</th><th>Champs affiches</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Informations</strong></td><td>Code, Date de service, Statut, Modele (lien vers le modele)</td></tr>
+      <tr><td><strong>Affectation</strong></td><td>Conducteur, Vehicule</td></tr>
+      <tr><td><strong>Horaires</strong></td><td>Depart prevu, Fin prevue, Depart reel, Fin reelle</td></tr>
+      <tr><td><strong>Financier</strong></td><td>Vente HT (somme des missions), Achat HT, Marge</td></tr>
+      <tr><td><strong>Missions</strong></td><td>Tableau : sequence, numero mission (lien), client, statut, montant</td></tr>
+    </tbody>
+  </table>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -582,7 +670,218 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
-<h2 id="statuts">9. Reference : Statuts et transitions</h2>
+<h2 id="conformite">9. Conformite et documents reglementaires</h2>
+
+<div class="role-section">
+  <div class="role-header">
+    <div class="role-icon" style="background:#e0f2fe;color:#0369a1;">&#128203;</div>
+    <div>
+      <div class="role-title">Gestion de la conformite</div>
+      <div class="role-subtitle">Suivi des documents obligatoires pour conducteurs, vehicules et sous-traitants</div>
+    </div>
+  </div>
+
+  <div class="info">
+    <strong>Qui gere la conformite ?</strong>
+    <ul>
+      <li><strong>RH / Paie</strong> : documents des conducteurs (permis, FIMO, FCO, ADR, visite medicale)</li>
+      <li><strong>Flotte</strong> : documents des vehicules (carte grise, assurance, controle technique, tachygraphe)</li>
+      <li><strong>Administrateur</strong> : tous les documents + configuration des modeles</li>
+    </ul>
+  </div>
+
+  <h3>A. Tableau de bord conformite</h3>
+  <ol>
+    <li>Aller dans <span class="menu-path">Referentiels → Conformite</span></li>
+    <li>La page affiche un resume global :</li>
+  </ol>
+  <table>
+    <thead><tr><th>Indicateur</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Entites total</strong></td><td>Nombre total de conducteurs + vehicules + sous-traitants</td></tr>
+      <tr><td><strong>Conformes</strong></td><td>Entites avec tous les documents valides (vert)</td></tr>
+      <tr><td><strong>A regulariser</strong></td><td>Entites avec des documents manquants ou expirant bientot (orange)</td></tr>
+      <tr><td><strong>Bloquants</strong></td><td>Entites avec des documents obligatoires manquants/expires (rouge)</td></tr>
+      <tr><td><strong>Taux de conformite</strong></td><td>Barre de progression en pourcentage (vert &ge; 80%, orange &ge; 50%, rouge &lt; 50%)</td></tr>
+    </tbody>
+  </table>
+  <p>Filtrez par type d'entite avec les onglets : <strong>Tous</strong>, <strong>Conducteurs</strong>, <strong>Vehicules</strong>, <strong>Sous-traitants</strong>.</p>
+  <p>Le tableau liste chaque entite avec ses indicateurs : documents requis, valides, manquants, expires.</p>
+
+  <h3>B. Consulter et deposer les documents d'une entite</h3>
+  <ol>
+    <li>Dans le tableau de conformite, cliquer sur <strong>« Voir »</strong> a cote d'un conducteur ou vehicule</li>
+    <li>Vous arrivez sur la <strong>checklist de conformite</strong> de l'entite</li>
+    <li>Pour chaque type de document requis, le statut est affiche :</li>
+  </ol>
+  <table>
+    <thead><tr><th>Icone</th><th>Statut</th><th>Signification</th></tr></thead>
+    <tbody>
+      <tr><td style="color:#22c55e;">&#10004;</td><td><strong>OK</strong></td><td>Document present et valide</td></tr>
+      <tr><td style="color:#eab308;">&#9200;</td><td><strong>Expirant</strong></td><td>Document bientot expire (dans les prochains jours)</td></tr>
+      <tr><td style="color:#ef4444;">&#10060;</td><td><strong>Expire</strong></td><td>Document expire — a renouveler d'urgence</td></tr>
+      <tr><td style="color:#ef4444;">&#10067;</td><td><strong>Manquant</strong></td><td>Document requis non encore depose</td></tr>
+      <tr><td style="color:#eab308;">&#9203;</td><td><strong>En attente</strong></td><td>Document depose, en attente de validation</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Deposer un document</h4>
+  <ol>
+    <li>Dans la checklist, cliquer sur le type de document a deposer</li>
+    <li>Renseigner les champs :</li>
+  </ol>
+  <table>
+    <thead><tr><th>Champ</th><th>Obligatoire</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Fichier</strong></td><td>Oui</td><td>Scan PDF ou photo du document</td></tr>
+      <tr><td><strong>Date d'emission</strong></td><td>Non</td><td>Date de delivrance du document</td></tr>
+      <tr><td><strong>Date d'expiration</strong></td><td>Non</td><td>Date de fin de validite</td></tr>
+      <tr><td><strong>Numero de document</strong></td><td>Non</td><td>Numero du permis, de la carte, etc.</td></tr>
+      <tr><td><strong>Organisme emetteur</strong></td><td>Non</td><td>Qui a delivre le document</td></tr>
+    </tbody>
+  </table>
+
+  <h3>C. Documents types par entite</h3>
+
+  <h4>Conducteurs — documents suivis</h4>
+  <ul>
+    <li>Permis de conduire (categories B, C, CE)</li>
+    <li>Carte d'identite / passeport</li>
+    <li>FIMO (Formation Initiale Minimum Obligatoire)</li>
+    <li>FCO (Formation Continue Obligatoire)</li>
+    <li>ADR (matieres dangereuses, si applicable)</li>
+    <li>Visite medicale du travail</li>
+    <li>Carte conducteur (tachygraphe)</li>
+    <li>Attestation de capacite professionnelle</li>
+  </ul>
+
+  <h4>Vehicules — documents suivis</h4>
+  <ul>
+    <li>Carte grise (certificat d'immatriculation)</li>
+    <li>Attestation d'assurance</li>
+    <li>Controle technique</li>
+    <li>Limiteur de vitesse (certificat de verification)</li>
+    <li>Tachygraphe (certificat de verification)</li>
+    <li>ATP (attestation pour transport de denrees perissables, si applicable)</li>
+    <li>ADR (conformite matieres dangereuses, si applicable)</li>
+  </ul>
+
+  <h3>D. Banniere d'alerte sur les fiches</h3>
+  <p>Quand vous ouvrez la fiche d'un conducteur ou d'un vehicule :</p>
+  <ul>
+    <li>Si des documents sont <strong>expires</strong> : une banniere <strong>rouge</strong> apparait en haut de la page</li>
+    <li>Si des documents <strong>expirent bientot</strong> : une banniere <strong>orange</strong> apparait</li>
+    <li>Dans les listes de conducteurs/vehicules, les lignes sont surlignees selon le statut de conformite</li>
+  </ul>
+
+  <div class="important">
+    <strong>Impact operationnel :</strong> Un conducteur ou vehicule en statut <strong>« Bloquant »</strong> (rouge) ne peut pas etre affecte a une mission. L'exploitation sera alertee si elle tente l'affectation.
+  </div>
+
+  <h3>E. Alertes de conformite</h3>
+  <ol>
+    <li>Aller dans <span class="menu-path">Referentiels → Conformite → bouton « Alertes »</span></li>
+    <li>La page liste toutes les alertes actives :</li>
+  </ol>
+  <table>
+    <thead><tr><th>Type d'alerte</th><th>Declenchement</th></tr></thead>
+    <tbody>
+      <tr><td><strong>J-60</strong></td><td>Document expire dans 60 jours</td></tr>
+      <tr><td><strong>J-30</strong></td><td>Document expire dans 30 jours</td></tr>
+      <tr><td><strong>J-15</strong></td><td>Document expire dans 15 jours</td></tr>
+      <tr><td><strong>J-7</strong></td><td>Document expire dans 7 jours</td></tr>
+      <tr><td><strong>J0 — Expire !</strong></td><td>Document expire aujourd'hui (rouge)</td></tr>
+      <tr><td><strong>Document manquant</strong></td><td>Document obligatoire jamais depose</td></tr>
+      <tr><td><strong>Escalade</strong></td><td>Alerte non acquittee, escaladee au niveau superieur</td></tr>
+    </tbody>
+  </table>
+  <p>Filtrez les alertes par statut : <strong>Toutes</strong>, <strong>Envoyees</strong>, <strong>Acquittees</strong>, <strong>Escaladees</strong>.</p>
+  <p>Pour traiter une alerte, cliquer sur <strong>« Acquitter »</strong> et optionnellement ajouter une note (ex: « Document commande, reception prevue le 15/04 »).</p>
+
+  <h3>F. Modeles de conformite (administrateur)</h3>
+  <ol>
+    <li>Aller dans <span class="menu-path">Referentiels → Conformite → bouton « Modeles »</span></li>
+    <li>Les modeles definissent quels documents sont obligatoires par type d'entite</li>
+    <li>Pour chaque document type, configurer :</li>
+  </ol>
+  <ul>
+    <li><strong>Type d'entite</strong> : conducteur, vehicule, ou sous-traitant</li>
+    <li><strong>Obligatoire / optionnel</strong></li>
+    <li><strong>Bloquant</strong> : si manquant, empeche l'affectation aux missions</li>
+    <li><strong>Duree de validite par defaut</strong></li>
+    <li><strong>Seuil d'alerte</strong> (en jours avant expiration)</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="notifications">10. Notifications et alertes</h2>
+
+<div class="role-section">
+  <div class="role-header">
+    <div class="role-icon" style="background:#fef3c7;color:#b45309;">&#128276;</div>
+    <div>
+      <div class="role-title">Systeme de notifications</div>
+      <div class="role-subtitle">Alertes en temps reel pour tous les evenements importants de la plateforme</div>
+    </div>
+  </div>
+
+  <h3>A. Consulter vos notifications</h3>
+  <ol>
+    <li>La <strong>cloche</strong> dans le menu lateral affiche le nombre de notifications non lues (pastille rouge)</li>
+    <li>Cliquer sur la cloche pour ouvrir la page <span class="menu-path">Notifications</span></li>
+    <li>Les notifications non lues sont surlignees en bleu clair</li>
+    <li>Cliquer sur une notification pour la marquer comme lue</li>
+    <li>Utiliser le bouton <strong>« Tout marquer comme lu »</strong> pour tout effacer</li>
+  </ol>
+
+  <div class="info">
+    <strong>Actualisation automatique :</strong> Le compteur de notifications est mis a jour toutes les 30 secondes sans recharger la page.
+  </div>
+
+  <h3>B. Types de notifications recues</h3>
+  <table>
+    <thead><tr><th>Evenement</th><th>Qui est notifie</th><th>Exemple</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Document expirant</strong></td><td>RH, Flotte, Admin</td><td>« Le permis de Jean DUPONT expire dans 15 jours »</td></tr>
+      <tr><td><strong>Document expire</strong></td><td>RH, Flotte, Admin</td><td>« Le controle technique du vehicule AB-123-CD est expire »</td></tr>
+      <tr><td><strong>Facture bientot echue</strong></td><td>Comptabilite, Admin</td><td>« La facture FA-2026-03-001 arrive a echeance dans 7 jours »</td></tr>
+      <tr><td><strong>Changement de statut mission</strong></td><td>Exploitation, Admin</td><td>« La mission MIS-2026-03-00042 est passee en statut Livree »</td></tr>
+      <tr><td><strong>Avoir valide</strong></td><td>Comptabilite, Admin</td><td>« L'avoir AV-2026-001 a ete valide »</td></tr>
+      <tr><td><strong>Alerte de conformite</strong></td><td>RH, Flotte, Admin</td><td>« 3 documents expires detectes lors du scan quotidien »</td></tr>
+      <tr><td><strong>Conducteur inactif</strong></td><td>RH, Admin</td><td>« Le conducteur Pierre MARTIN a ete desactive automatiquement »</td></tr>
+    </tbody>
+  </table>
+
+  <h3>C. Configurer les regles de notification (administrateur)</h3>
+  <ol>
+    <li>Aller dans <span class="menu-path">Parametrage → Parametres</span></li>
+    <li>Dans la section <strong>Notifications</strong>, creer une regle :</li>
+  </ol>
+  <table>
+    <thead><tr><th>Champ</th><th>Description</th><th>Exemple</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Type d'evenement</strong></td><td>L'evenement declencheur</td><td>document_expiring</td></tr>
+      <tr><td><strong>Canaux</strong></td><td>Comment envoyer la notification</td><td>IN_APP, EMAIL, SMS</td></tr>
+      <tr><td><strong>Destinataires</strong></td><td>Qui recoit (vide = roles concernes par defaut)</td><td>Vide ou IDs specifiques</td></tr>
+      <tr><td><strong>Delai (heures)</strong></td><td>Temps d'attente avant envoi (0 = immediat)</td><td>0</td></tr>
+      <tr><td><strong>Actif</strong></td><td>Activer/desactiver la regle</td><td>Oui</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info">
+    <strong>Scan quotidien :</strong> Chaque nuit, le systeme scanne automatiquement tous les documents et genere des alertes progressives (J-60, J-30, J-15, J-7, J0) pour les expirations a venir.
+  </div>
+
+  <h3>D. Canaux de notification disponibles</h3>
+  <ul>
+    <li><strong>IN_APP</strong> : Notification dans l'application (cloche + page notifications)</li>
+    <li><strong>EMAIL</strong> : Email envoye a l'adresse de l'utilisateur</li>
+    <li><strong>SMS</strong> : SMS envoye au numero de telephone</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="statuts">11. Reference : Statuts et transitions</h2>
 
 <h3>Statuts des missions</h3>
 <table>

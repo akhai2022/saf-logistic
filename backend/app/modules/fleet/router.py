@@ -588,6 +588,114 @@ async def cost_summary(
 
 
 # =====================================================================
+# Vehicle Monthly Cost Breakdown (Rentabilité)
+# =====================================================================
+
+@router.get("/vehicles/{vid}/costs/monthly")
+async def cost_monthly_breakdown(
+    vid: str,
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    year: int | None = Query(None),
+):
+    """Monthly cost breakdown per category for a vehicle — replicates Calcul renta véhicule spreadsheet."""
+    from datetime import date as datemod
+    await _check_vehicle(db, vid, str(tenant.tenant_id))
+    y = year or datemod.today().year
+    tid = str(tenant.tenant_id)
+
+    rows = (await db.execute(text("""
+        SELECT categorie,
+               EXTRACT(MONTH FROM date_cout)::int AS mois,
+               COALESCE(SUM(montant_ht), 0) AS total_ht
+        FROM vehicle_costs
+        WHERE tenant_id = :tid AND vehicle_id = :vid
+          AND EXTRACT(YEAR FROM date_cout) = :year
+        GROUP BY categorie, mois
+        ORDER BY mois, categorie
+    """), {"tid": tid, "vid": vid, "year": y})).fetchall()
+
+    # Build matrix: {month: {category: amount}}
+    months: dict[int, dict[str, float]] = {m: {} for m in range(1, 13)}
+    for r in rows:
+        months[r.mois][r.categorie] = float(r.total_ht)
+
+    # Also get annual totals per category
+    annual = (await db.execute(text("""
+        SELECT categorie, COALESCE(SUM(montant_ht), 0) AS total_ht
+        FROM vehicle_costs
+        WHERE tenant_id = :tid AND vehicle_id = :vid
+          AND EXTRACT(YEAR FROM date_cout) = :year
+        GROUP BY categorie ORDER BY total_ht DESC
+    """), {"tid": tid, "vid": vid, "year": y})).fetchall()
+
+    return {
+        "year": y,
+        "vehicle_id": vid,
+        "months": {m: data for m, data in months.items()},
+        "annual_by_category": {r.categorie: float(r.total_ht) for r in annual},
+        "annual_total": sum(float(r.total_ht) for r in annual),
+    }
+
+
+@router.get("/rentabilite/routes")
+async def route_profitability(
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    year: int | None = Query(None),
+):
+    """P&L per route template — replicates Feuille de calcul des tournée spreadsheet.
+    Aggregates revenue (montant_vente_ht) and cost (montant_achat_ht) from missions
+    generated from each route template, broken down by month."""
+    from datetime import date as datemod
+    y = year or datemod.today().year
+    tid = str(tenant.tenant_id)
+
+    rows = (await db.execute(text("""
+        SELECT rt.id AS template_id, rt.code, rt.label, rt.site,
+               c.raison_sociale AS client_name,
+               EXTRACT(MONTH FROM j.date_chargement_prevue)::int AS mois,
+               COALESCE(SUM(j.montant_vente_ht), 0) AS revenue,
+               COALESCE(SUM(j.montant_achat_ht), 0) AS cost,
+               COUNT(j.id) AS nb_missions
+        FROM route_templates rt
+        LEFT JOIN jobs j ON j.source_route_template_id = rt.id
+            AND EXTRACT(YEAR FROM j.date_chargement_prevue) = :year
+        LEFT JOIN customers c ON rt.customer_id = c.id
+        WHERE rt.tenant_id = :tid AND rt.status = 'ACTIVE'
+        GROUP BY rt.id, rt.code, rt.label, rt.site, c.raison_sociale, mois
+        ORDER BY rt.code, mois
+    """), {"tid": tid, "year": y})).fetchall()
+
+    # Group by template
+    templates: dict[str, dict] = {}
+    for r in rows:
+        key = str(r.template_id)
+        if key not in templates:
+            templates[key] = {
+                "template_id": key, "code": r.code, "label": r.label,
+                "site": r.site, "client_name": r.client_name,
+                "months": {m: {"revenue": 0, "cost": 0, "margin": 0, "nb_missions": 0} for m in range(1, 13)},
+                "annual_revenue": 0, "annual_cost": 0, "annual_margin": 0, "annual_missions": 0,
+            }
+        if r.mois:
+            m = r.mois
+            rev = float(r.revenue)
+            cost = float(r.cost)
+            templates[key]["months"][m] = {
+                "revenue": rev, "cost": cost, "margin": rev - cost, "nb_missions": int(r.nb_missions),
+            }
+            templates[key]["annual_revenue"] += rev
+            templates[key]["annual_cost"] += cost
+            templates[key]["annual_margin"] += rev - cost
+            templates[key]["annual_missions"] += int(r.nb_missions)
+
+    return {"year": y, "routes": list(templates.values())}
+
+
+# =====================================================================
 # Vehicle Claims (Sinistres)
 # =====================================================================
 

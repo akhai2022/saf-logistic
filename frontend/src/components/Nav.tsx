@@ -76,6 +76,7 @@ const ALL_SECTIONS: NavSection[] = [
     icon: "monitoring",
     items: [
       { href: "/reports", label: "Tableau de bord", icon: "bar_chart" },
+      { href: "/rentabilite", label: "Rentabilite", icon: "trending_up" },
     ],
   },
   {

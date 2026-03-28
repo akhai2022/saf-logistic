@@ -116,6 +116,8 @@ def _mission_from_row(r) -> MissionOut:
         pod_s3_key=r.pod_s3_key,
         created_at=_ts(r.created_at),
         agency_id=str(r.agency_id) if r.agency_id else None,
+        route_id=str(r.route_id) if getattr(r, "route_id", None) else None,
+        route_numero=getattr(r, "route_numero", None),
     )
 
 
@@ -224,7 +226,7 @@ async def list_missions(
     sort_by: str | None = Query(None),
     order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
-    q = "SELECT * FROM jobs WHERE tenant_id = :tid"
+    q = "SELECT j.*, rt.numero AS route_numero FROM jobs j LEFT JOIN routes rt ON j.route_id = rt.id WHERE j.tenant_id = :tid"
     params: dict = {"tid": str(tenant.tenant_id)}
 
     effective_status = statut or status
@@ -233,18 +235,18 @@ async def list_missions(
         new_to_legacy = {"BROUILLON": "draft", "PLANIFIEE": "planned", "AFFECTEE": "assigned",
                          "EN_COURS": "in_progress", "LIVREE": "delivered", "CLOTUREE": "closed"}
         legacy_val = new_to_legacy.get(effective_status, effective_status)
-        q += " AND status = :status"
+        q += " AND j.status = :status"
         params["status"] = legacy_val
 
     if client_id:
-        q += " AND customer_id = :cid"
+        q += " AND j.customer_id = :cid"
         params["cid"] = client_id
     if search:
-        q += " AND (reference ILIKE :search OR numero ILIKE :search OR reference_client ILIKE :search OR client_raison_sociale ILIKE :search)"
+        q += " AND (j.reference ILIKE :search OR j.numero ILIKE :search OR j.reference_client ILIKE :search OR j.client_raison_sociale ILIKE :search)"
         params["search"] = f"%{search}%"
 
-    allowed_sorts = {"created_at", "numero", "montant_vente_ht", "date_chargement_prevue", "date_livraison_prevue"}
-    sort_col = sort_by if sort_by in allowed_sorts else "created_at"
+    allowed_sorts = {"created_at": "j.created_at", "numero": "j.numero", "montant_vente_ht": "j.montant_vente_ht", "date_chargement_prevue": "j.date_chargement_prevue", "date_livraison_prevue": "j.date_livraison_prevue"}
+    sort_col = allowed_sorts.get(sort_by, "j.created_at")
     q += f" ORDER BY {sort_col} {order} LIMIT :lim OFFSET :off"
     params["lim"] = limit
     params["off"] = offset
@@ -298,7 +300,7 @@ async def get_mission(
     db: AsyncSession = Depends(get_db),
 ):
     row = (await db.execute(
-        text("SELECT * FROM jobs WHERE id = :id AND tenant_id = :tid"),
+        text("SELECT j.*, rt.numero AS route_numero FROM jobs j LEFT JOIN routes rt ON j.route_id = rt.id WHERE j.id = :id AND j.tenant_id = :tid"),
         {"id": job_id, "tid": str(tenant.tenant_id)},
     )).first()
     if not row:

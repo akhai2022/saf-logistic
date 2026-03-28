@@ -421,6 +421,9 @@ class MissionOut(BaseModel):
     pod_s3_key: str | None = None
     created_at: str | None = None
     agency_id: str | None = None
+    # Tournée link
+    route_id: str | None = None
+    route_numero: str | None = None
 
 class MissionDetail(MissionOut):
     date_chargement_reelle: str | None = None

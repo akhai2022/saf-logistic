@@ -387,6 +387,9 @@ export interface Mission {
   updated_by?: string;
   created_at?: string;
   updated_at?: string;
+  // Tournée link
+  route_id?: string;
+  route_numero?: string;
   // Legacy compat
   customer_id?: string;
   pickup_address?: string;

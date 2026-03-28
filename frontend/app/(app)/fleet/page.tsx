@@ -8,19 +8,42 @@ import PageHeader from "@/components/PageHeader";
 import Card from "@/components/Card";
 import StatusBadge from "@/components/StatusBadge";
 
+interface VehicleAssignment {
+  vehicle_id: string;
+  immatriculation: string;
+  marque?: string;
+  modele?: string;
+  categorie?: string;
+  vehicle_statut?: string;
+  route_id?: string;
+  route_numero?: string;
+  route_libelle?: string;
+  route_site?: string;
+  route_recurrence?: string;
+  route_driver_name?: string;
+  client_name?: string;
+  current_mission_id?: string;
+  current_mission_numero?: string;
+  current_mission_statut?: string;
+  current_mission_date?: string;
+}
+
 export default function FleetDashboardPage() {
   const [stats, setStats] = useState<FleetDashboardStats | null>(null);
   const [upcoming, setUpcoming] = useState<MaintenanceRecord[]>([]);
+  const [assignments, setAssignments] = useState<VehicleAssignment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       apiGet<FleetDashboardStats>("/v1/fleet/dashboard"),
       apiGet<MaintenanceRecord[]>("/v1/fleet/maintenance/upcoming?days=30"),
+      apiGet<VehicleAssignment[]>("/v1/fleet/assignments"),
     ])
-      .then(([s, u]) => {
+      .then(([s, u, a]) => {
         setStats(s);
         setUpcoming(u);
+        setAssignments(a);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -100,6 +123,52 @@ export default function FleetDashboardPage() {
                     <td className="py-2 pr-4">{m.date_debut}</td>
                     <td className="py-2 pr-4"><StatusBadge statut={m.statut} /></td>
                     <td className="py-2 pr-4 text-gray-500">{m.prestataire || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* Vehicle assignments */}
+      <Card title="Affectations vehicules" icon="pin_drop" className="mt-6">
+        {assignments.length === 0 ? (
+          <p className="text-sm text-gray-500">Aucune affectation trouvee.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-gray-500">
+                  <th className="py-2 pr-4">Vehicule</th>
+                  <th className="py-2 pr-4">Marque / Modele</th>
+                  <th className="py-2 pr-4">Tournee</th>
+                  <th className="py-2 pr-4">Site</th>
+                  <th className="py-2 pr-4">Conducteur</th>
+                  <th className="py-2 pr-4">Client</th>
+                  <th className="py-2 pr-4">Derniere mission</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignments.map((a) => (
+                  <tr key={a.vehicle_id} className="border-b last:border-0 hover:bg-gray-50">
+                    <td className="py-2 pr-4">
+                      <Link href={`/vehicles/${a.vehicle_id}`} className="font-mono font-medium text-primary hover:underline">{a.immatriculation}</Link>
+                    </td>
+                    <td className="py-2 pr-4 text-gray-600">{a.marque} {a.modele}</td>
+                    <td className="py-2 pr-4">
+                      {a.route_numero ? (
+                        <Link href={`/routes/${a.route_id}`} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline">{a.route_numero}</Link>
+                      ) : <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="py-2 pr-4 text-xs">{a.route_site || "—"}</td>
+                    <td className="py-2 pr-4 text-xs font-medium">{a.route_driver_name || "—"}</td>
+                    <td className="py-2 pr-4 text-xs">{a.client_name || "—"}</td>
+                    <td className="py-2 pr-4">
+                      {a.current_mission_numero ? (
+                        <Link href={`/jobs/${a.current_mission_id}`} className="text-xs text-primary hover:underline">{a.current_mission_numero}</Link>
+                      ) : <span className="text-xs text-gray-300">Aucune</span>}
+                    </td>
                   </tr>
                 ))}
               </tbody>

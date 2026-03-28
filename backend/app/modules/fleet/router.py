@@ -823,3 +823,80 @@ async def fleet_dashboard(
         sinistres_ouverts=open_claims,
         cout_total_mois_ht=month_cost,
     )
+
+
+# =====================================================================
+# Vehicle Assignments — where is each vehicle and what does it do
+# =====================================================================
+
+@router.get("/assignments")
+async def list_vehicle_assignments(
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """For each active vehicle: current assigned route, driver, site."""
+    tid = str(tenant.tenant_id)
+    rows = (await db.execute(text("""
+        SELECT
+            v.id AS vehicle_id,
+            COALESCE(v.immatriculation, v.plate_number) AS immatriculation,
+            v.marque, v.modele, v.statut AS vehicle_statut,
+            v.categorie,
+            -- Current route assignment
+            r.id AS route_id,
+            r.numero AS route_numero,
+            r.libelle AS route_libelle,
+            r.site AS route_site,
+            r.recurrence AS route_recurrence,
+            -- Driver from route
+            COALESCE(rd.nom, rd.last_name) || ' ' || COALESCE(rd.prenom, rd.first_name) AS route_driver_name,
+            rd.telephone_mobile AS route_driver_tel,
+            -- Current/latest mission
+            latest_job.id AS current_mission_id,
+            latest_job.numero AS current_mission_numero,
+            latest_job.status AS current_mission_statut,
+            latest_job.date_chargement_prevue AS current_mission_date,
+            -- Client from route
+            c.raison_sociale AS client_name
+        FROM vehicles v
+        LEFT JOIN LATERAL (
+            SELECT * FROM routes rt
+            WHERE rt.vehicle_id = v.id AND rt.statut = 'ACTIF'
+            ORDER BY rt.created_at DESC LIMIT 1
+        ) r ON true
+        LEFT JOIN drivers rd ON r.driver_id = rd.id
+        LEFT JOIN customers c ON r.client_id = c.id
+        LEFT JOIN LATERAL (
+            SELECT * FROM jobs j
+            WHERE j.vehicle_id = v.id AND j.tenant_id = :tid
+              AND j.status NOT IN ('ANNULEE', 'draft')
+            ORDER BY j.date_chargement_prevue DESC NULLS LAST LIMIT 1
+        ) latest_job ON true
+        WHERE v.tenant_id = :tid AND v.statut = 'ACTIF'
+        ORDER BY v.immatriculation
+    """), {"tid": tid})).fetchall()
+
+    return [
+        {
+            "vehicle_id": str(r.vehicle_id),
+            "immatriculation": r.immatriculation,
+            "marque": r.marque,
+            "modele": r.modele,
+            "categorie": r.categorie,
+            "vehicle_statut": r.vehicle_statut,
+            "route_id": str(r.route_id) if r.route_id else None,
+            "route_numero": r.route_numero,
+            "route_libelle": r.route_libelle,
+            "route_site": r.route_site,
+            "route_recurrence": r.route_recurrence,
+            "route_driver_name": r.route_driver_name,
+            "route_driver_tel": r.route_driver_tel,
+            "client_name": r.client_name,
+            "current_mission_id": str(r.current_mission_id) if r.current_mission_id else None,
+            "current_mission_numero": r.current_mission_numero,
+            "current_mission_statut": r.current_mission_statut,
+            "current_mission_date": r.current_mission_date.isoformat() if r.current_mission_date else None,
+        }
+        for r in rows
+    ]

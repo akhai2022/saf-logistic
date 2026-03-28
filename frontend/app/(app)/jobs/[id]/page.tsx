@@ -243,6 +243,7 @@ export default function JobDetailPage() {
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <dt className="text-gray-500">Client</dt><dd className="font-medium">{mission.client_raison_sociale || "—"}</dd>
               <dt className="text-gray-500">Réf. client</dt><dd>{mission.reference_client || "—"}</dd>
+              <dt className="text-gray-500">Tournée</dt><dd>{mission.route_numero ? <a href={`/routes/${mission.route_id}`} className="text-sm bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline font-medium">{mission.route_numero}</a> : "—"}</dd>
               <dt className="text-gray-500">Type</dt><dd>{mission.type_mission?.replace(/_/g, " ") || "—"}</dd>
               <dt className="text-gray-500">Distance estimée</dt><dd>{mission.distance_estimee_km ? `${mission.distance_estimee_km} km` : "—"}</dd>
               <dt className="text-gray-500">Distance réelle</dt><dd>{mission.distance_reelle_km ? `${mission.distance_reelle_km} km` : "—"}</dd>

@@ -112,7 +112,7 @@ async def driver_planning(
           AND j.driver_id IS NOT NULL
           AND j.date_chargement_prevue < :end_date
           AND j.date_livraison_prevue > :start_date
-          AND j.status NOT IN ('ANNULEE', 'BROUILLON')
+          AND j.status NOT IN ('ANNULEE', 'BROUILLON', 'draft')
     """), {"tid": tid, "start_date": start, "end_date": end})).fetchall()
 
     # Group missions by driver
@@ -175,7 +175,7 @@ async def vehicle_planning(
           AND j.vehicle_id IS NOT NULL
           AND j.date_chargement_prevue < :end_date
           AND j.date_livraison_prevue > :start_date
-          AND j.status NOT IN ('ANNULEE', 'BROUILLON')
+          AND j.status NOT IN ('ANNULEE', 'BROUILLON', 'draft')
     """), {"tid": tid, "start_date": start, "end_date": end})).fetchall()
 
     vehicle_missions: dict[str, list] = {}
@@ -224,7 +224,7 @@ async def check_availability(
             FROM jobs j
             LEFT JOIN customers c ON c.id = j.customer_id
             WHERE j.tenant_id = :tid AND j.driver_id = :did
-              AND j.status NOT IN ('ANNULEE', 'BROUILLON', 'CLOTUREE')
+              AND j.status NOT IN ('ANNULEE', 'BROUILLON', 'CLOTUREE', 'draft', 'closed')
               AND j.date_chargement_prevue < :end_date
               AND j.date_livraison_prevue > :start_date
         """), {"tid": tid, "did": body.driver_id, "start_date": start_date, "end_date": end_date})).fetchall()
@@ -243,7 +243,7 @@ async def check_availability(
             FROM jobs j
             LEFT JOIN customers c ON c.id = j.customer_id
             WHERE j.tenant_id = :tid AND j.vehicle_id = :vid
-              AND j.status NOT IN ('ANNULEE', 'BROUILLON', 'CLOTUREE')
+              AND j.status NOT IN ('ANNULEE', 'BROUILLON', 'CLOTUREE', 'draft', 'closed')
               AND j.date_chargement_prevue < :end_date
               AND j.date_livraison_prevue > :start_date
         """), {"tid": tid, "vid": body.vehicle_id, "start_date": start_date, "end_date": end_date})).fetchall()

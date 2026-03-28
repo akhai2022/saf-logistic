@@ -403,7 +403,7 @@ async def create_mission(
             created_by, updated_by
         ) VALUES (
             :id, :tid, :aid, :numero, :ref, :ref_client,
-            :cid, :crs, :type_m, :prio, 'draft',
+            :cid, :crs, :type_m, :prio, 'BROUILLON',
             :dcp, :dlp,
             :aci, :acl, :acc, :aci2,
             :dek, :mvh,
@@ -475,7 +475,7 @@ async def update_mission(
             goods_description = COALESCE(:gd, goods_description),
             notes = COALESCE(:notes, notes),
             updated_at = NOW()
-        WHERE id = :id AND tenant_id = :tid AND status IN ('draft', 'planned')
+        WHERE id = :id AND tenant_id = :tid AND status IN ('draft', 'planned', 'BROUILLON', 'PLANIFIEE')
         RETURNING id
     """), {
         "id": job_id, "tid": str(tenant.tenant_id),
@@ -525,7 +525,7 @@ async def assign_mission(
     ), {"id": job_id, "tid": tid})).first()
     if not mission:
         raise HTTPException(404, "Mission non trouvee")
-    if mission.status not in ("planned", "assigned", "draft"):
+    if mission.status not in ("planned", "assigned", "draft", "PLANIFIEE", "AFFECTEE", "BROUILLON"):
         raise HTTPException(400, "La mission ne peut pas etre affectee dans ce statut")
 
     # RG-C-016: subcontracted needs purchase amount
@@ -556,7 +556,7 @@ async def assign_mission(
         overlap_drv = (await db.execute(text("""
             SELECT id, reference FROM jobs
             WHERE tenant_id = :tid AND driver_id = :did AND id != :jid
-              AND status IN ('assigned','in_progress')
+              AND status IN ('assigned','in_progress','AFFECTEE','EN_COURS')
               AND (date_chargement_prevue, COALESCE(date_livraison_prevue, date_chargement_prevue))
                   OVERLAPS
                   (
@@ -570,7 +570,7 @@ async def assign_mission(
         overlap_veh = (await db.execute(text("""
             SELECT id, reference FROM jobs
             WHERE tenant_id = :tid AND vehicle_id = :vid AND id != :jid
-              AND status IN ('assigned','in_progress')
+              AND status IN ('assigned','in_progress','AFFECTEE','EN_COURS')
               AND (date_chargement_prevue, COALESCE(date_livraison_prevue, date_chargement_prevue))
                   OVERLAPS
                   (
@@ -596,7 +596,7 @@ async def assign_mission(
             is_subcontracted = :is_sub,
             montant_achat_ht = COALESCE(:mah, montant_achat_ht),
             marge_brute = COALESCE(:marge, marge_brute),
-            status = 'assigned',
+            status = 'AFFECTEE',
             updated_at = NOW()
         WHERE id = :id AND tenant_id = :tid
     """), {
@@ -605,7 +605,7 @@ async def assign_mission(
         "is_sub": is_sub, "mah": montant_achat, "marge": marge,
     })
     await db.commit()
-    result = {"status": "assigned", "statut": "AFFECTEE"}
+    result = {"status": "AFFECTEE", "statut": "AFFECTEE"}
     if warnings:
         result["warnings"] = warnings
     return result
@@ -621,14 +621,14 @@ async def unassign_mission(
     result = await db.execute(text("""
         UPDATE jobs SET driver_id = NULL, vehicle_id = NULL, trailer_id = NULL,
             subcontractor_id = NULL, is_subcontracted = false,
-            status = 'planned', updated_at = NOW()
-        WHERE id = :id AND tenant_id = :tid AND status = 'assigned'
+            status = 'PLANIFIEE', updated_at = NOW()
+        WHERE id = :id AND tenant_id = :tid AND status IN ('assigned', 'AFFECTEE')
         RETURNING id
     """), {"id": job_id, "tid": str(tenant.tenant_id)})
     if not result.first():
         raise HTTPException(400, "Mission non trouvee ou ne peut pas etre desaffectee")
     await db.commit()
-    return {"status": "planned", "statut": "PLANIFIEE"}
+    return {"status": "PLANIFIEE", "statut": "PLANIFIEE"}
 
 
 @router.post("/{job_id}/transition")
@@ -654,16 +654,19 @@ async def transition_mission(
         raise HTTPException(404, "Mission non trouvee")
 
     current = row.status
-    allowed = VALID_TRANSITIONS.get(current, [])
-    if target not in allowed:
-        # Try mapping new status names to legacy
-        new_to_legacy = {"BROUILLON": "draft", "PLANIFIEE": "planned", "AFFECTEE": "assigned",
-                         "EN_COURS": "in_progress", "LIVREE": "delivered", "CLOTUREE": "closed",
-                         "ANNULEE": "cancelled", "FACTUREE": "invoiced"}
-        legacy_target = new_to_legacy.get(target, target)
-        if legacy_target not in allowed:
-            raise HTTPException(400, f"Transition impossible de {current} vers {target}")
-        target = legacy_target
+    # Normalize current status to uppercase for transition lookup
+    legacy_to_new = {"draft": "BROUILLON", "planned": "PLANIFIEE", "assigned": "AFFECTEE",
+                     "in_progress": "EN_COURS", "delivered": "LIVREE", "closed": "CLOTUREE"}
+    current_norm = legacy_to_new.get(current, current)
+    target_norm = legacy_to_new.get(target, target)
+
+    # Check transitions using both normalized and raw forms
+    allowed = VALID_TRANSITIONS.get(current_norm, VALID_TRANSITIONS.get(current, []))
+    if target_norm not in allowed and target not in allowed:
+        raise HTTPException(400, f"Transition impossible de {current_norm} vers {target_norm}")
+
+    # Always write uppercase status
+    target = target_norm
 
     # RG-C-024: close requires valid POD
     if target in ("closed", "CLOTUREE"):
@@ -702,9 +705,7 @@ async def transition_mission(
 
     await db.commit()
 
-    legacy_map = {"draft": "BROUILLON", "planned": "PLANIFIEE", "assigned": "AFFECTEE",
-                  "in_progress": "EN_COURS", "delivered": "LIVREE", "closed": "CLOTUREE"}
-    return {"status": target, "statut": legacy_map.get(target, target)}
+    return {"status": target, "statut": target}
 
 
 # Legacy close endpoint
@@ -732,10 +733,10 @@ async def close_mission(
         raise HTTPException(400, "POD must be uploaded before closing the job")
 
     await db.execute(text("""
-        UPDATE jobs SET status='closed', closed_at=NOW(), date_cloture=NOW(), updated_at=NOW() WHERE id=:id
+        UPDATE jobs SET status='CLOTUREE', closed_at=NOW(), date_cloture=NOW(), updated_at=NOW() WHERE id=:id
     """), {"id": job_id})
     await db.commit()
-    return {"status": "closed", "statut": "CLOTUREE"}
+    return {"status": "CLOTUREE", "statut": "CLOTUREE"}
 
 
 # Legacy POD upload (simple s3_key)

@@ -627,24 +627,26 @@ async def seed_saf(db: AsyncSession) -> None:
             "statut": c["statut"],
         })
 
-    # ── 16. Routes (tournées) from SAF planning data ───────────────
-    ROUTES = [
-        {"numero": "1029", "libelle": "Tournée 1029 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
-        {"numero": "1013", "libelle": "Tournée 1013 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
-        {"numero": "1016", "libelle": "Tournée 1016 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
-        {"numero": "1017", "libelle": "Tournée 1017 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
-        {"numero": "1012", "libelle": "Tournée 1012 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
-        {"numero": "095174", "libelle": "Tournée 95174 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
-        {"numero": "095237", "libelle": "Tournée 95237 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
-        {"numero": "095238", "libelle": "Tournée 95238 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
-        {"numero": "174", "libelle": "Tournée 174 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
-        {"numero": "1406", "libelle": "Tournée 1406 — K+N Epône", "client_code": "KN-001", "site": "Epône", "recurrence": "LUN_VEN"},
+    # ── 16. Route Templates (tournées modèles) from SAF planning data
+    ROUTE_TEMPLATES = [
+        {"code": "1029", "label": "Tournee 1029 — K+N Epone", "client_code": "KN-001", "site": "Epone", "recurrence": "LUN_VEN"},
+        {"code": "1013", "label": "Tournee 1013 — K+N Epone", "client_code": "KN-001", "site": "Epone", "recurrence": "LUN_VEN"},
+        {"code": "1016", "label": "Tournee 1016 — K+N Epone", "client_code": "KN-001", "site": "Epone", "recurrence": "LUN_VEN"},
+        {"code": "1017", "label": "Tournee 1017 — K+N Epone", "client_code": "KN-001", "site": "Epone", "recurrence": "LUN_VEN"},
+        {"code": "1012", "label": "Tournee 1012 — K+N Epone", "client_code": "KN-001", "site": "Epone", "recurrence": "LUN_VEN"},
+        {"code": "095174", "label": "Tournee 95174 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
+        {"code": "095237", "label": "Tournee 95237 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
+        {"code": "095238", "label": "Tournee 95238 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
+        {"code": "174", "label": "Tournee 174 — Geodis", "client_code": "GEO-001", "site": "Geodis", "recurrence": "LUN_VEN"},
+        {"code": "1406", "label": "Tournee 1406 — K+N Epone", "client_code": "KN-001", "site": "Epone", "recurrence": "LUN_VEN"},
     ]
+    ROUTES = ROUTE_TEMPLATES  # alias for legacy seed below
     # Build customer code→id lookup
     cust_lookup = {}
     for crow in (await db.execute(text("SELECT id, code FROM customers WHERE tenant_id = :tid"), {"tid": tid})).fetchall():
         cust_lookup[crow.code] = str(crow.id)
 
+    # Legacy routes table (kept for backward compat)
     for rt in ROUTES:
         rtid = uuid.uuid4()
         await db.execute(text("""
@@ -653,7 +655,22 @@ async def seed_saf(db: AsyncSession) -> None:
             VALUES (:id, :tid, :num, :lib, :cid, :site, :rec, :debut, :type, 'ACTIF')
             ON CONFLICT ON CONSTRAINT uq_routes_tenant_numero DO NOTHING
         """), {
-            "id": str(rtid), "tid": tid, "num": rt["numero"], "lib": rt["libelle"],
+            "id": str(rtid), "tid": tid, "num": rt["code"], "lib": rt["label"],
+            "cid": cust_lookup.get(rt["client_code"]),
+            "site": rt["site"], "rec": rt["recurrence"],
+            "debut": date(2025, 12, 1), "type": "LOT_COMPLET",
+        })
+
+    # New route_templates table
+    for rt in ROUTE_TEMPLATES:
+        rtid = uuid.uuid4()
+        await db.execute(text("""
+            INSERT INTO route_templates (id, tenant_id, code, label, customer_id, site,
+                recurrence_rule, valid_from, default_mission_type, status)
+            VALUES (:id, :tid, :code, :label, :cid, :site, :rec, :debut, :type, 'ACTIVE')
+            ON CONFLICT ON CONSTRAINT uq_route_templates_tenant_code DO NOTHING
+        """), {
+            "id": str(rtid), "tid": tid, "code": rt["code"], "label": rt["label"],
             "cid": cust_lookup.get(rt["client_code"]),
             "site": rt["site"], "rec": rt["recurrence"],
             "debut": date(2025, 12, 1), "type": "LOT_COMPLET",

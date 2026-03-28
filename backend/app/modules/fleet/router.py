@@ -845,10 +845,10 @@ async def list_vehicle_assignments(
             v.categorie,
             -- Current route assignment
             r.id AS route_id,
-            r.numero AS route_numero,
-            r.libelle AS route_libelle,
+            r.code AS route_numero,
+            r.label AS route_libelle,
             r.site AS route_site,
-            r.recurrence AS route_recurrence,
+            r.recurrence_rule AS route_recurrence,
             -- Driver from route
             COALESCE(rd.nom, rd.last_name) || ' ' || COALESCE(rd.prenom, rd.first_name) AS route_driver_name,
             rd.telephone_mobile AS route_driver_tel,
@@ -861,12 +861,12 @@ async def list_vehicle_assignments(
             c.raison_sociale AS client_name
         FROM vehicles v
         LEFT JOIN LATERAL (
-            SELECT * FROM routes rt
-            WHERE rt.vehicle_id = v.id AND rt.statut = 'ACTIF'
+            SELECT * FROM route_templates rt
+            WHERE rt.default_vehicle_id = v.id AND rt.status = 'ACTIVE'
             ORDER BY rt.created_at DESC LIMIT 1
         ) r ON true
-        LEFT JOIN drivers rd ON r.driver_id = rd.id
-        LEFT JOIN customers c ON r.client_id = c.id
+        LEFT JOIN drivers rd ON r.default_driver_id = rd.id
+        LEFT JOIN customers c ON r.customer_id = c.id
         LEFT JOIN LATERAL (
             SELECT * FROM jobs j
             WHERE j.vehicle_id = v.id AND j.tenant_id = :tid

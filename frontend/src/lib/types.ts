@@ -387,9 +387,15 @@ export interface Mission {
   updated_by?: string;
   created_at?: string;
   updated_at?: string;
-  // Tournée link
+  // Tournée link (legacy)
   route_id?: string;
   route_numero?: string;
+  // Source tracking (new model)
+  source_type?: string;
+  source_route_template_id?: string;
+  source_route_template_code?: string;
+  source_route_run_id?: string;
+  source_route_run_code?: string;
   // Legacy compat
   customer_id?: string;
   pickup_address?: string;

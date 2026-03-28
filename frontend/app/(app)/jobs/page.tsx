@@ -156,7 +156,8 @@ export default function JobsPage() {
             <thead className="table-header">
               <tr>
                 <SortableHeader label="Numéro" field="numero" currentSort={sortBy} currentOrder={order} onSort={handleSort} />
-                <th>Tournee</th>
+                <th>Modele</th>
+                <th>Execution</th>
                 <th>Client</th>
                 <th>Type</th>
                 <th>Statut</th>
@@ -174,7 +175,8 @@ export default function JobsPage() {
                       {m.numero || m.reference || m.id.slice(0, 8)}
                     </Link>
                   </td>
-                  <td>{m.route_numero ? <Link href={`/routes/${m.route_id}`} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline">{m.route_numero}</Link> : <span className="text-gray-300">—</span>}</td>
+                  <td>{m.source_route_template_code ? <Link href={`/route-templates/${m.source_route_template_id}`} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline">{m.source_route_template_code}</Link> : (m.route_numero ? <Link href={`/route-templates`} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline">{m.route_numero}</Link> : <span className="text-gray-300">—</span>)}</td>
+                  <td>{m.source_route_run_code ? <Link href={`/route-runs/${m.source_route_run_id}`} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded hover:underline">{m.source_route_run_code}</Link> : <span className="text-gray-300">—</span>}</td>
                   <td className="text-gray-600">{m.client_raison_sociale || "—"}</td>
                   <td className="text-gray-600">{m.type_mission?.replace(/_/g, " ") || "—"}</td>
                   <td><StatusBadge statut={getStatut(m)} /></td>

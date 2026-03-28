@@ -75,6 +75,11 @@ const COLORS: Record<string, string> = {
   NON_RESPONSABLE: "bg-green-100 text-green-700",
   PARTAGE: "bg-yellow-100 text-yellow-700",
   A_DETERMINER: "bg-gray-100 text-gray-600",
+  // Route template statuses (English)
+  ACTIVE: "bg-green-100 text-green-800",
+  SUSPENDED: "bg-orange-100 text-orange-800",
+  ARCHIVED: "bg-gray-200 text-gray-500",
+  DRAFT: "bg-gray-100 text-gray-700",
 };
 
 const LABELS: Record<string, string> = {
@@ -101,6 +106,8 @@ const LABELS: Record<string, string> = {
   EN_REPARATION: "En réparation", CLOS: "Clos", REMBOURSE: "Remboursé",
   RESPONSABLE: "Responsable", NON_RESPONSABLE: "Non responsable",
   PARTAGE: "Partagé", A_DETERMINER: "À déterminer",
+  // Route template statuses (English)
+  ACTIVE: "Actif", SUSPENDED: "Suspendu", ARCHIVED: "Archivé", DRAFT: "Brouillon",
 };
 
 const ICONS: Record<string, string> = {
@@ -125,6 +132,8 @@ const ICONS: Record<string, string> = {
   EN_REPARATION: "build", CLOS: "lock", REMBOURSE: "paid",
   RESPONSABLE: "error", NON_RESPONSABLE: "check",
   PARTAGE: "swap_horiz", A_DETERMINER: "help",
+  // Route template statuses (English)
+  ACTIVE: "check_circle", SUSPENDED: "pause_circle", ARCHIVED: "archive", DRAFT: "edit_note",
 };
 
 export default function StatusBadge({ statut, size = "sm" }: StatusBadgeProps) {

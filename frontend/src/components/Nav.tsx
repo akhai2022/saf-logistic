@@ -222,13 +222,13 @@ export default function Nav() {
                 {user.role}
               </span>
             </div>
-            {/* Guide link */}
+            {/* Guide links */}
             <a
-              href="/guide/index.html"
+              href="/guide/utilisateur.html"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors border border-white/10 hover:border-primary/30"
-              title="Guide utilisateur"
+              title="Guide utilisateur par profil"
             >
               <span className="material-symbols-outlined icon-sm">menu_book</span>
               <span>Guide utilisateur</span>

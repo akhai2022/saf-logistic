@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAF Logistic — Guide Utilisateur par Profil</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b; line-height: 1.7; background: #f8fafc; }
+  .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+  h2 { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+  h3 { font-size: 1.15rem; font-weight: 600; color: #334155; margin: 28px 0 12px; }
+  h4 { font-size: 1rem; font-weight: 600; color: #475569; margin: 16px 0 8px; }
+  .subtitle { color: #64748b; font-size: 1rem; margin-bottom: 32px; }
+  .badge { display: inline-block; background: #3b82f6; color: white; font-size: 0.75rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; margin-bottom: 16px; }
+  p, li { color: #475569; }
+  ol, ul { padding-left: 24px; margin: 12px 0; }
+  li { margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.9rem; }
+  th { background: #f1f5f9; color: #334155; font-weight: 600; padding: 10px 12px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  tr:hover td { background: #f8fafc; }
+  .role-section { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 28px; margin: 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .role-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .role-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+  .role-title { font-size: 1.3rem; font-weight: 700; color: #0f172a; }
+  .role-subtitle { font-size: 0.9rem; color: #64748b; }
+  .menu-path { display: inline-block; background: #fef3c7; color: #92400e; font-size: 0.8rem; font-weight: 500; padding: 2px 10px; border-radius: 6px; border: 1px solid #fde68a; }
+  .action { display: inline-block; background: #f0f9ff; color: #0369a1; font-size: 0.8rem; font-weight: 500; padding: 2px 10px; border-radius: 6px; border: 1px solid #bae6fd; }
+  .workflow { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 12px 0; font-size: 0.9rem; }
+  .workflow-arrow { color: #3b82f6; font-weight: 700; margin: 0 4px; }
+  .info { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .info strong { color: #1e40af; }
+  .important { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .important strong { color: #991b1b; }
+  .success { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .success strong { color: #166534; }
+  .toc { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 24px 0; }
+  .toc a { color: #3b82f6; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 6px 0; }
+  code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: #0f172a; }
+  .status-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 8px 0; }
+  .status-pill { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+  .s-brouillon { background: #f1f5f9; color: #475569; }
+  .s-planifiee { background: #dbeafe; color: #1e40af; }
+  .s-affectee { background: #e0e7ff; color: #3730a3; }
+  .s-encours { background: #fed7aa; color: #9a3412; }
+  .s-livree { background: #bbf7d0; color: #166534; }
+  .s-cloturee { background: #e2e8f0; color: #475569; }
+  .s-facturee { background: #a7f3d0; color: #065f46; }
+  .arrow { color: #94a3b8; font-weight: 700; }
+  .menu-table td:first-child { font-weight: 600; white-space: nowrap; }
+  @media print { .container { max-width: 100%; } }
+  @media (max-width: 640px) { .role-section { padding: 16px; } h1 { font-size: 1.5rem; } h2 { font-size: 1.2rem; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<span class="badge">SAF Logistic v1.0</span>
+<h1>Guide Utilisateur — Par Profil</h1>
+<p class="subtitle">Pour chaque profil (role), ce guide explique les menus disponibles, les actions possibles, et les procedures de travail quotidiennes.</p>
+
+<div class="toc">
+  <strong>Sommaire</strong>
+  <ol>
+    <li><a href="#overview">Vue d'ensemble des profils</a></li>
+    <li><a href="#exploitation">Profil Exploitation — Responsable d'exploitation</a></li>
+    <li><a href="#compta">Profil Comptabilite — Gestionnaire financier</a></li>
+    <li><a href="#rh">Profil RH / Paie — Gestionnaire des ressources humaines</a></li>
+    <li><a href="#flotte">Profil Flotte — Gestionnaire de parc</a></li>
+    <li><a href="#admin">Profil Administrateur — Dirigeant / DSI</a></li>
+    <li><a href="#lecture">Profil Lecture seule — Auditeur / Consultant</a></li>
+    <li><a href="#conducteur">Profil Conducteur / Sous-traitant</a></li>
+    <li><a href="#statuts">Reference : Statuts et transitions</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="overview">1. Vue d'ensemble des profils</h2>
+
+<table>
+  <thead>
+    <tr><th>Profil</th><th>Objectif principal</th><th>Sections visibles</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Exploitation</strong></td><td>Planifier, affecter et suivre les missions de transport</td><td>Exploitation, Referentiels</td></tr>
+    <tr><td><strong>Comptabilite</strong></td><td>Facturer, suivre les paiements et gerer la tresorerie</td><td>Exploitation (lecture), Finance, Pilotage</td></tr>
+    <tr><td><strong>RH / Paie</strong></td><td>Gerer les conducteurs, la conformite et la paie</td><td>Exploitation (lecture), Referentiels, Finance (paie)</td></tr>
+    <tr><td><strong>Flotte</strong></td><td>Gerer le parc vehicules, la maintenance et les sinistres</td><td>Referentiels, Flotte</td></tr>
+    <tr><td><strong>Administrateur</strong></td><td>Configurer le systeme, gerer les utilisateurs, superviser</td><td>Toutes les sections + Administration</td></tr>
+    <tr><td><strong>Lecture seule</strong></td><td>Consulter l'ensemble de l'activite sans modifier</td><td>Toutes les sections (lecture uniquement)</td></tr>
+    <tr><td><strong>Sous-traitant</strong></td><td>Voir les missions, deposer des documents</td><td>Exploitation (lecture)</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="exploitation">2. Profil Exploitation</h2>
+
+<div class="role-section">
+  <div class="role-header">
+    <div class="role-icon" style="background:#dbeafe;color:#1e40af;">&#128666;</div>
+    <div>
+      <div class="role-title">Responsable d'exploitation</div>
+      <div class="role-subtitle">Planification, affectation et suivi operationnel des missions de transport</div>
+    </div>
+  </div>
+
+  <h3>Menus disponibles</h3>
+  <table class="menu-table">
+    <thead><tr><th>Menu</th><th>Page</th><th>Ce que vous pouvez y faire</th></tr></thead>
+    <tbody>
+      <tr><td>Missions</td><td><code>/jobs</code></td><td>Creer, modifier, planifier et suivre toutes les missions</td></tr>
+      <tr><td>Tournees</td><td><code>/route-templates</code></td><td>Creer des modeles de tournees recurrentes avec arrets par defaut</td></tr>
+      <tr><td>Executions</td><td><code>/route-runs</code></td><td>Generer et piloter les tournees du jour</td></tr>
+      <tr><td>Planning</td><td><code>/planning</code></td><td>Vue semaine des conducteurs et vehicules avec leurs missions</td></tr>
+      <tr><td>Litiges</td><td><code>/disputes</code></td><td>Ouvrir et suivre les reclamations clients</td></tr>
+      <tr><td>Affretement</td><td><code>/subcontracting</code></td><td>Gerer les offres de sous-traitance</td></tr>
+      <tr><td>Conducteurs</td><td><code>/drivers</code></td><td>Consulter les conducteurs (lecture)</td></tr>
+      <tr><td>Vehicules</td><td><code>/vehicles</code></td><td>Consulter les vehicules (lecture)</td></tr>
+      <tr><td>Clients</td><td><code>/customers</code></td><td>Consulter et mettre a jour les clients</td></tr>
+      <tr><td>Conformite</td><td><code>/compliance</code></td><td>Consulter le statut de conformite des conducteurs et vehicules</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Procedures quotidiennes</h3>
+
+  <h4>A. Creer une mission manuelle</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Exploitation → Missions</span></li>
+    <li>Cliquer sur <strong>« Nouvelle mission »</strong></li>
+    <li>Renseigner : client, type, dates de chargement/livraison, montant</li>
+    <li>La mission est creee en statut <span class="status-pill s-brouillon">Brouillon</span></li>
+  </ol>
+
+  <h4>B. Creer une tournee recurrente</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Exploitation → Tournees</span></li>
+    <li>Cliquer sur <strong>« Nouveau modele »</strong></li>
+    <li>Renseigner : code, libelle, client, recurrence (LUN_VEN, quotidienne, etc.)</li>
+    <li>Definir les valeurs par defaut : conducteur, vehicule, montant vente</li>
+    <li>Ajouter les arrets (points de livraison) dans l'onglet <strong>Arrets</strong></li>
+  </ol>
+
+  <h4>C. Generer les executions de la semaine</h4>
+  <ol>
+    <li>Ouvrir le detail d'un modele de tournee</li>
+    <li>Aller dans l'onglet <strong>Executions</strong></li>
+    <li>Renseigner la plage de dates (ex: lundi → vendredi)</li>
+    <li>Cocher <strong>« Creer les missions automatiquement »</strong></li>
+    <li>Cliquer sur <strong>« Generer »</strong></li>
+    <li>Le systeme cree une execution par jour ouvrable + une mission par execution</li>
+  </ol>
+
+  <div class="info">
+    <strong>Idempotence :</strong> Si vous regenerez pour les memes dates, les executions deja creees ne seront pas dupliquees.
+  </div>
+
+  <h4>D. Affecter un conducteur et un vehicule</h4>
+  <ol>
+    <li>Ouvrir la fiche d'une mission</li>
+    <li>Dans la carte <strong>Affectation</strong>, selectionner le conducteur et le vehicule</li>
+    <li>Si sous-traite, cocher <strong>« Sous-traite »</strong> et renseigner le sous-traitant + montant achat</li>
+    <li>Cliquer sur <strong>« Affecter »</strong></li>
+    <li>Le statut passe a <span class="status-pill s-affectee">Affectee</span></li>
+  </ol>
+
+  <div class="important">
+    <strong>Attention :</strong> Le systeme verifie que le conducteur est actif, que le vehicule est actif, et signale les conflits de planning (non bloquant).
+  </div>
+
+  <h4>E. Suivre le cycle de vie d'une mission</h4>
+  <div class="status-flow">
+    <span class="status-pill s-brouillon">Brouillon</span> <span class="arrow">→</span>
+    <span class="status-pill s-planifiee">Planifiee</span> <span class="arrow">→</span>
+    <span class="status-pill s-affectee">Affectee</span> <span class="arrow">→</span>
+    <span class="status-pill s-encours">En cours</span> <span class="arrow">→</span>
+    <span class="status-pill s-livree">Livree</span> <span class="arrow">→</span>
+    <span class="status-pill s-cloturee">Cloturee</span> <span class="arrow">→</span>
+    <span class="status-pill s-facturee">Facturee</span>
+  </div>
+  <ul>
+    <li><strong>Brouillon → Planifiee :</strong> quand les informations sont completes</li>
+    <li><strong>Planifiee → Affectee :</strong> quand conducteur + vehicule sont assignes</li>
+    <li><strong>Affectee → En cours :</strong> quand le conducteur demarre la livraison</li>
+    <li><strong>En cours → Livree :</strong> quand tous les points de livraison sont livres</li>
+    <li><strong>Livree → Cloturee :</strong> quand le POD (preuve de livraison) est valide</li>
+    <li><strong>Cloturee → Facturee :</strong> quand la facture est emise</li>
+  </ul>
+
+  <h4>F. Consulter le planning</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Exploitation → Planning</span></li>
+    <li>Basculer entre les onglets <strong>Conducteurs</strong> et <strong>Vehicules</strong></li>
+    <li>Naviguer par semaine avec les fleches</li>
+    <li>Cliquer sur une mission (pastille coloree) pour voir son detail</li>
+  </ol>
+
+  <h4>G. Gerer un litige</h4>
+  <ol>
+    <li>Ouvrir une mission → onglet <strong>Litiges</strong></li>
+    <li>Cliquer sur <strong>« Nouveau litige »</strong></li>
+    <li>Renseigner : type (avarie, perte, retard…), description, responsabilite, montant estime</li>
+    <li>Le litige est cree en statut <strong>Ouvert</strong></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="compta">3. Profil Comptabilite</h2>
+
+<div class="role-section">
+  <div class="role-header">
+    <div class="role-icon" style="background:#fef3c7;color:#92400e;">&#128176;</div>
+    <div>
+      <div class="role-title">Gestionnaire financier</div>
+      <div class="role-subtitle">Facturation, relances, tarification, rapprochement fournisseurs</div>
+    </div>
+  </div>
+
+  <h3>Menus disponibles</h3>
+  <table class="menu-table">
+    <thead><tr><th>Menu</th><th>Page</th><th>Ce que vous pouvez y faire</th></tr></thead>
+    <tbody>
+      <tr><td>Missions</td><td><code>/jobs</code></td><td>Consulter les missions (lecture seule)</td></tr>
+      <tr><td>Factures</td><td><code>/invoices</code></td><td>Creer, valider et suivre les factures clients</td></tr>
+      <tr><td>Tarification</td><td><code>/pricing</code></td><td>Definir les regles de prix (forfait, au km, au poids)</td></tr>
+      <tr><td>Relances</td><td><code>/billing/dunning</code></td><td>Suivre les impayes et envoyer les relances</td></tr>
+      <tr><td>OCR</td><td><code>/ocr</code></td><td>Numeriser les factures fournisseurs par OCR</td></tr>
+      <tr><td>Factures fournisseurs</td><td><code>/supplier-invoices</code></td><td>Rapprocher les factures sous-traitants</td></tr>
+      <tr><td>Tableau de bord</td><td><code>/reports</code></td><td>KPIs financiers : DSO, balance agee, impayes</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Procedures quotidiennes</h3>
+
+  <h4>A. Creer une facture client</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Finance → Factures</span></li>
+    <li>Cliquer sur <strong>« Nouvelle facture »</strong></li>
+    <li>Selectionner le client et la periode</li>
+    <li>Ajouter les lignes (missions cloturees ou lignes manuelles)</li>
+    <li>Verifier le total HT, TVA, TTC</li>
+    <li>Cliquer sur <strong>« Valider »</strong> pour finaliser la facture</li>
+    <li>Telecharger le PDF si besoin</li>
+  </ol>
+
+  <h4>B. Gerer les regles de tarification</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Finance → Tarification</span></li>
+    <li>Creer des regles : forfait, prix au km, surcharge</li>
+    <li>Associer a un client specifique ou laisser en global</li>
+    <li>Le systeme appliquera ces regles lors de la generation de factures</li>
+  </ol>
+
+  <h4>C. Suivre les impayes (relances)</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Finance → Relances</span></li>
+    <li>Les factures en retard sont listees par niveau de relance (1, 2, 3)</li>
+    <li>Pour chaque facture, vous pouvez enregistrer une action de relance</li>
+    <li>Suivre l'historique des relances effectuees</li>
+  </ol>
+
+  <h4>D. Numeriser une facture fournisseur</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Finance → OCR</span></li>
+    <li>Telecharger (upload) le scan de la facture (PDF ou image)</li>
+    <li>Le systeme extrait automatiquement : numero, montant, date, fournisseur</li>
+    <li>Verifier et corriger les champs extraits</li>
+    <li>Valider pour creer la facture fournisseur</li>
+  </ol>
+
+  <h4>E. Rapprocher les factures fournisseurs</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Finance → Factures fournisseurs</span></li>
+    <li>Pour chaque facture, verifier l'ecart entre le montant facture et le montant attendu (missions)</li>
+    <li>Valider ou contester la facture</li>
+  </ol>
+
+  <h3>KPIs a surveiller</h3>
+  <ul>
+    <li><strong>DSO</strong> : Delai moyen de recouvrement (objectif &lt; 45 jours)</li>
+    <li><strong>Balance agee</strong> : Repartition des impayes par anciennete</li>
+    <li><strong>Nombre de factures impayees</strong></li>
+    <li><strong>Ecarts sous-traitants</strong> : Ecart entre couts prevus et factures recues</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="rh">4. Profil RH / Paie</h2>
+
+<div class="role-section">
+  <div class="role-header">
+    <div class="role-icon" style="background:#fce7f3;color:#9d174d;">&#128101;</div>
+    <div>
+      <div class="role-title">Gestionnaire Ressources Humaines</div>
+      <div class="role-subtitle">Gestion des conducteurs, conformite reglementaire et preparation de la paie</div>
+    </div>
+  </div>
+
+  <h3>Menus disponibles</h3>
+  <table class="menu-table">
+    <thead><tr><th>Menu</th><th>Page</th><th>Ce que vous pouvez y faire</th></tr></thead>
+    <tbody>
+      <tr><td>Conducteurs</td><td><code>/drivers</code></td><td>Creer et gerer les fiches conducteurs</td></tr>
+      <tr><td>Conformite</td><td><code>/compliance</code></td><td>Suivre et mettre a jour les documents reglementaires</td></tr>
+      <tr><td>Paie</td><td><code>/payroll</code></td><td>Preparer, calculer et exporter la pre-paie</td></tr>
+      <tr><td>Missions</td><td><code>/jobs</code></td><td>Consulter les missions (lecture seule)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Procedures quotidiennes</h3>
+
+  <h4>A. Creer un conducteur</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Referentiels → Conducteurs</span></li>
+    <li>Cliquer sur <strong>« Nouveau conducteur »</strong></li>
+    <li>Renseigner : nom, prenom, matricule, permis, qualifications (FIMO, FCO, ADR)</li>
+    <li>Renseigner le type de contrat (CDI, CDD, Interim)</li>
+    <li>Le conducteur est cree en statut <strong>Actif</strong></li>
+  </ol>
+
+  <h4>B. Suivre la conformite des conducteurs</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Referentiels → Conformite</span></li>
+    <li>Les conducteurs avec des documents manquants ou expires apparaissent en rouge (<strong>Bloquant</strong>) ou orange (<strong>A regulariser</strong>)</li>
+    <li>Cliquer sur un conducteur pour voir la liste des documents requis</li>
+    <li>Telecharger les documents manquants (permis, FIMO, visite medicale, etc.)</li>
+  </ol>
+
+  <div class="important">
+    <strong>Conformite bloquante :</strong> Un conducteur en statut « Bloquant » ne peut pas etre affecte a une mission. Regularisez ses documents en priorite.
+  </div>
+
+  <h4>C. Preparer la paie mensuelle</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Finance → Paie</span></li>
+    <li>Creer une nouvelle periode de paie (mois/annee)</li>
+    <li>Cliquer sur <strong>« Calculer »</strong> pour generer les variables depuis les missions du mois</li>
+    <li>Le systeme calcule pour chaque conducteur : heures, km, missions completees</li>
+    <li>Corriger les variables si necessaire</li>
+    <li>Cliquer sur <strong>« Soumettre »</strong> pour envoyer a la validation</li>
+    <li>Apres approbation, <strong>« Verrouiller »</strong> et <strong>« Exporter SILAE »</strong></li>
+  </ol>
+
+  <div class="workflow">
+    <strong>Cycle de la paie :</strong>
+    <span class="status-pill s-brouillon">Brouillon</span> <span class="arrow">→</span>
+    <span class="status-pill s-planifiee">Soumise</span> <span class="arrow">→</span>
+    <span class="status-pill s-affectee">Approuvee</span> <span class="arrow">→</span>
+    <span class="status-pill s-cloturee">Verrouillee</span>
+  </div>
+
+  <h3>KPIs a surveiller</h3>
+  <ul>
+    <li><strong>Delai de pre-paie</strong> : Nombre de jours entre fin de mois et export SILAE</li>
+    <li><strong>Anomalies</strong> : Variables de paie hors normes</li>
+    <li><strong>Conformite conducteurs</strong> : % de conducteurs avec tous les documents valides</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="flotte">5. Profil Flotte</h2>
+
+<div class="role-section">
+  <div class="role-header">
+    <div class="role-icon" style="background:#dcfce7;color:#166534;">&#128663;</div>
+    <div>
+      <div class="role-title">Gestionnaire de parc</div>
+      <div class="role-subtitle">Maintenance, couts, sinistres et conformite des vehicules</div>
+    </div>
+  </div>
+
+  <h3>Menus disponibles</h3>
+  <table class="menu-table">
+    <thead><tr><th>Menu</th><th>Page</th><th>Ce que vous pouvez y faire</th></tr></thead>
+    <tbody>
+      <tr><td>Tableau de bord flotte</td><td><code>/fleet</code></td><td>Vue globale : disponibilite, couts, KPIs du parc</td></tr>
+      <tr><td>Maintenance</td><td><code>/fleet/maintenance</code></td><td>Planifier et suivre les maintenances</td></tr>
+      <tr><td>Sinistres</td><td><code>/fleet/claims</code></td><td>Declarer et suivre les sinistres vehicules</td></tr>
+      <tr><td>Vehicules</td><td><code>/vehicles</code></td><td>Creer et gerer les fiches vehicules</td></tr>
+      <tr><td>Conformite</td><td><code>/compliance</code></td><td>Suivre les documents reglementaires des vehicules</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Procedures quotidiennes</h3>
+
+  <h4>A. Ajouter un vehicule</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Referentiels → Vehicules</span></li>
+    <li>Cliquer sur <strong>« Nouveau vehicule »</strong></li>
+    <li>Renseigner : immatriculation, marque, modele, categorie, PTAC, charge utile</li>
+    <li>Renseigner : proprietaire (propre/location), assurance, controle technique</li>
+  </ol>
+
+  <h4>B. Planifier une maintenance</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Flotte → Maintenance</span></li>
+    <li>Cliquer sur <strong>« Planifier »</strong></li>
+    <li>Selectionner le vehicule, le type de maintenance, la date prevue</li>
+    <li>Renseigner le prestataire et le cout estime</li>
+    <li>La maintenance apparait dans le calendrier</li>
+  </ol>
+
+  <h4>C. Enregistrer un sinistre</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Flotte → Sinistres</span></li>
+    <li>Cliquer sur <strong>« Nouveau sinistre »</strong></li>
+    <li>Renseigner : date, type (collision, vol, vandalisme), description</li>
+    <li>Renseigner le conducteur implique, le tiers eventuel</li>
+    <li>Joindre les photos et documents</li>
+    <li>Suivre le sinistre jusqu'a sa cloture</li>
+  </ol>
+
+  <h4>D. Suivre la conformite vehicules</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Referentiels → Conformite</span></li>
+    <li>Les vehicules avec des documents expires apparaissent en rouge</li>
+    <li>Documents a surveiller : carte grise, assurance, controle technique, limiteur de vitesse, tachygraphe</li>
+    <li>Telecharger les documents mis a jour</li>
+  </ol>
+
+  <h4>E. Suivre les couts</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Flotte → Tableau de bord</span></li>
+    <li>Consulter le cout mensuel par categorie (carburant, assurance, maintenance, peages)</li>
+    <li>Identifier les vehicules les plus couteux</li>
+  </ol>
+
+  <h3>KPIs a surveiller</h3>
+  <ul>
+    <li><strong>Taux de disponibilite</strong> : % de vehicules actifs (objectif &gt; 90%)</li>
+    <li><strong>Cout au km</strong> : Cout total / km parcourus</li>
+    <li><strong>Maintenances a venir</strong> : Nombre de maintenances prevues dans les 30 prochains jours</li>
+    <li><strong>Pannes non planifiees</strong> : Nombre de pannes/immobilisations imprevues</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="admin">6. Profil Administrateur</h2>
+
+<div class="role-section">
+  <div class="role-header">
+    <div class="role-icon" style="background:#e0e7ff;color:#3730a3;">&#128272;</div>
+    <div>
+      <div class="role-title">Administrateur / Dirigeant</div>
+      <div class="role-subtitle">Configuration du systeme, gestion des utilisateurs, supervision globale</div>
+    </div>
+  </div>
+
+  <h3>Menus disponibles</h3>
+  <p>L'administrateur a acces a <strong>tous les menus</strong> de tous les profils, plus :</p>
+  <table class="menu-table">
+    <thead><tr><th>Menu</th><th>Page</th><th>Ce que vous pouvez y faire</th></tr></thead>
+    <tbody>
+      <tr><td>Parametres</td><td><code>/settings</code></td><td>Configurer l'entreprise : RIB, TVA, centres de cout, notifications</td></tr>
+      <tr><td>Audit</td><td><code>/audit</code></td><td>Consulter l'historique de toutes les modifications</td></tr>
+      <tr><td>Entreprises</td><td><code>/admin/tenants</code></td><td>Gerer les entreprises (multi-tenant, super admin uniquement)</td></tr>
+      <tr><td>Tableau de bord</td><td><code>/reports</code></td><td>KPIs complets : CA, marge, conformite, DSO, cout/km</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Procedures cles</h3>
+
+  <h4>A. Configurer les parametres de l'entreprise</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Parametrage → Parametres</span></li>
+    <li>Renseigner les informations legales : SIREN, SIRET, TVA intracommunautaire</li>
+    <li>Ajouter les comptes bancaires (IBAN, BIC)</li>
+    <li>Configurer les taux de TVA applicables</li>
+    <li>Creer les centres de cout</li>
+    <li>Configurer les regles de notification (alertes conformite, factures, etc.)</li>
+  </ol>
+
+  <h4>B. Gerer les utilisateurs</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Administration → Entreprises</span> → selectionner votre entreprise</li>
+    <li>Dans l'onglet <strong>Utilisateurs</strong>, cliquer sur <strong>« Nouvel utilisateur »</strong></li>
+    <li>Renseigner : email, nom complet, role, agence</li>
+    <li>Chaque utilisateur recoit les menus et permissions de son role</li>
+  </ol>
+
+  <h4>C. Consulter l'audit</h4>
+  <ol>
+    <li>Aller dans <span class="menu-path">Parametrage → Audit</span></li>
+    <li>Filtrer par utilisateur, action, type d'entite ou date</li>
+    <li>Voir le detail : ancienne valeur → nouvelle valeur</li>
+  </ol>
+
+  <h3>KPIs a surveiller</h3>
+  <ul>
+    <li><strong>CA mensuel</strong> : Chiffre d'affaires du mois</li>
+    <li><strong>Marge brute</strong> : Ventes - Achats</li>
+    <li><strong>Taux de conformite</strong> : % de conducteurs/vehicules conformes</li>
+    <li><strong>DSO</strong> : Delai de recouvrement</li>
+    <li><strong>Cout au km</strong> : Cout total flotte / km</li>
+    <li><strong>Missions en cours</strong> : Volume d'activite en temps reel</li>
+    <li><strong>Litiges ouverts</strong> : Nombre de reclamations non resolues</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="lecture">7. Profil Lecture seule</h2>
+
+<div class="role-section">
+  <div class="role-header">
+    <div class="role-icon" style="background:#f1f5f9;color:#475569;">&#128065;</div>
+    <div>
+      <div class="role-title">Auditeur / Consultant</div>
+      <div class="role-subtitle">Consultation de l'ensemble de l'activite sans possibilite de modification</div>
+    </div>
+  </div>
+
+  <h3>Acces</h3>
+  <p>Vous avez acces en <strong>lecture seule</strong> a toutes les sections :</p>
+  <ul>
+    <li>Missions, tournees, executions, planning</li>
+    <li>Clients, conducteurs, vehicules, sous-traitants</li>
+    <li>Factures, tarification, avoirs</li>
+    <li>Paie (consultation)</li>
+    <li>Flotte, maintenance</li>
+    <li>Rapports et tableaux de bord</li>
+    <li>Audit (historique des modifications)</li>
+  </ul>
+
+  <div class="info">
+    <strong>Restriction :</strong> Vous ne pouvez ni creer, ni modifier, ni supprimer de donnees. Tous les boutons d'action sont masques ou desactives.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="conducteur">8. Profil Conducteur / Sous-traitant</h2>
+
+<div class="role-section">
+  <div class="role-header">
+    <div class="role-icon" style="background:#fed7aa;color:#9a3412;">&#128587;</div>
+    <div>
+      <div class="role-title">Conducteur / Sous-traitant</div>
+      <div class="role-subtitle">Voir les missions affectees, signaler les evenements, deposer les preuves de livraison</div>
+    </div>
+  </div>
+
+  <h3>Menus disponibles</h3>
+  <table class="menu-table">
+    <thead><tr><th>Menu</th><th>Page</th><th>Ce que vous pouvez y faire</th></tr></thead>
+    <tbody>
+      <tr><td>Mes missions</td><td><code>/driver</code></td><td>Liste des missions qui vous sont affectees</td></tr>
+      <tr><td>Missions</td><td><code>/jobs</code></td><td>Consulter les missions (lecture seule)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Procedures quotidiennes</h3>
+
+  <h4>A. Consulter vos missions du jour</h4>
+  <ol>
+    <li>Se connecter sur la plateforme</li>
+    <li>La page d'accueil affiche vos missions du jour</li>
+    <li>Verifier les adresses, contacts et instructions de chaque mission</li>
+  </ol>
+
+  <h4>B. Signaler les evenements</h4>
+  <ol>
+    <li>Ouvrir une mission</li>
+    <li>Signaler : depart, arrivee, pause, incident</li>
+    <li>La geolocalisation est enregistree automatiquement</li>
+  </ol>
+
+  <h4>C. Deposer une preuve de livraison (POD)</h4>
+  <ol>
+    <li>Ouvrir la mission livree</li>
+    <li>Aller dans l'onglet <strong>POD</strong></li>
+    <li>Prendre une photo du bon de livraison signe</li>
+    <li>Telecharger la photo (upload)</li>
+    <li>Indiquer s'il y a des reserves (avaries, manquants)</li>
+  </ol>
+
+  <div class="info">
+    <strong>Important :</strong> Le POD est obligatoire pour que la mission puisse etre cloturee. Sans POD, le cycle de vie est bloque a « Livree ».
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="statuts">9. Reference : Statuts et transitions</h2>
+
+<h3>Statuts des missions</h3>
+<table>
+  <thead><tr><th>Statut</th><th>Description</th><th>Transitions possibles</th></tr></thead>
+  <tbody>
+    <tr><td><span class="status-pill s-brouillon">Brouillon</span></td><td>Mission creee, informations incompletes</td><td>→ Planifiee, → Annulee</td></tr>
+    <tr><td><span class="status-pill s-planifiee">Planifiee</span></td><td>Informations completes, prete a etre affectee</td><td>→ Affectee, → Brouillon, → Annulee</td></tr>
+    <tr><td><span class="status-pill s-affectee">Affectee</span></td><td>Conducteur et vehicule assignes</td><td>→ En cours, → Planifiee, → Annulee</td></tr>
+    <tr><td><span class="status-pill s-encours">En cours</span></td><td>Livraison en cours</td><td>→ Livree, → Affectee, → Annulee</td></tr>
+    <tr><td><span class="status-pill s-livree">Livree</span></td><td>Tous les points de livraison effectues</td><td>→ Cloturee</td></tr>
+    <tr><td><span class="status-pill s-cloturee">Cloturee</span></td><td>POD valide, mission archivee</td><td>→ Facturee</td></tr>
+    <tr><td><span class="status-pill s-facturee">Facturee</span></td><td>Facture client emise</td><td>(terminal)</td></tr>
+  </tbody>
+</table>
+
+<h3>Statuts des executions (tournees du jour)</h3>
+<table>
+  <thead><tr><th>Statut</th><th>Description</th><th>Transitions possibles</th></tr></thead>
+  <tbody>
+    <tr><td><span class="status-pill s-brouillon">Brouillon</span></td><td>Execution creee</td><td>→ Planifiee, → Annulee</td></tr>
+    <tr><td><span class="status-pill s-planifiee">Planifiee</span></td><td>Prete a etre dispatchee</td><td>→ Dispatchee, → Brouillon, → Annulee</td></tr>
+    <tr><td><span class="status-pill s-affectee">Dispatchee</span></td><td>Envoyee au conducteur</td><td>→ En cours, → Planifiee, → Annulee</td></tr>
+    <tr><td><span class="status-pill s-encours">En cours</span></td><td>Conducteur en tournee</td><td>→ Terminee, → Annulee</td></tr>
+    <tr><td><span class="status-pill s-livree">Terminee</span></td><td>Tournee completee</td><td>(terminal)</td></tr>
+  </tbody>
+</table>
+
+<h3>Statuts de conformite</h3>
+<table>
+  <thead><tr><th>Statut</th><th>Couleur</th><th>Signification</th></tr></thead>
+  <tbody>
+    <tr><td><strong>OK</strong></td><td style="color:#166534;">Vert</td><td>Tous les documents sont valides et a jour</td></tr>
+    <tr><td><strong>A regulariser</strong></td><td style="color:#d97706;">Orange</td><td>Certains documents expirent bientot ou sont manquants (non bloquant)</td></tr>
+    <tr><td><strong>Bloquant</strong></td><td style="color:#dc2626;">Rouge</td><td>Documents obligatoires manquants ou expires — affectation impossible</td></tr>
+  </tbody>
+</table>
+
+<div class="success" style="margin-top:48px;">
+  <strong>Besoin d'aide ?</strong> Contactez votre administrateur pour toute question sur votre profil ou vos acces.
+  Pour le guide de configuration initiale (creation d'entreprise, donnees de demo), consultez le <a href="/guide/index.html">Guide de configuration</a>.
+</div>
+
+</div>
+</body>
+</html>

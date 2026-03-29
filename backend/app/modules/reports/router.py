@@ -486,3 +486,130 @@ async def export_data(
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# =====================================================================
+# Manager Analytics Dashboard
+# =====================================================================
+
+@router.get("/analytics")
+async def manager_analytics(
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Comprehensive analytics for the manager dashboard — charts, trends, optimization insights."""
+    tid = str(tenant.tenant_id)
+    today = date.today()
+    fom = today.replace(day=1)
+
+    # ── 1. Missions per day (last 30 days) ───────────────────────
+    missions_daily = (await db.execute(text("""
+        SELECT date_chargement_prevue::date AS day, COUNT(*) AS count,
+               COALESCE(SUM(montant_vente_ht), 0) AS revenue,
+               COALESCE(SUM(montant_achat_ht), 0) AS cost
+        FROM jobs WHERE tenant_id = :tid
+          AND date_chargement_prevue >= CURRENT_DATE - INTERVAL '30 days'
+          AND date_chargement_prevue IS NOT NULL
+        GROUP BY day ORDER BY day
+    """), {"tid": tid})).fetchall()
+
+    # ── 2. Route profitability ranking ───────────────────────────
+    route_ranking = (await db.execute(text("""
+        SELECT rt.code, rt.label,
+               COUNT(j.id) AS missions,
+               COALESCE(SUM(j.montant_vente_ht), 0) AS revenue,
+               COALESCE(SUM(j.montant_achat_ht), 0) AS cost,
+               COALESCE(SUM(j.montant_vente_ht), 0) - COALESCE(SUM(j.montant_achat_ht), 0) AS margin
+        FROM route_templates rt
+        LEFT JOIN jobs j ON j.source_route_template_id = rt.id
+        WHERE rt.tenant_id = :tid AND rt.status = 'ACTIVE'
+        GROUP BY rt.id, rt.code, rt.label
+        ORDER BY margin DESC
+    """), {"tid": tid})).fetchall()
+
+    # ── 3. Driver utilization (missions per driver) ──────────────
+    driver_util = (await db.execute(text("""
+        SELECT COALESCE(d.nom, d.last_name) || ' ' || COALESCE(d.prenom, d.first_name) AS name,
+               COUNT(j.id) AS missions,
+               COALESCE(SUM(j.montant_vente_ht), 0) AS revenue
+        FROM drivers d
+        LEFT JOIN jobs j ON j.driver_id = d.id AND j.date_chargement_prevue >= CURRENT_DATE - INTERVAL '30 days'
+        WHERE d.tenant_id = :tid AND d.statut = 'ACTIF'
+        GROUP BY d.id, d.nom, d.last_name, d.prenom, d.first_name
+        ORDER BY missions DESC
+    """), {"tid": tid})).fetchall()
+
+    # ── 4. Vehicle utilization ───────────────────────────────────
+    vehicle_util = (await db.execute(text("""
+        SELECT COALESCE(v.immatriculation, v.plate_number) AS plate,
+               COUNT(j.id) AS missions,
+               COALESCE(SUM(j.montant_vente_ht), 0) AS revenue
+        FROM vehicles v
+        LEFT JOIN jobs j ON j.vehicle_id = v.id AND j.date_chargement_prevue >= CURRENT_DATE - INTERVAL '30 days'
+        WHERE v.tenant_id = :tid AND v.statut = 'ACTIF'
+        GROUP BY v.id, v.immatriculation, v.plate_number
+        ORDER BY missions DESC
+    """), {"tid": tid})).fetchall()
+
+    # ── 5. Global summary ────────────────────────────────────────
+    summary = (await db.execute(text("""
+        SELECT COUNT(*) AS total_missions,
+               COALESCE(SUM(montant_vente_ht), 0) AS total_revenue,
+               COALESCE(SUM(montant_achat_ht), 0) AS total_cost,
+               COUNT(DISTINCT driver_id) AS active_drivers,
+               COUNT(DISTINCT vehicle_id) AS active_vehicles
+        FROM jobs WHERE tenant_id = :tid
+          AND date_chargement_prevue >= :fom
+    """), {"tid": tid, "fom": fom})).first()
+
+    # ── 6. Compliance summary ────────────────────────────────────
+    compliance = (await db.execute(text("""
+        SELECT statut_global, COUNT(*) AS count
+        FROM compliance_checklists WHERE tenant_id = :tid
+        GROUP BY statut_global
+    """), {"tid": tid})).fetchall()
+
+    # ── 7. Missions by status ────────────────────────────────────
+    status_dist = (await db.execute(text("""
+        SELECT status, COUNT(*) AS count
+        FROM jobs WHERE tenant_id = :tid AND date_chargement_prevue >= :fom
+        GROUP BY status ORDER BY count DESC
+    """), {"tid": tid, "fom": fom})).fetchall()
+
+    total_rev = float(summary.total_revenue) if summary else 0
+    total_cost = float(summary.total_cost) if summary else 0
+
+    return {
+        "period": f"{fom.isoformat()} — {today.isoformat()}",
+        "summary": {
+            "total_missions": summary.total_missions if summary else 0,
+            "total_revenue": total_rev,
+            "total_cost": total_cost,
+            "total_margin": total_rev - total_cost,
+            "margin_pct": round((total_rev - total_cost) / total_rev * 100, 1) if total_rev else 0,
+            "active_drivers": summary.active_drivers if summary else 0,
+            "active_vehicles": summary.active_vehicles if summary else 0,
+        },
+        "missions_daily": [
+            {"date": r.day.isoformat(), "count": r.count, "revenue": float(r.revenue), "cost": float(r.cost)}
+            for r in missions_daily
+        ],
+        "route_ranking": [
+            {"code": r.code, "label": r.label, "missions": r.missions,
+             "revenue": float(r.revenue), "cost": float(r.cost), "margin": float(r.margin)}
+            for r in route_ranking
+        ],
+        "driver_utilization": [
+            {"name": r.name, "missions": r.missions, "revenue": float(r.revenue)}
+            for r in driver_util
+        ],
+        "vehicle_utilization": [
+            {"plate": r.plate, "missions": r.missions, "revenue": float(r.revenue)}
+            for r in vehicle_util
+        ],
+        "compliance": {r.statut_global: r.count for r in compliance},
+        "status_distribution": [
+            {"status": r.status, "count": r.count} for r in status_dist
+        ],
+    }

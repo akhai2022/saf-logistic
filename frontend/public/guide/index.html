@@ -71,6 +71,9 @@
     <li><a href="#step6">Créer les règles de tarification</a></li>
     <li><a href="#step7">Ajouter des utilisateurs</a></li>
     <li><a href="#step8">Vérifier que tout est prêt</a></li>
+    <li><a href="#step9">Utilisation quotidienne — Tournées et Missions</a></li>
+    <li><a href="#step10">Actions par profil — Où faire quoi</a></li>
+    <li><a href="#step11">Conformité et alertes documentaires</a></li>
   </ol>
 </div>
 
@@ -500,6 +503,180 @@
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
+<div class="step" id="step9">
+  <div class="step-header">
+    <div class="step-num">9</div>
+    <div class="step-title">Utilisation quotidienne — Tournées et Missions</div>
+  </div>
+  <span class="who">Qui : Exploitant / Dispatcher</span>
+
+  <p>Le flux de travail quotidien repose sur les <strong>tournées</strong>. Les missions sont générées automatiquement.</p>
+
+  <h3>9.1 — Créer une tournée modèle (une seule fois par route)</h3>
+  <div class="info">
+    <strong>Menu : Exploitation → Tournées</strong>
+    <ol>
+      <li>Cliquer <strong>"Nouveau modèle"</strong></li>
+      <li>Remplir : Code (ex: 1406), Libellé (ex: K+N Epône), Client, Site</li>
+      <li>Choisir la récurrence : <strong>Lun-Ven</strong> (par défaut), Lun-Sam, Quotidienne, etc.</li>
+      <li>Affecter le <strong>conducteur par défaut</strong> et le <strong>véhicule par défaut</strong></li>
+      <li>Saisir le <strong>montant vente HT</strong> (revenu journalier) et <strong>montant achat HT</strong> (coût journalier)</li>
+      <li>Enregistrer</li>
+    </ol>
+    <p><strong>Résultat :</strong> Le modèle apparaît dans la liste des tournées avec son conducteur et véhicule affectés.</p>
+  </div>
+
+  <h3>9.2 — Générer les exécutions du mois</h3>
+  <div class="info">
+    <strong>Menu : Exploitation → Tournées → cliquer sur un modèle → onglet "Exécutions"</strong>
+    <ol>
+      <li>Saisir la période : <strong>Date début</strong> et <strong>Date fin</strong> (ex: 01/04 → 30/04)</li>
+      <li>Cocher <strong>"Créer les missions automatiquement"</strong></li>
+      <li>Cliquer <strong>"Générer"</strong></li>
+    </ol>
+    <p><strong>Résultat :</strong> Le système crée automatiquement :</p>
+    <ul>
+      <li>1 <strong>exécution</strong> par jour ouvré (selon la récurrence)</li>
+      <li>1 <strong>mission</strong> par exécution (avec conducteur, véhicule et montants hérités du modèle)</li>
+    </ul>
+    <p>Exemple : Pour avril 2026 (Lun-Ven) = <strong>22 exécutions + 22 missions</strong> générées en un clic.</p>
+  </div>
+
+  <h3>9.3 — Gestion quotidienne</h3>
+  <div class="info">
+    <strong>Menu : Exploitation → Exécutions</strong>
+    <ul>
+      <li>Voir les tournées du jour (filtrer par date)</li>
+      <li>Si un conducteur est absent → cliquer l'exécution → <strong>modifier le conducteur</strong></li>
+      <li>Si un véhicule est en panne → cliquer l'exécution → <strong>modifier le véhicule</strong></li>
+    </ul>
+  </div>
+
+  <div class="info">
+    <strong>Menu : Exploitation → Missions</strong>
+    <ul>
+      <li>Les missions progressent : <strong>PLANIFIÉE → AFFECTÉE → EN COURS → LIVRÉE → CLÔTURÉE → FACTURÉE</strong></li>
+      <li>Le dispatcher change le statut au fur et à mesure de la journée</li>
+      <li>Chaque mission affiche son <strong>modèle source</strong> et son <strong>exécution</strong> associée</li>
+    </ul>
+  </div>
+
+  <div class="important">
+    <strong>Ce que l'utilisateur ne fait PAS manuellement :</strong>
+    <ul>
+      <li>Créer des missions individuelles — elles sont générées depuis les tournées</li>
+      <li>Affecter conducteur/véhicule par mission — hérité de l'exécution</li>
+      <li>Calculer les revenus/coûts — hérités des montants du modèle</li>
+      <li>Vérifier la conformité — le scan quotidien tourne automatiquement</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="step" id="step10">
+  <div class="step-header">
+    <div class="step-num">10</div>
+    <div class="step-title">Actions par profil — Où faire quoi</div>
+  </div>
+
+  <h3>Exploitant / Dispatcher</h3>
+  <table>
+    <thead><tr><th>Action</th><th>Menu</th><th>Page</th></tr></thead>
+    <tbody>
+      <tr><td>Créer une tournée modèle</td><td><strong>Exploitation → Tournées</strong> → "Nouveau modèle"</td><td>/route-templates</td></tr>
+      <tr><td>Générer les exécutions</td><td><strong>Exploitation → Tournées</strong> → cliquer modèle → Exécutions → "Générer"</td><td>/route-templates/[id]</td></tr>
+      <tr><td>Voir les exécutions du jour</td><td><strong>Exploitation → Exécutions</strong> → filtrer par date</td><td>/route-runs</td></tr>
+      <tr><td>Changer conducteur/véhicule</td><td><strong>Exploitation → Exécutions</strong> → cliquer → modifier</td><td>/route-runs/[id]</td></tr>
+      <tr><td>Suivre les missions</td><td><strong>Exploitation → Missions</strong></td><td>/jobs</td></tr>
+      <tr><td>Changer statut mission</td><td><strong>Exploitation → Missions</strong> → cliquer → boutons statut</td><td>/jobs/[id]</td></tr>
+      <tr><td>Consulter le planning</td><td><strong>Exploitation → Planning</strong></td><td>/planning</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Comptable</h3>
+  <table>
+    <thead><tr><th>Action</th><th>Menu</th><th>Page</th></tr></thead>
+    <tbody>
+      <tr><td>Consulter les missions</td><td><strong>Exploitation → Missions</strong></td><td>/jobs</td></tr>
+      <tr><td>Créer une facture</td><td><strong>Finance → Factures</strong> → "Nouvelle facture"</td><td>/invoices</td></tr>
+      <tr><td>Gérer les tarifs</td><td><strong>Finance → Tarifs</strong></td><td>/pricing</td></tr>
+      <tr><td>Scanner un document OCR</td><td><strong>Finance → OCR</strong></td><td>/ocr</td></tr>
+      <tr><td>Voir la rentabilité</td><td><strong>Pilotage → Rentabilité</strong></td><td>/rentabilite</td></tr>
+    </tbody>
+  </table>
+
+  <h3>RH / Paie</h3>
+  <table>
+    <thead><tr><th>Action</th><th>Menu</th><th>Page</th></tr></thead>
+    <tbody>
+      <tr><td>Télécharger document conducteur</td><td><strong>Référentiels → Conducteurs</strong> → cliquer → Conformité → "Télécharger"</td><td>/drivers/[id]</td></tr>
+      <tr><td>Vérifier la conformité</td><td><strong>Référentiels → Conformité</strong></td><td>/compliance</td></tr>
+      <tr><td>Saisir variables de paie</td><td><strong>Finance → Paie</strong></td><td>/payroll</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Gestionnaire Flotte</h3>
+  <table>
+    <thead><tr><th>Action</th><th>Menu</th><th>Page</th></tr></thead>
+    <tbody>
+      <tr><td>Télécharger document véhicule</td><td><strong>Référentiels → Véhicules</strong> → cliquer → Conformité → "Télécharger"</td><td>/vehicles/[id]</td></tr>
+      <tr><td>Voir les expirations</td><td><strong>Flotte → Tableau de bord</strong> → widget "Expirations"</td><td>/fleet</td></tr>
+      <tr><td>Planifier maintenance</td><td><strong>Flotte → Maintenance</strong> → "Nouvelle maintenance"</td><td>/fleet/maintenance</td></tr>
+      <tr><td>Déclarer un sinistre</td><td><strong>Flotte → Sinistres</strong> → "Déclarer"</td><td>/fleet/claims</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Auditeur (lecture seule)</h3>
+  <table>
+    <thead><tr><th>Action</th><th>Menu</th><th>Page</th></tr></thead>
+    <tbody>
+      <tr><td>Consulter tout</td><td>Toutes les sections</td><td>Lecture seule</td></tr>
+      <tr><td>Journal d'audit</td><td><strong>Paramétrage → Journal d'audit</strong></td><td>/audit</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<div class="step" id="step11">
+  <div class="step-header">
+    <div class="step-num">11</div>
+    <div class="step-title">Conformité et alertes documentaires</div>
+  </div>
+  <span class="who">Qui : RH, Fleet Manager, Admin</span>
+
+  <h3>Comment fonctionnent les alertes</h3>
+  <div class="info">
+    <p>Le système vérifie <strong>automatiquement chaque jour</strong> les dates d'expiration de tous les documents (permis, FIMO, carte grise, contrôle technique, etc.).</p>
+    <p>Des alertes sont créées à <strong>90, 60, 30, 15 et 7 jours</strong> avant l'expiration.</p>
+  </div>
+
+  <h3>Où voir les alertes</h3>
+  <table>
+    <thead><tr><th>Emplacement</th><th>Ce qui apparaît</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Icône cloche</strong> (barre latérale)</td><td>Badge rouge avec nombre de notifications</td></tr>
+      <tr><td><strong>Conducteurs / Véhicules</strong> (liste)</td><td>Ligne rouge = BLOQUANT, orange = À RÉGULARISER</td></tr>
+      <tr><td><strong>Conducteur / Véhicule</strong> (détail)</td><td>Bannière rouge/orange en haut de page</td></tr>
+      <tr><td><strong>Conformité</strong></td><td>Dashboard avec taux de conformité par entité</td></tr>
+      <tr><td><strong>Flotte → Tableau de bord</strong></td><td>Widget "Expirations à venir (60j)"</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Comment corriger une alerte</h3>
+  <div class="info">
+    <ol>
+      <li>Aller dans <strong>Référentiels → Conducteurs</strong> (ou Véhicules)</li>
+      <li>Cliquer sur l'entité en rouge/orange</li>
+      <li>Aller à l'onglet <strong>Conformité</strong></li>
+      <li>Voir les documents manquants ou expirés</li>
+      <li>Cliquer <strong>"Télécharger"</strong> pour uploader le nouveau document</li>
+      <li>Remplir la <strong>date d'expiration</strong> du nouveau document</li>
+      <li>L'alerte disparaîtra au prochain scan quotidien</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
 <h2>Checklist rapide</h2>
 
 <div class="checklist">
@@ -513,6 +690,9 @@
   <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 6</strong> — Finance → Tarifs : créer au moins 1 règle de tarification</div>
   <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 7</strong> — Ajouter les utilisateurs avec les bons rôles</div>
   <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 8</strong> — Vérifier : les 6 éléments sont vert sur la page Configuration</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 9</strong> — Créer les tournées modèles + générer les exécutions du mois</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 10</strong> — Former les utilisateurs sur leurs actions (voir tableau par profil)</div>
+  <div class="checklist-item"><span class="uncheck">&#9744;</span> <strong>Étape 11</strong> — Vérifier les alertes de conformité et uploader les documents manquants</div>
 </div>
 
 <p style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin-top: 48px; padding-top: 24px; border-top: 1px solid #e2e8f0;">

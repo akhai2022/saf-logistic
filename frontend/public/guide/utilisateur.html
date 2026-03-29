@@ -99,6 +99,133 @@
   </tbody>
 </table>
 
+<h3>Comptes de connexion (demo SAF Logistique)</h3>
+<div class="info">
+  <strong>URL de connexion :</strong> <a href="https://saf.dataforgeai.fr/login">https://saf.dataforgeai.fr/login</a><br>
+  Renseignez l'email, le mot de passe, et le <strong>Tenant ID</strong> fourni par votre administrateur.
+</div>
+<table>
+  <thead><tr><th>Profil</th><th>Email</th><th>Nom</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Administrateur</strong></td><td><code>dirigeant@saf.local</code></td><td>Marc LEFEVRE</td><td>admin</td></tr>
+    <tr><td><strong>Exploitation</strong></td><td><code>exploitant@saf.local</code></td><td>Sophie GIRARD</td><td>exploitation</td></tr>
+    <tr><td><strong>Comptabilite</strong></td><td><code>compta@saf.local</code></td><td>Claire MOREAU</td><td>compta</td></tr>
+    <tr><td><strong>RH / Paie</strong></td><td><code>rh@saf.local</code></td><td>Isabelle FOURNIER</td><td>rh_paie</td></tr>
+    <tr><td><strong>Flotte</strong></td><td><code>flotte@saf.local</code></td><td>Thomas ROUX</td><td>flotte</td></tr>
+    <tr><td><strong>Lecture seule</strong></td><td><code>auditeur@saf.local</code></td><td>Laurent BLANC</td><td>lecture_seule</td></tr>
+  </tbody>
+</table>
+
+<h3>Journee type par profil</h3>
+
+<h4>Journee type — Exploitation (Sophie GIRARD)</h4>
+<div class="workflow">
+<strong>Matin :</strong>
+<ol>
+  <li>Consulter le <strong>Planning</strong> de la semaine — verifier que tous les conducteurs ont des missions</li>
+  <li>Ouvrir <strong>Tournees</strong> → generer les executions de la semaine si pas encore fait</li>
+  <li>Ouvrir <strong>Executions</strong> → dispatcher les tournees du jour (bouton « Dispatcher »)</li>
+  <li>Verifier les <strong>Notifications</strong> (cloche) — alertes de conformite, conflits de planning</li>
+</ol>
+<strong>Journee :</strong>
+<ol start="5">
+  <li>Surveiller les missions <strong>En cours</strong> dans la liste des missions</li>
+  <li>Traiter les missions manuelles : creer, planifier, affecter conducteur + vehicule</li>
+  <li>Traiter les <strong>Litiges</strong> ouverts — repondre, documenter, cloturer</li>
+  <li>Gerer les offres d'<strong>Affretement</strong> si des missions sont sous-traitees</li>
+</ol>
+<strong>Fin de journee :</strong>
+<ol start="9">
+  <li>Verifier les missions <strong>Livrees</strong> — valider les POD (preuves de livraison)</li>
+  <li>Cloturer les missions terminees (Livree → Cloturee)</li>
+  <li>Preparer le planning du lendemain</li>
+</ol>
+</div>
+
+<h4>Journee type — Comptabilite (Claire MOREAU)</h4>
+<div class="workflow">
+<strong>Matin :</strong>
+<ol>
+  <li>Consulter le <strong>Tableau de bord</strong> — DSO, balance agee, factures impayees</li>
+  <li>Traiter les <strong>Relances</strong> en cours — envoyer les rappels niveau 2/3</li>
+  <li>Verifier les <strong>Notifications</strong> — factures arrivant a echeance</li>
+</ol>
+<strong>Journee :</strong>
+<ol start="4">
+  <li>Creer les <strong>Factures</strong> pour les missions cloturees</li>
+  <li>Numiriser les factures fournisseurs via <strong>OCR</strong></li>
+  <li>Rapprocher les <strong>Factures fournisseurs</strong> — verifier les ecarts</li>
+  <li>Mettre a jour les <strong>Regles de tarification</strong> si besoin</li>
+</ol>
+<strong>Fin de mois :</strong>
+<ol start="8">
+  <li>Valider toutes les factures du mois</li>
+  <li>Generer les avoirs si necessaire</li>
+  <li>Exporter les donnees pour la comptabilite</li>
+</ol>
+</div>
+
+<h4>Journee type — RH / Paie (Isabelle FOURNIER)</h4>
+<div class="workflow">
+<strong>Matin :</strong>
+<ol>
+  <li>Consulter la <strong>Conformite</strong> des conducteurs — traiter les alertes rouges en priorite</li>
+  <li>Verifier les <strong>Notifications</strong> — documents expirant, conducteurs desactives</li>
+  <li>Deposer les documents renouveles (permis, FIMO, visite medicale)</li>
+</ol>
+<strong>Journee :</strong>
+<ol start="4">
+  <li>Mettre a jour les fiches <strong>Conducteurs</strong> — entrees, sorties, changements de contrat</li>
+  <li>Acquitter les <strong>Alertes de conformite</strong> traitees</li>
+</ol>
+<strong>Fin de mois :</strong>
+<ol start="6">
+  <li>Creer la <strong>Periode de paie</strong> du mois</li>
+  <li>Cliquer sur <strong>« Calculer »</strong> — le systeme genere les variables depuis les missions</li>
+  <li>Verifier et corriger les variables (heures, km, primes)</li>
+  <li><strong>Soumettre</strong> → <strong>Approuver</strong> → <strong>Verrouiller</strong></li>
+  <li><strong>Exporter SILAE</strong> — envoyer au cabinet comptable</li>
+</ol>
+</div>
+
+<h4>Journee type — Flotte (Thomas ROUX)</h4>
+<div class="workflow">
+<strong>Matin :</strong>
+<ol>
+  <li>Consulter le <strong>Tableau de bord flotte</strong> — disponibilite, maintenances a venir</li>
+  <li>Verifier la <strong>Conformite</strong> vehicules — documents expires (CT, assurance, tachygraphe)</li>
+  <li>Traiter les <strong>Notifications</strong> — alertes d'expiration</li>
+</ol>
+<strong>Journee :</strong>
+<ol start="4">
+  <li>Planifier les <strong>Maintenances</strong> — ajouter les RDV, renseigner les prestataires</li>
+  <li>Enregistrer les maintenances effectuees (couts, pieces, resultat)</li>
+  <li>Saisir les <strong>Couts</strong> vehicules (carburant, peages, assurance)</li>
+  <li>Traiter les <strong>Sinistres</strong> en cours — photos, devis, suivi assurance</li>
+</ol>
+<strong>Hebdomadaire :</strong>
+<ol start="8">
+  <li>Deposer les documents vehicules renouveles dans la <strong>Conformite</strong></li>
+  <li>Mettre a jour les fiches vehicules (km compteur, changement de statut)</li>
+</ol>
+</div>
+
+<h4>Journee type — Administrateur (Marc LEFEVRE)</h4>
+<div class="workflow">
+<strong>Matin :</strong>
+<ol>
+  <li>Consulter le <strong>Tableau de bord</strong> complet — CA, marge, conformite, DSO</li>
+  <li>Verifier les <strong>Notifications</strong> — tous les evenements critiques</li>
+</ol>
+<strong>Hebdomadaire :</strong>
+<ol start="3">
+  <li>Gerer les <strong>Utilisateurs</strong> — creer de nouveaux comptes, ajuster les roles</li>
+  <li>Configurer les <strong>Regles de notification</strong> dans Parametres</li>
+  <li>Consulter l'<strong>Audit</strong> — verifier les actions effectuees</li>
+  <li>Mettre a jour les <strong>Parametres</strong> entreprise si besoin (RIB, TVA, centres de cout)</li>
+</ol>
+</div>
+
 <!-- ═══════════════════════════════════════════════════════════ -->
 <h2 id="exploitation">2. Profil Exploitation</h2>
 

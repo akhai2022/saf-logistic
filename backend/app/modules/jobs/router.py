@@ -1308,7 +1308,12 @@ async def generate_cmr(
 
     # Generate PDF
     from app.modules.jobs.cmr_service import generate_cmr_pdf
-    pdf_bytes = generate_cmr_pdf(mission, delivery_points, goods, customer, company, driver, vehicle)
+    import logging
+    try:
+        pdf_bytes = generate_cmr_pdf(mission, delivery_points, goods, customer, company, driver, vehicle)
+    except Exception as e:
+        logging.getLogger(__name__).error("CMR generation failed for mission %s: %s", job_id, e, exc_info=True)
+        raise HTTPException(500, f"Erreur lors de la generation du CMR: {e}")
 
     # Upload to S3
     from app.infra.s3 import _get_s3_client

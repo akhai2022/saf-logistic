@@ -124,6 +124,6 @@ def _normalize_goods(g):
     d["nature"] = getattr(g, "nature", None)
     d["quantite"] = float(getattr(g, "quantite", 0) or 0)
     d["unite"] = getattr(g, "unite", None)
-    d["poids_kg"] = float(getattr(g, "poids_kg", 0) or 0)
+    d["poids_kg"] = float(getattr(g, "poids_brut_kg", None) or getattr(g, "poids_kg", 0) or 0)
     d["volume_m3"] = float(getattr(g, "volume_m3", 0) or 0)
     return d

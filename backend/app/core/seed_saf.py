@@ -483,7 +483,13 @@ async def seed_saf(db: AsyncSession) -> None:
                 libelle, obligatoire, bloquant, duree_validite_defaut_jours,
                 alertes_jours, ordre_affichage)
             VALUES (:id, :tid, :et, :td, :label, :oblig, :bloq, :duree, :alertes, :ordre)
-            ON CONFLICT DO NOTHING
+            ON CONFLICT (tenant_id, entity_type, type_document) DO UPDATE SET
+                libelle = EXCLUDED.libelle,
+                obligatoire = EXCLUDED.obligatoire,
+                bloquant = EXCLUDED.bloquant,
+                duree_validite_defaut_jours = EXCLUDED.duree_validite_defaut_jours,
+                alertes_jours = EXCLUDED.alertes_jours,
+                ordre_affichage = EXCLUDED.ordre_affichage
         """), {
             "id": str(ctid), "tid": tid, "et": entity_type.upper(), "td": code,
             "label": label, "oblig": mandatory, "bloq": mandatory,

@@ -223,17 +223,21 @@ export default function Nav() {
                 {user.role}
               </span>
             </div>
-            {/* Guide links */}
-            <a
-              href="/guide/index.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors border border-white/10 hover:border-primary/30"
-              title="Guide utilisateur par profil"
-            >
-              <span className="material-symbols-outlined icon-sm">menu_book</span>
-              <span>Guide utilisateur</span>
-            </a>
+            {/* Guide + Checklist links */}
+            <div className="flex gap-2">
+              <a href="/guide/index.html" target="_blank" rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors border border-white/10 hover:border-primary/30"
+                title="Guide utilisateur">
+                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>menu_book</span>
+                <span>Guide</span>
+              </a>
+              <a href="/guide/checklist-onboarding.html" target="_blank" rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors border border-white/10 hover:border-primary/30"
+                title="Checklist onboarding">
+                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>checklist</span>
+                <span>Checklist</span>
+              </a>
+            </div>
             {/* Disconnect button */}
             <button
               onClick={logout}

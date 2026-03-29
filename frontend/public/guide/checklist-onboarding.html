@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAF Logistic — Checklist Onboarding Equipe Metier</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; color: #1e293b; line-height: 1.7; background: #f8fafc; }
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+  h2 { font-size: 1.3rem; font-weight: 700; color: #0f172a; margin: 36px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0; }
+  h3 { font-size: 1rem; font-weight: 600; color: #334155; margin: 20px 0 8px; }
+  .subtitle { color: #64748b; font-size: 0.95rem; margin-bottom: 24px; }
+  .badge { display: inline-block; background: #3b82f6; color: white; font-size: 0.7rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; margin-bottom: 12px; }
+  .week { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .week-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .week-num { background: #3b82f6; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
+  .week-num.urgent { background: #dc2626; }
+  .week-num.normal { background: #f59e0b; }
+  .week-num.later { background: #22c55e; }
+  .week-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+  th { background: #f1f5f9; color: #334155; font-weight: 600; padding: 8px 10px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  tr:hover td { background: #f8fafc; }
+  .check { width: 20px; text-align: center; }
+  .check input { width: 16px; height: 16px; cursor: pointer; }
+  .who { display: inline-block; background: #f0f9ff; color: #0369a1; font-size: 0.7rem; font-weight: 500; padding: 1px 8px; border-radius: 4px; }
+  .where { color: #6b7280; font-size: 0.8rem; }
+  .important { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px; margin: 12px 0; font-size: 0.85rem; }
+  .important strong { color: #991b1b; }
+  .info { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px; margin: 12px 0; font-size: 0.85rem; }
+  .info strong { color: #1e40af; }
+  .success { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px; margin: 12px 0; font-size: 0.85rem; }
+  .success strong { color: #166534; }
+  .status-loaded { color: #16a34a; font-weight: 600; }
+  .status-missing { color: #dc2626; font-weight: 600; }
+  .status-partial { color: #f59e0b; font-weight: 600; }
+  @media print { body { background: white; } .container { max-width: 100%; } .check input { appearance: none; border: 1.5px solid #999; width: 14px; height: 14px; border-radius: 2px; } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<span class="badge">SAF Logistic — Onboarding</span>
+<h1>Checklist de Mise en Service</h1>
+<p class="subtitle">Document pour l'equipe metier — Donnees a fournir et actions a realiser pour completer la mise en service de la plateforme SAF Logistic.</p>
+
+<div class="info">
+  <strong>URL de la plateforme :</strong> <a href="https://saf.dataforgeai.fr">https://saf.dataforgeai.fr</a><br>
+  <strong>Guide complet :</strong> <a href="/guide/index.html">Guide utilisateur</a>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Etat actuel des donnees</h2>
+
+<table>
+  <thead><tr><th>Donnee</th><th>Statut</th><th>Quantite</th><th>Action requise</th></tr></thead>
+  <tbody>
+    <tr><td>Conducteurs</td><td class="status-loaded">Charge</td><td>27</td><td>Verifier les informations</td></tr>
+    <tr><td>Vehicules</td><td class="status-loaded">Charge</td><td>26</td><td>Verifier immatriculations et dates CT</td></tr>
+    <tr><td>Clients</td><td class="status-partial">Partiel</td><td>4</td><td>Completer adresses et contacts</td></tr>
+    <tr><td>Tournees modeles</td><td class="status-loaded">Charge</td><td>10</td><td>Verifier montants vente/achat</td></tr>
+    <tr><td>Documents conformite</td><td class="status-partial">Partiel</td><td>125</td><td>Scanner les documents manquants</td></tr>
+    <tr><td>Parametres entreprise</td><td class="status-loaded">Charge</td><td>—</td><td>Verifier SIRET et TVA</td></tr>
+    <tr><td>Compte bancaire</td><td class="status-partial">A verifier</td><td>1</td><td>Saisir le vrai IBAN</td></tr>
+    <tr><td>Taux TVA</td><td class="status-loaded">Charge</td><td>4</td><td>—</td></tr>
+    <tr><td>Tarifs clients</td><td class="status-missing">A creer</td><td>1</td><td>Saisir tarifs par client</td></tr>
+    <tr><td>Sous-traitants</td><td class="status-missing">Vide</td><td>0</td><td>Ajouter si applicable</td></tr>
+    <tr><td>Salaires conducteurs</td><td class="status-missing">Non saisis</td><td>—</td><td>Saisir pour rentabilite</td></tr>
+    <tr><td>Couts vehicules</td><td class="status-missing">Non saisis</td><td>—</td><td>Saisir pour rentabilite</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Semaine 1 — Priorite haute (minimum viable)</h2>
+
+<div class="week">
+  <div class="week-header">
+    <div class="week-num urgent">1</div>
+    <div class="week-title">Donnees critiques pour demarrer</div>
+  </div>
+
+  <div class="important">
+    <strong>Sans ces donnees, la plateforme ne peut pas etre utilisee en production.</strong>
+  </div>
+
+  <table>
+    <thead><tr><th class="check"></th><th>Action</th><th>Responsable</th><th>Menu</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Verifier les adresses clients</strong></td>
+        <td><span class="who">Comptable</span></td>
+        <td class="where">Referentiels → Clients → detail</td>
+        <td>Adresse facturation complete pour K+N, Geodis, DB Schenker, Central Express</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Saisir les tarifs par client</strong></td>
+        <td><span class="who">Comptable</span></td>
+        <td class="where">Finance → Tarifs → "Nouveau tarif"</td>
+        <td>Montant HT par type de prestation pour chaque client. Necessaire pour la facturation.</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Verifier le compte bancaire</strong></td>
+        <td><span class="who">Comptable</span></td>
+        <td class="where">Parametrage → Parametres → Banque</td>
+        <td>Remplacer l'IBAN de demo par le vrai IBAN de l'entreprise</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Verifier les infos entreprise</strong></td>
+        <td><span class="who">Admin</span></td>
+        <td class="where">Parametrage → Parametres → Entreprise</td>
+        <td>SIREN, SIRET, TVA intracommunautaire, adresse, telephone, email</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Scanner les documents expires</strong></td>
+        <td><span class="who">RH</span></td>
+        <td class="where">Referentiels → Conducteurs → detail → Conformite</td>
+        <td>9 documents expires detectes (ADR, carte identite, visite medicale). Scanner et uploader les versions a jour.</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Verifier les montants des tournees</strong></td>
+        <td><span class="who">Dirigeant</span></td>
+        <td class="where">Exploitation → Tournees → detail</td>
+        <td>Montant vente HT et achat HT par tournee pour le calcul de rentabilite</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Semaine 2 — Donnees operationnelles</h2>
+
+<div class="week">
+  <div class="week-header">
+    <div class="week-num normal">2</div>
+    <div class="week-title">Completer pour l'exploitation quotidienne</div>
+  </div>
+
+  <table>
+    <thead><tr><th class="check"></th><th>Action</th><th>Responsable</th><th>Menu</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Ajouter les contacts clients</strong></td>
+        <td><span class="who">Exploitation</span></td>
+        <td class="where">Referentiels → Clients → detail → Contacts</td>
+        <td>Nom, email, telephone du contact principal et facturation par client</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Ajouter les adresses de livraison</strong></td>
+        <td><span class="who">Exploitation</span></td>
+        <td class="where">Referentiels → Clients → detail → Adresses</td>
+        <td>Adresses de chargement et livraison pour chaque client/site</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Saisir les salaires conducteurs</strong></td>
+        <td><span class="who">RH</span></td>
+        <td class="where">Referentiels → Conducteurs → detail → Contrat</td>
+        <td>Salaire base mensuel et taux horaire pour le calcul de rentabilite</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Saisir les couts vehicules</strong></td>
+        <td><span class="who">Flotte</span></td>
+        <td class="where">Referentiels → Vehicules → detail → Couts</td>
+        <td>Gasoil, assurance, entretien, reparation, peage du mois en cours</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Configurer les arrets des tournees</strong></td>
+        <td><span class="who">Exploitation</span></td>
+        <td class="where">Exploitation → Tournees → detail → Arrets</td>
+        <td>Points de chargement et livraison par tournee pour le CMR</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Generer les executions du mois</strong></td>
+        <td><span class="who">Exploitation</span></td>
+        <td class="where">Exploitation → Tournees → detail → Executions → Generer</td>
+        <td>Selectionner la periode (ex: 01/05 au 31/05) et generer</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Semaine 3 — Completude et conformite</h2>
+
+<div class="week">
+  <div class="week-header">
+    <div class="week-num later">3</div>
+    <div class="week-title">Objectif : 100% de conformite</div>
+  </div>
+
+  <table>
+    <thead><tr><th class="check"></th><th>Action</th><th>Responsable</th><th>Menu</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Scanner TOUS les documents conducteurs</strong></td>
+        <td><span class="who">RH</span></td>
+        <td class="where">Referentiels → Conducteurs → detail → Conformite</td>
+        <td>Permis, FIMO, FCO, carte conducteur, visite medicale, carte identite, ADR</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Scanner TOUS les documents vehicules</strong></td>
+        <td><span class="who">Flotte</span></td>
+        <td class="where">Referentiels → Vehicules → detail → Conformite</td>
+        <td>Carte grise, controle technique, assurance, attestation capacite</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Ajouter les sous-traitants</strong></td>
+        <td><span class="who">Exploitation</span></td>
+        <td class="where">Referentiels → Sous-traitants</td>
+        <td>Si SAF utilise des sous-traitants pour certaines tournees</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Verifier le tableau de bord conformite</strong></td>
+        <td><span class="who">Admin</span></td>
+        <td class="where">Pilotage → Conformite</td>
+        <td>Objectif : 100% — tous les documents valides pour tous les conducteurs et vehicules</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Planifier les maintenances</strong></td>
+        <td><span class="who">Flotte</span></td>
+        <td class="where">Flotte → Maintenance → "Nouvelle maintenance"</td>
+        <td>Controles techniques, vidanges, tachygraphes a planifier</td>
+      </tr>
+      <tr>
+        <td class="check"><input type="checkbox"></td>
+        <td><strong>Former les utilisateurs</strong></td>
+        <td><span class="who">Admin</span></td>
+        <td class="where">Guide utilisateur</td>
+        <td>S'assurer que chaque profil connait ses actions (voir guide, etape 10)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Documents a fournir par l'equipe metier</h2>
+
+<h3>Dirigeant / Admin</h3>
+<table>
+  <thead><tr><th class="check"></th><th>Document / Information</th><th>Format</th></tr></thead>
+  <tbody>
+    <tr><td class="check"><input type="checkbox"></td><td>Kbis a jour</td><td>PDF</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Licence de transport</td><td>Numero + scan PDF</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Attestation de capacite</td><td>PDF</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>RIB bancaire</td><td>IBAN + BIC</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Tarifs negocies par client</td><td>Tableau (client, type, montant HT)</td></tr>
+  </tbody>
+</table>
+
+<h3>RH / Paie</h3>
+<table>
+  <thead><tr><th class="check"></th><th>Document / Information</th><th>Format</th></tr></thead>
+  <tbody>
+    <tr><td class="check"><input type="checkbox"></td><td>Permis de conduire (chaque conducteur)</td><td>Scan PDF/JPG + date expiration</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>FIMO / FCO (chaque conducteur)</td><td>Scan + date expiration</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Carte conducteur (chaque conducteur)</td><td>Scan + date expiration</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Visite medicale (chaque conducteur)</td><td>Scan + date expiration</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>ADR si applicable</td><td>Scan + date expiration</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Salaires mensuels bruts</td><td>Tableau (conducteur, montant)</td></tr>
+  </tbody>
+</table>
+
+<h3>Gestionnaire Flotte</h3>
+<table>
+  <thead><tr><th class="check"></th><th>Document / Information</th><th>Format</th></tr></thead>
+  <tbody>
+    <tr><td class="check"><input type="checkbox"></td><td>Carte grise (chaque vehicule)</td><td>Scan PDF</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Controle technique (chaque vehicule)</td><td>Scan + date expiration</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Attestation assurance (chaque vehicule)</td><td>Scan + date expiration + compagnie</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Couts mensuels par vehicule</td><td>Tableau (vehicule, gasoil, entretien, reparation...)</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Planning des maintenances prevues</td><td>Dates CT, tachygraphe, limiteur</td></tr>
+  </tbody>
+</table>
+
+<h3>Exploitation / Dispatch</h3>
+<table>
+  <thead><tr><th class="check"></th><th>Document / Information</th><th>Format</th></tr></thead>
+  <tbody>
+    <tr><td class="check"><input type="checkbox"></td><td>Adresses de chargement par client</td><td>Adresse complete + contact</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Adresses de livraison par client</td><td>Adresse complete + contact</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Contacts clients (exploitation + facturation)</td><td>Nom, email, telephone</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Horaires d'ouverture des sites</td><td>Par adresse</td></tr>
+    <tr><td class="check"><input type="checkbox"></td><td>Contraintes specifiques par tournee</td><td>Temperature, ADR, hayon, etc.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Rappel des comptes utilisateurs</h2>
+
+<div class="info">
+  <strong>Tenant ID :</strong> <code>10000000-0000-0000-0000-000000000001</code>
+</div>
+
+<table>
+  <thead><tr><th>Profil</th><th>Email</th><th>Mot de passe</th></tr></thead>
+  <tbody>
+    <tr><td>Admin</td><td>admin@saf-logistique.fr</td><td>SafAdmin2026!</td></tr>
+    <tr><td>Exploitation</td><td>exploitation@saf-logistique.fr</td><td>SafExploit2026!</td></tr>
+    <tr><td>Comptabilite</td><td>compta@saf-logistique.fr</td><td>SafCompta2026!</td></tr>
+    <tr><td>RH Paie</td><td>rh@saf-logistique.fr</td><td>SafRH2026!</td></tr>
+    <tr><td>Flotte</td><td>flotte@saf-logistique.fr</td><td>SafFlotte2026!</td></tr>
+  </tbody>
+</table>
+
+<p style="text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+  SAF Logistic v1.0 — Checklist Onboarding<br>
+  <a href="https://saf.dataforgeai.fr" style="color: #3b82f6;">https://saf.dataforgeai.fr</a> |
+  <a href="/guide/index.html" style="color: #3b82f6;">Guide utilisateur</a>
+</p>
+
+</div>
+</body>
+</html>

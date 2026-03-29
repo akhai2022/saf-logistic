@@ -1255,13 +1255,13 @@ async def generate_cmr(
 
     # Load delivery points
     delivery_points = (await db.execute(
-        text("SELECT * FROM delivery_points WHERE mission_id = :mid AND tenant_id = :tid ORDER BY ordre"),
+        text("SELECT * FROM mission_delivery_points WHERE mission_id = :mid AND tenant_id = :tid ORDER BY ordre"),
         {"mid": job_id, "tid": tid},
     )).fetchall()
 
     # Load goods
     goods = (await db.execute(
-        text("SELECT * FROM goods WHERE mission_id = :mid AND tenant_id = :tid ORDER BY created_at"),
+        text("SELECT * FROM mission_goods WHERE mission_id = :mid AND tenant_id = :tid ORDER BY created_at"),
         {"mid": job_id, "tid": tid},
     )).fetchall()
 
@@ -1273,11 +1273,16 @@ async def generate_cmr(
             {"id": str(mission.customer_id)},
         )).first()
 
-    # Load company settings (tenant)
+    # Load company settings (prefer company_settings over tenants for full details)
     company = (await db.execute(
-        text("SELECT * FROM tenants WHERE id = :id"),
+        text("SELECT * FROM company_settings WHERE tenant_id = :id"),
         {"id": tid},
     )).first()
+    if not company:
+        company = (await db.execute(
+            text("SELECT * FROM tenants WHERE id = :id"),
+            {"id": tid},
+        )).first()
 
     # Load driver
     driver = None

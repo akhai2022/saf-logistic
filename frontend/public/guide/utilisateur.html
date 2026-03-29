@@ -113,6 +113,7 @@
     <tr><td><strong>RH / Paie</strong></td><td><code>rh@saf.local</code></td><td>Isabelle FOURNIER</td><td>rh_paie</td></tr>
     <tr><td><strong>Flotte</strong></td><td><code>flotte@saf.local</code></td><td>Thomas ROUX</td><td>flotte</td></tr>
     <tr><td><strong>Lecture seule</strong></td><td><code>auditeur@saf.local</code></td><td>Laurent BLANC</td><td>lecture_seule</td></tr>
+    <tr><td><strong>Sous-traitant</strong></td><td><code>soustraitant@saf.local</code></td><td>Pierre MARTIN</td><td>soustraitant</td></tr>
   </tbody>
 </table>
 
@@ -743,6 +744,18 @@
   <div class="info">
     <strong>Restriction :</strong> Vous ne pouvez ni creer, ni modifier, ni supprimer de donnees. Tous les boutons d'action sont masques ou desactives.
   </div>
+
+  <h3>Journee type — Auditeur (Laurent BLANC)</h3>
+  <div class="workflow">
+  <ol>
+    <li>Consulter le <strong>Tableau de bord</strong> — vue d'ensemble des KPIs (CA, conformite, missions)</li>
+    <li>Verifier les <strong>Missions</strong> en cours — statuts, affectations, montants</li>
+    <li>Consulter les <strong>Factures</strong> — verification des montants et echeances</li>
+    <li>Verifier la <strong>Conformite</strong> — documents des conducteurs et vehicules</li>
+    <li>Consulter l'<strong>Audit</strong> — tracer les modifications effectuees par les utilisateurs</li>
+    <li>Exporter les donnees si necessaire pour rapport externe</li>
+  </ol>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -793,6 +806,34 @@
 
   <div class="info">
     <strong>Important :</strong> Le POD est obligatoire pour que la mission puisse etre cloturee. Sans POD, le cycle de vie est bloque a « Livree ».
+  </div>
+
+  <h3>Journee type — Conducteur</h3>
+  <div class="workflow">
+  <strong>Avant le depart :</strong>
+  <ol>
+    <li>Se connecter → consulter <strong>Mes missions</strong> du jour</li>
+    <li>Verifier les adresses, contacts et instructions speciales de chaque livraison</li>
+    <li>Verifier les marchandises a charger (onglet Marchandises de chaque mission)</li>
+  </ol>
+  <strong>Pendant la tournee :</strong>
+  <ol start="4">
+    <li>Signaler le <strong>depart</strong> (evenement)</li>
+    <li>A chaque point de livraison : signaler l'<strong>arrivee</strong></li>
+    <li>Faire signer le bon de livraison</li>
+    <li>Photographier le bon signe et les colis livres</li>
+  </ol>
+  <strong>Apres chaque livraison :</strong>
+  <ol start="8">
+    <li>Ouvrir la mission → onglet <strong>POD</strong></li>
+    <li>Telecharger (upload) la photo du bon de livraison signe</li>
+    <li>Si reserves (avarie, manquant) : cocher <strong>« Reserves »</strong> et decrire le probleme</li>
+  </ol>
+  <strong>Fin de journee :</strong>
+  <ol start="11">
+    <li>Verifier que toutes les missions ont un POD depose</li>
+    <li>Signaler la fin de service</li>
+  </ol>
   </div>
 </div>
 

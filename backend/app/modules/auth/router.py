@@ -23,7 +23,7 @@ router = APIRouter(prefix="/v1/auth", tags=["auth"])
 # ── Role → sidebar sections mapping ──────────────────────────────
 
 SIDEBAR_BY_ROLE: dict[str, list[str]] = {
-    "admin": ["exploitation", "referentiels", "finance", "flotte", "pilotage", "parametrage"],
+    "admin": ["exploitation", "referentiels", "finance", "flotte", "pilotage", "parametrage", "administration"],
     "exploitation": ["exploitation", "referentiels"],
     "compta": ["exploitation", "finance", "pilotage"],
     "flotte": ["referentiels", "flotte"],

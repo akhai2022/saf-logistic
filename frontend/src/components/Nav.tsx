@@ -75,8 +75,9 @@ const ALL_SECTIONS: NavSection[] = [
     label: "Pilotage",
     icon: "monitoring",
     items: [
-      { href: "/reports", label: "Tableau de bord", icon: "bar_chart" },
+      { href: "/reports", label: "Tableau de bord", icon: "monitoring" },
       { href: "/rentabilite", label: "Rentabilite", icon: "trending_up" },
+      { href: "/compliance", label: "Conformite", icon: "verified_user" },
     ],
   },
   {

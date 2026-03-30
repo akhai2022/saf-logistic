@@ -490,3 +490,35 @@ async def list_agencies(
         {"tid": str(tenant.tenant_id)},
     )
     return [{"id": str(r.id), "name": r.name, "code": r.code} for r in result.all()]
+
+
+@router.post("/fix-compliance-duplicates")
+async def fix_compliance_duplicates(
+    user: dict = Depends(require_super_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """One-time fix: remove duplicate compliance_templates and add unique constraint."""
+    # Delete duplicates
+    result = await db.execute(text("""
+        DELETE FROM compliance_templates
+        WHERE id NOT IN (
+            SELECT DISTINCT ON (tenant_id, entity_type, type_document) id
+            FROM compliance_templates
+            ORDER BY tenant_id, entity_type, type_document, created_at ASC
+        )
+    """))
+    deleted = result.rowcount
+
+    # Add unique constraint if not exists
+    try:
+        await db.execute(text("""
+            ALTER TABLE compliance_templates
+            ADD CONSTRAINT uq_compliance_templates_tenant_entity_doctype
+            UNIQUE (tenant_id, entity_type, type_document)
+        """))
+        constraint_added = True
+    except Exception:
+        constraint_added = False  # already exists
+
+    await db.commit()
+    return {"deleted_duplicates": deleted, "constraint_added": constraint_added}

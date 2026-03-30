@@ -6,12 +6,12 @@ import { login } from "@/lib/auth";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 
-const DEFAULT_TENANT = "00000000-0000-0000-0000-000000000001";
+const DEFAULT_TENANT = "10000000-0000-0000-0000-000000000001";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@saf.local");
-  const [password, setPassword] = useState("admin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [tenantId, setTenantId] = useState(DEFAULT_TENANT);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

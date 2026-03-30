@@ -64,19 +64,9 @@ aws-prod-build-push:
 	./scripts/deploy/aws/build_and_push.sh
 
 aws-prod-redeploy:
-	@echo "==> Force redeploying ECS services..."
-	$(eval CLUSTER := $(shell cd $(TF_DIR) && terraform output -raw ecs_cluster_name))
-	$(eval API_SVC := $(shell cd $(TF_DIR) && terraform output -raw api_service_name))
-	$(eval WEB_SVC := $(shell cd $(TF_DIR) && terraform output -raw web_service_name))
-	$(eval WORKER_SVC := $(shell cd $(TF_DIR) && terraform output -raw worker_service_name))
-	aws ecs update-service --cluster $(CLUSTER) --service $(API_SVC) --force-new-deployment --no-cli-pager
-	aws ecs update-service --cluster $(CLUSTER) --service $(WEB_SVC) --force-new-deployment --no-cli-pager
-	aws ecs update-service --cluster $(CLUSTER) --service $(WORKER_SVC) --force-new-deployment --no-cli-pager
-	@echo "==> Waiting for API service stability..."
-	aws ecs wait services-stable --cluster $(CLUSTER) --services $(API_SVC) $(WEB_SVC) $(WORKER_SVC)
-	@echo "==> All services stable."
+	./scripts/deploy/aws/build_and_push.sh --deploy
 
-aws-prod-deploy: aws-prod-apply aws-prod-build-push aws-prod-redeploy
+aws-prod-deploy: aws-prod-apply aws-prod-redeploy
 
 aws-prod-migrate:
 	@echo "==> Running migration task..."

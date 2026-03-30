@@ -5,6 +5,9 @@ import Link from "next/link";
 import { apiGet } from "@/lib/api";
 import PageHeader from "@/components/PageHeader";
 import Card from "@/components/Card";
+import DonutChart from "@/components/charts/DonutChart";
+import LineChart from "@/components/charts/LineChart";
+import BarChart from "@/components/charts/BarChart";
 
 interface Analytics {
   period: string;
@@ -43,6 +46,16 @@ const STATUS_LABELS: Record<string, string> = {
   delivered: "Livree", closed: "Cloturee", draft: "Brouillon",
   PLANIFIEE: "Planifiee", AFFECTEE: "Affectee", EN_COURS: "En cours",
   LIVREE: "Livree", CLOTUREE: "Cloturee", FACTUREE: "Facturee",
+};
+
+const STATUS_HEX: Record<string, string> = {
+  planned: "#60a5fa", PLANIFIEE: "#60a5fa",
+  assigned: "#818cf8", AFFECTEE: "#818cf8",
+  in_progress: "#fbbf24", EN_COURS: "#fbbf24",
+  delivered: "#4ade80", LIVREE: "#4ade80",
+  closed: "#16a34a", CLOTUREE: "#16a34a",
+  FACTUREE: "#059669",
+  draft: "#d1d5db", BROUILLON: "#d1d5db",
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -102,34 +115,46 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Missions par jour */}
-        <Card title="Activite quotidienne (30j)" icon="bar_chart">
-          {data.missions_daily.length === 0 ? (
-            <p className="text-sm text-gray-400 py-4">Aucune donnee</p>
-          ) : (
-            <div className="space-y-1">
-              {data.missions_daily.slice(-15).map((d) => (
-                <div key={d.date} className="flex items-center gap-2 text-xs">
-                  <span className="w-16 text-gray-500 shrink-0">{d.date.slice(5)}</span>
-                  <Bar value={d.count} max={maxDailyMissions} color="bg-blue-500" />
-                  <span className="w-8 text-right font-medium">{d.count}</span>
-                  <span className="w-16 text-right text-gray-400">{fmt(d.revenue)}€</span>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Revenue trend line chart */}
+        <Card title="Tendance CA et charges (30j)" icon="show_chart">
+          <LineChart
+            data={data.missions_daily.map((d) => ({
+              label: d.date.slice(5),
+              value: d.revenue,
+              value2: d.cost,
+            }))}
+            height={220}
+            color1="#22c55e"
+            color2="#ef4444"
+            label1="CA HT"
+            label2="Charges"
+            formatValue={(n) => `${(n / 1000).toFixed(1)}k`}
+          />
         </Card>
 
-        {/* Classement des tournees */}
-        <Card title="Rentabilite par tournee" icon="route">
-          <div className="space-y-2">
-            {data.route_ranking.map((r, i) => (
-              <div key={r.code} className="flex items-center gap-2 text-xs">
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-white font-bold shrink-0 ${i < 3 ? "bg-green-500" : "bg-gray-300"}`} style={{ fontSize: 10 }}>{i + 1}</span>
-                <span className="w-20 font-medium shrink-0 truncate">{r.code}</span>
-                <Bar value={r.revenue} max={maxRouteRevenue} color={r.margin >= 0 ? "bg-green-500" : "bg-red-400"} />
-                <span className="w-16 text-right font-medium">{fmt(r.revenue)}€</span>
-                <span className={`w-16 text-right font-medium ${r.margin >= 0 ? "text-green-600" : "text-red-600"}`}>{r.margin >= 0 ? "+" : ""}{fmt(r.margin)}€</span>
+        {/* Classement des tournees — Bar chart */}
+        <Card title="CA et charges par tournee" icon="route">
+          <BarChart
+            data={data.route_ranking.map((r) => ({
+              label: r.code,
+              value: r.revenue,
+              value2: r.cost,
+            }))}
+            height={220}
+            color1="#22c55e"
+            color2="#ef4444"
+            label1="CA HT"
+            label2="Charges"
+            formatValue={(n) => `${(n / 1000).toFixed(0)}k`}
+          />
+          {/* Margin summary below */}
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-100">
+            {data.route_ranking.map((r) => (
+              <div key={r.code} className="flex items-center gap-1 text-xs">
+                <span className="font-mono font-medium">{r.code}</span>
+                <span className={`font-bold ${r.margin >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  {r.margin >= 0 ? "+" : ""}{fmt(r.margin)}€
+                </span>
               </div>
             ))}
           </div>
@@ -175,33 +200,19 @@ export default function ReportsPage() {
           </div>
         </Card>
 
-        {/* Repartition statuts missions */}
+        {/* Repartition statuts missions — Donut */}
         <Card title="Statuts des missions (mois)" icon="donut_small">
-          {data.status_distribution.length === 0 ? (
-            <p className="text-sm text-gray-400 py-4">Aucune mission ce mois</p>
-          ) : (
-            <>
-              <div className="flex rounded-full overflow-hidden h-6 mb-4">
-                {data.status_distribution.map((st) => {
-                  const total = data.status_distribution.reduce((a, b) => a + b.count, 0);
-                  const pct = (st.count / total) * 100;
-                  return (
-                    <div key={st.status} className={`${STATUS_COLORS[st.status] || "bg-gray-300"} transition-all`}
-                         style={{ width: `${pct}%` }} title={`${STATUS_LABELS[st.status] || st.status}: ${st.count}`} />
-                  );
-                })}
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {data.status_distribution.map((st) => (
-                  <div key={st.status} className="flex items-center gap-1.5 text-xs">
-                    <div className={`w-3 h-3 rounded-sm ${STATUS_COLORS[st.status] || "bg-gray-300"}`} />
-                    <span>{STATUS_LABELS[st.status] || st.status}</span>
-                    <span className="font-bold">{st.count}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          <DonutChart
+            data={data.status_distribution.map((st) => ({
+              label: STATUS_LABELS[st.status] || st.status,
+              value: st.count,
+              color: STATUS_HEX[st.status] || "#d1d5db",
+            }))}
+            size={220}
+            thickness={40}
+            centerValue={String(data.status_distribution.reduce((a, b) => a + b.count, 0))}
+            centerLabel="missions"
+          />
         </Card>
 
         {/* Conformite */}

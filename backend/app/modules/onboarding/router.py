@@ -58,3 +58,33 @@ async def demo_setup(
     """Seed the tenant with demo data (drivers, customer, FR presets)."""
     await seed(db)
     return DemoSetupResponse(status="ok", message="Demo data seeded successfully")
+
+
+@router.post("/fix-compliance-duplicates")
+async def fix_compliance_duplicates(
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove duplicate compliance_templates and add unique constraint."""
+    from sqlalchemy import text
+    result = await db.execute(text("""
+        DELETE FROM compliance_templates
+        WHERE id NOT IN (
+            SELECT DISTINCT ON (tenant_id, entity_type, type_document) id
+            FROM compliance_templates
+            ORDER BY tenant_id, entity_type, type_document, created_at ASC
+        )
+    """))
+    deleted = result.rowcount
+    try:
+        await db.execute(text("""
+            ALTER TABLE compliance_templates
+            ADD CONSTRAINT uq_compliance_templates_tenant_entity_doctype
+            UNIQUE (tenant_id, entity_type, type_document)
+        """))
+        constraint_added = True
+    except Exception:
+        constraint_added = False
+    await db.commit()
+    return {"deleted_duplicates": deleted, "constraint_added": constraint_added}

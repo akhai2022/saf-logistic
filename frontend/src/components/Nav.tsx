@@ -119,8 +119,11 @@ export default function Nav() {
     const config = getDashboardConfig();
     if (config?.sidebar_sections?.length) {
       setVisibleSections(ALL_SECTIONS.filter((s) => config.sidebar_sections.includes(s.key)));
+    } else {
+      // No config = show all sections (admin default)
+      setVisibleSections(ALL_SECTIONS);
     }
-  }, []);
+  }, [user]);
 
   // Poll notification count every 30s
   useEffect(() => {

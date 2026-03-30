@@ -99,17 +99,18 @@ if [ "$DEPLOY" = true ]; then
     fi
 
     # Get current task def, update image tag, register new revision
-    CURRENT_TD=$(aws ecs describe-task-definition --task-definition "$FAMILY" --output json)
-    NEW_TD=$(echo "$CURRENT_TD" | python3 -c "
+    TMPFILE=$(mktemp /tmp/td-XXXXXX.json)
+    aws ecs describe-task-definition --task-definition "$FAMILY" --output json | python3 -c "
 import sys, json
 td = json.load(sys.stdin)['taskDefinition']
 td['containerDefinitions'][0]['image'] = '${NEW_IMAGE}'
 for k in ['taskDefinitionArn','revision','status','requiresAttributes','compatibilities','registeredAt','registeredBy','deregisteredAt']:
     td.pop(k, None)
-print(json.dumps(td))
-")
-    REV=$(echo "$NEW_TD" | aws ecs register-task-definition --cli-input-json file:///dev/stdin \
+json.dump(td, open('${TMPFILE}', 'w'))
+"
+    REV=$(aws ecs register-task-definition --cli-input-json "file://${TMPFILE}" \
       --query 'taskDefinition.revision' --output text)
+    rm -f "$TMPFILE"
     echo "    ${FAMILY}: registered revision ${REV} with image ${NEW_IMAGE}"
 
     # Map family to service name (same name in this setup)

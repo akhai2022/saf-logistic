@@ -263,13 +263,13 @@ resource "aws_lb_target_group" "web" {
   target_type = "ip"
 
   health_check {
-    path                = "/"
+    path                = "/login"
     port                = "traffic-port"
     healthy_threshold   = 2
     unhealthy_threshold = 3
     timeout             = 5
     interval            = 15
-    matcher             = "200,307"
+    matcher             = "200"
   }
 
   deregistration_delay = 30

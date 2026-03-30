@@ -206,7 +206,7 @@ export default function PlanningPage() {
             <div
               className="grid min-w-[900px]"
               style={{
-                gridTemplateColumns: "200px repeat(7, 1fr)",
+                gridTemplateColumns: "260px repeat(7, 1fr)",
               }}
             >
               {/* Header row */}
@@ -269,8 +269,8 @@ function DriverRow({
   return (
     <>
       <div className="sticky left-0 z-10 bg-white px-3 py-2 border-b border-r border-gray-100 flex items-center gap-2">
-        <span className="text-sm font-medium text-gray-800 truncate">{row.driver_name}</span>
-        {row.conformite_statut && (
+        <Link href={`/drivers`} className="text-sm font-semibold text-gray-800 hover:text-primary whitespace-nowrap">{row.driver_name}</Link>
+        {row.conformite_statut && row.conformite_statut !== "OK" && (
           <StatusBadge statut={row.conformite_statut} size="sm" />
         )}
       </div>

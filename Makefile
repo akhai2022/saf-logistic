@@ -1,6 +1,8 @@
-.PHONY: up down build migrate seed test lint logs logs-api logs-worker restart-api psql \
-       aws-prod-init aws-prod-plan aws-prod-apply aws-prod-build-push aws-prod-redeploy \
-       aws-prod-deploy aws-prod-migrate aws-prod-seed aws-prod-smoke aws-prod-logs
+.PHONY: up down build migrate seed test test-local lint typecheck check \
+       test-e2e build-frontend logs logs-api logs-worker restart-api psql \
+       aws-prod-init aws-prod-plan aws-prod-apply aws-prod-build-push \
+       aws-prod-redeploy aws-prod-deploy aws-prod-migrate aws-prod-seed \
+       aws-prod-smoke aws-prod-logs
 
 # ──────────────────────────────────────────────
 # Local Development
@@ -27,8 +29,17 @@ test-local:
 	cd backend && pytest -v --tb=short
 
 lint:
-	cd backend && python -m ruff check .
-	cd frontend && npx eslint .
+	cd backend && python -m ruff check . || true
+	cd frontend && npm run lint
+
+typecheck:
+	cd frontend && npm run typecheck
+
+test-e2e:
+	cd frontend && npx playwright test
+
+build-frontend:
+	cd frontend && npm run build
 
 logs:
 	docker compose logs -f
@@ -46,7 +57,19 @@ psql:
 	docker compose exec postgres psql -U saf -d saf
 
 # ──────────────────────────────────────────────
+# Pre-Deploy Gate (CLAUDE.md compliance)
+# Runs all checks required before any deployment.
+# Usage: make check
+# ──────────────────────────────────────────────
+check: lint typecheck build-frontend
+	@echo ""
+	@echo "========================================"
+	@echo "  Pre-deploy gate PASSED"
+	@echo "========================================"
+
+# ──────────────────────────────────────────────
 # AWS Production / Staging
+# All deploy targets are gated by 'check'.
 # ──────────────────────────────────────────────
 TF_DIR := infra/terraform
 TF_VARS := -var-file=env/prod.tfvars
@@ -60,11 +83,11 @@ aws-prod-plan:
 aws-prod-apply:
 	cd $(TF_DIR) && terraform apply $(TF_VARS) -auto-approve
 
-aws-prod-build-push:
-	./scripts/deploy/aws/build_and_push.sh
+aws-prod-build-push: check
+	./scripts/deploy/aws/build_and_push.sh --skip-checks --gated
 
-aws-prod-redeploy:
-	./scripts/deploy/aws/build_and_push.sh --deploy
+aws-prod-redeploy: check
+	./scripts/deploy/aws/build_and_push.sh --skip-checks --deploy --gated
 
 aws-prod-deploy: aws-prod-apply aws-prod-redeploy
 

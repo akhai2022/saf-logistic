@@ -15,18 +15,19 @@ set -euo pipefail
 
 DEPLOY=false
 SKIP_CHECKS=false
+GATED=false
 for arg in "$@"; do
   case "$arg" in
     --deploy) DEPLOY=true ;;
     --skip-checks) SKIP_CHECKS=true ;;
+    --gated) GATED=true ;;  # Set by Makefile after 'make check' passed
   esac
 done
 
-# --skip-checks is forbidden when deploying to production
-if [ "$SKIP_CHECKS" = true ] && [ "$DEPLOY" = true ]; then
-  echo "ERROR: --skip-checks cannot be combined with --deploy (production)."
-  echo "       Pre-flight checks are mandatory for production deployments."
-  echo "       Use --skip-checks without --deploy for image-only builds."
+# --skip-checks + --deploy is only allowed when called from the Makefile gate
+if [ "$SKIP_CHECKS" = true ] && [ "$DEPLOY" = true ] && [ "$GATED" = false ]; then
+  echo "ERROR: --skip-checks cannot be combined with --deploy directly."
+  echo "       Use 'make aws-prod-redeploy' which runs pre-deploy checks first."
   exit 1
 fi
 

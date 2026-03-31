@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import Button from "@/components/Button";
@@ -98,18 +99,15 @@ export default function SubcontractingPage() {
   };
 
   const handleAccept = async (offerId: string) => {
-    await apiPost(`/v1/subcontracting/offers/${offerId}/accept`);
-    refresh();
+    if (await mutate(() => apiPost(`/v1/subcontracting/offers/${offerId}/accept`), "Offre acceptée")) refresh();
   };
 
   const handleReject = async (offerId: string) => {
-    await apiPost(`/v1/subcontracting/offers/${offerId}/reject`, {});
-    refresh();
+    if (await mutate(() => apiPost(`/v1/subcontracting/offers/${offerId}/reject`, {}), "Offre refusée")) refresh();
   };
 
   const handleCancel = async (offerId: string) => {
-    await apiPost(`/v1/subcontracting/offers/${offerId}/cancel`);
-    refresh();
+    if (await mutate(() => apiPost(`/v1/subcontracting/offers/${offerId}/cancel`), "Offre annulée")) refresh();
   };
 
   const fmtDate = (d?: string) => (d ? d.split("T")[0] : "\u2014");

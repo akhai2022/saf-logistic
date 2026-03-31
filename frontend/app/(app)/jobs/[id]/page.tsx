@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import { uploadFile, getDownloadUrl } from "@/lib/upload";
 import type { Mission, Driver, Vehicle, Subcontractor, DeliveryPoint, MissionGoods, ProofOfDelivery, Dispute } from "@/lib/types";
@@ -77,56 +78,52 @@ export default function JobDetailPage() {
   const fmtDateTime = (d?: string) => d ? d.replace("T", " ").slice(0, 16) : "—";
 
   const handleTransition = async (target: string) => {
-    await apiPost(`/v1/jobs/${id}/transition`, { statut: target });
-    reload();
+    if (await mutate(() => apiPost(`/v1/jobs/${id}/transition`, { statut: target }), "Statut mis à jour")) reload();
   };
 
   const handleAssign = async () => {
-    await apiPost(`/v1/jobs/${id}/assign`, {
+    if (await mutate(() => apiPost(`/v1/jobs/${id}/assign`, {
       driver_id: assignForm.driver_id || undefined,
       vehicle_id: assignForm.vehicle_id || undefined,
       trailer_id: assignForm.trailer_id || undefined,
       subcontractor_id: assignForm.subcontractor_id || undefined,
       is_subcontracted: assignForm.is_subcontracted,
       montant_achat_ht: assignForm.montant_achat_ht ? parseFloat(assignForm.montant_achat_ht) : undefined,
-    });
-    reload();
+    }), "Affectation enregistrée")) reload();
   };
 
   const handleUnassign = async () => {
-    await apiDelete(`/v1/jobs/${id}/assign`);
-    reload();
+    if (await mutate(() => apiDelete(`/v1/jobs/${id}/assign`), "Affectation supprimée")) reload();
   };
 
   const handleAddDp = async (e: React.FormEvent) => {
     e.preventDefault();
-    await apiPost(`/v1/jobs/${id}/delivery-points`, {
+    if (!await mutate(() => apiPost(`/v1/jobs/${id}/delivery-points`, {
       ordre: (mission.delivery_points?.length || 0) + 1,
       contact_nom: dpForm.contact_nom || undefined,
       contact_telephone: dpForm.contact_telephone || undefined,
       date_livraison_prevue: dpForm.date_livraison_prevue || undefined,
       instructions: dpForm.instructions || undefined,
-    });
+    }), "Point de livraison ajouté")) return;
     setShowDpForm(false);
     setDpForm({ contact_nom: "", contact_telephone: "", date_livraison_prevue: "", instructions: "" });
     reload();
   };
 
   const handleDpStatus = async (dpId: string, newStatut: string) => {
-    await apiPatch(`/v1/jobs/${id}/delivery-points/${dpId}/status`, { statut: newStatut });
-    reload();
+    if (await mutate(() => apiPatch(`/v1/jobs/${id}/delivery-points/${dpId}/status`, { statut: newStatut }), "Statut mis à jour")) reload();
   };
 
   const handleAddGoods = async (e: React.FormEvent) => {
     e.preventDefault();
-    await apiPost(`/v1/jobs/${id}/goods`, {
+    if (!await mutate(() => apiPost(`/v1/jobs/${id}/goods`, {
       description: goodsForm.description,
       nature: goodsForm.nature,
       quantite: parseFloat(goodsForm.quantite),
       unite: goodsForm.unite,
       poids_brut_kg: parseFloat(goodsForm.poids_brut_kg),
       volume_m3: goodsForm.volume_m3 ? parseFloat(goodsForm.volume_m3) : undefined,
-    });
+    }), "Marchandise ajoutée")) return;
     setShowGoodsForm(false);
     setGoodsForm({ description: "", nature: "PALETTE", quantite: "1", unite: "PALETTE", poids_brut_kg: "", volume_m3: "" });
     reload();
@@ -152,18 +149,17 @@ export default function JobDetailPage() {
   };
 
   const handlePodValidation = async (podId: string, podStatut: string, motif?: string) => {
-    await apiPatch(`/v1/jobs/${id}/pods/${podId}`, { statut: podStatut, motif_rejet: motif });
-    reload();
+    if (await mutate(() => apiPatch(`/v1/jobs/${id}/pods/${podId}`, { statut: podStatut, motif_rejet: motif }), "Statut mis à jour")) reload();
   };
 
   const handleAddDispute = async (e: React.FormEvent) => {
     e.preventDefault();
-    await apiPost(`/v1/jobs/${id}/disputes`, {
+    if (!await mutate(() => apiPost(`/v1/jobs/${id}/disputes`, {
       type: disputeForm.type,
       description: disputeForm.description,
       responsabilite: disputeForm.responsabilite,
       montant_estime_eur: disputeForm.montant_estime_eur ? parseFloat(disputeForm.montant_estime_eur) : undefined,
-    });
+    }), "Litige créé")) return;
     setShowDisputeForm(false);
     setDisputeForm({ type: "AVARIE", description: "", responsabilite: "A_DETERMINER", montant_estime_eur: "" });
     reload();

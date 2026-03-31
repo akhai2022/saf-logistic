@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { apiGet, apiPost, apiPatch } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import type { MaintenanceRecord, Vehicle } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -76,13 +77,15 @@ export default function MaintenanceListPage() {
     if (form.cout_total_ht) payload.cout_total_ht = parseFloat(form.cout_total_ht);
     if (form.notes) payload.notes = form.notes;
 
-    const created = await apiPost<MaintenanceRecord>(`/v1/fleet/vehicles/${form.vehicle_id}/maintenance`, payload);
+    const created = await mutate(() => apiPost<MaintenanceRecord>(`/v1/fleet/vehicles/${form.vehicle_id}/maintenance`, payload), "Intervention créée");
+    if (!created) return;
     setRecords([created, ...records]);
     setShowCreate(false);
   };
 
   const handleStatusChange = async (mid: string, newStatut: string) => {
-    const updated = await apiPatch<MaintenanceRecord>(`/v1/fleet/maintenance/${mid}/status`, { statut: newStatut });
+    const updated = await mutate(() => apiPatch<MaintenanceRecord>(`/v1/fleet/maintenance/${mid}/status`, { statut: newStatut }), "Statut mis à jour");
+    if (!updated) return;
     setRecords(records.map((r) => (r.id === mid ? updated : r)));
   };
 

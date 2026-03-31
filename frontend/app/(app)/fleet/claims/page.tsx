@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { apiGet, apiPost, apiPatch } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { VehicleClaim, Vehicle, Driver } from "@/lib/types";
 import Button from "@/components/Button";
@@ -83,15 +84,14 @@ export default function ClaimsListPage() {
     if (form.franchise) payload.franchise = parseFloat(form.franchise);
     if (form.notes) payload.notes = form.notes;
 
-    await apiPost<VehicleClaim>(`/v1/fleet/vehicles/${form.vehicle_id}/claims`, payload);
+    if (!await mutate(() => apiPost<VehicleClaim>(`/v1/fleet/vehicles/${form.vehicle_id}/claims`, payload), "Sinistre déclaré")) return;
     setShowCreate(false);
     setForm({ ...form, lieu: "", description: "", notes: "", cout_reparation_ht: "", franchise: "" });
     refresh();
   };
 
   const handleStatusChange = async (claimId: string, newStatut: string) => {
-    await apiPatch<VehicleClaim>(`/v1/fleet/claims/${claimId}/status`, { statut: newStatut });
-    refresh();
+    if (await mutate(() => apiPatch<VehicleClaim>(`/v1/fleet/claims/${claimId}/status`, { statut: newStatut }), "Statut mis à jour")) refresh();
   };
 
   const inp = "border rounded-lg px-3 py-2 text-sm w-full bg-white";

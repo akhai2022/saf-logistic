@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import type { PricingRule, Customer } from "@/lib/types";
 import Button from "@/components/Button";
@@ -34,7 +35,8 @@ export default function PricingPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const rule = await apiPost<PricingRule>("/v1/billing/pricing-rules", buildPayload());
+    const rule = await mutate(() => apiPost<PricingRule>("/v1/billing/pricing-rules", buildPayload()), "Tarif créé");
+    if (!rule) return;
     setRules([...rules, rule]);
     setShowCreate(false);
     setForm(EMPTY_FORM);
@@ -43,7 +45,8 @@ export default function PricingPage() {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingId) return;
-    const updated = await apiPut<PricingRule>(`/v1/billing/pricing-rules/${editingId}`, buildPayload());
+    const updated = await mutate(() => apiPut<PricingRule>(`/v1/billing/pricing-rules/${editingId}`, buildPayload()), "Enregistré");
+    if (!updated) return;
     setRules(rules.map((r) => (r.id === editingId ? updated : r)));
     setEditingId(null);
     setForm(EMPTY_FORM);

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiGet, apiPost, apiPut, apiPatch } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { uploadFile } from "@/lib/upload";
 import FilePicker from "@/components/FilePicker";
 import ComplianceTab from "@/components/ComplianceTab";
@@ -85,8 +86,8 @@ export default function DriverDetailPage() {
   };
 
   const handleStatusChange = async (newStatut: string) => {
-    await apiPatch(`/v1/masterdata/drivers/${id}/status`, { statut: newStatut });
-    apiGet<DriverDetail>(`/v1/masterdata/drivers/${id}`).then(setDriver);
+    if (await mutate(() => apiPatch(`/v1/masterdata/drivers/${id}/status`, { statut: newStatut }), "Statut mis à jour"))
+      apiGet<DriverDetail>(`/v1/masterdata/drivers/${id}`).then(setDriver);
   };
 
   const togglePermis = (cat: string) => {

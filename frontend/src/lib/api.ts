@@ -1,8 +1,24 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
+  public detail: string;
+  constructor(public status: number, body: string) {
+    // Parse FastAPI error response to extract user-friendly message
+    let detail = body;
+    try {
+      const parsed = JSON.parse(body);
+      if (typeof parsed.detail === "string") {
+        detail = parsed.detail;
+      } else if (Array.isArray(parsed.detail)) {
+        detail = parsed.detail.map((d: { msg?: string; loc?: string[] }) =>
+          d.msg || JSON.stringify(d)
+        ).join(". ");
+      }
+    } catch {
+      // body is not JSON, use as-is
+    }
+    super(detail);
+    this.detail = detail;
   }
 }
 

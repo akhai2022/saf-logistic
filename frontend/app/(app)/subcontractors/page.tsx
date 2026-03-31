@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Subcontractor } from "@/lib/types";
@@ -45,10 +46,10 @@ export default function SubcontractorsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const s = await apiPost<Subcontractor>("/v1/masterdata/subcontractors", {
+    if (!await mutate(() => apiPost<Subcontractor>("/v1/masterdata/subcontractors", {
       ...form,
       delai_paiement_jours: parseInt(form.delai_paiement_jours) || 45,
-    });
+    }), "Sous-traitant créé")) return;
     setShowCreate(false);
     refresh();
     setForm({ code: "", raison_sociale: "", siret: "", email: "", adresse_ligne1: "", code_postal: "", ville: "", telephone: "", delai_paiement_jours: "45", mode_paiement: "VIREMENT" });

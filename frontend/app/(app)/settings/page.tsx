@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPut, apiPost, apiDelete } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import type {
   CompanySettings,
@@ -146,14 +147,15 @@ function BankTab() {
   }, []);
 
   const save = async () => {
-    const result = await apiPost<BankAccount>("/v1/settings/bank-accounts", form);
+    const result = await mutate(() => apiPost<BankAccount>("/v1/settings/bank-accounts", form), "Compte bancaire ajouté");
+    if (!result) return;
     setAccounts([...accounts, result]);
     setShowForm(false);
     setForm({ label: "", iban: "", bic: "", bank_name: "", is_default: false });
   };
 
   const remove = async (id: string) => {
-    await apiDelete<void>(`/v1/settings/bank-accounts/${id}`);
+    if (!await mutate(() => apiDelete<void>(`/v1/settings/bank-accounts/${id}`), "Supprimé")) return;
     setAccounts(accounts.filter((a) => a.id !== id));
   };
 
@@ -200,14 +202,15 @@ function VatTab() {
   useEffect(() => { apiGet<VatConfig[]>("/v1/settings/vat").then(setConfigs); }, []);
 
   const save = async () => {
-    const result = await apiPost<VatConfig>("/v1/settings/vat", form);
+    const result = await mutate(() => apiPost<VatConfig>("/v1/settings/vat", form), "Taux TVA ajouté");
+    if (!result) return;
     setConfigs([...configs, result]);
     setShowForm(false);
     setForm({ rate: 20, label: "", mention_legale: "", is_default: false, is_active: true });
   };
 
   const remove = async (id: string) => {
-    await apiDelete<void>(`/v1/settings/vat/${id}`);
+    if (!await mutate(() => apiDelete<void>(`/v1/settings/vat/${id}`), "Supprimé")) return;
     setConfigs(configs.filter((c) => c.id !== id));
   };
 
@@ -250,14 +253,15 @@ function CostCenterTab() {
   useEffect(() => { apiGet<CostCenter[]>("/v1/settings/cost-centers").then(setCenters); }, []);
 
   const save = async () => {
-    const result = await apiPost<CostCenter>("/v1/settings/cost-centers", form);
+    const result = await mutate(() => apiPost<CostCenter>("/v1/settings/cost-centers", form), "Centre de coûts ajouté");
+    if (!result) return;
     setCenters([...centers, result]);
     setShowForm(false);
     setForm({ code: "", label: "", is_active: true });
   };
 
   const remove = async (id: string) => {
-    await apiDelete<void>(`/v1/settings/cost-centers/${id}`);
+    if (!await mutate(() => apiDelete<void>(`/v1/settings/cost-centers/${id}`), "Supprimé")) return;
     setCenters(centers.filter((c) => c.id !== id));
   };
 
@@ -298,14 +302,15 @@ function NotificationsTab() {
   useEffect(() => { apiGet<NotificationConfig[]>("/v1/settings/notifications").then(setConfigs); }, []);
 
   const save = async () => {
-    const result = await apiPost<NotificationConfig>("/v1/settings/notifications", form);
+    const result = await mutate(() => apiPost<NotificationConfig>("/v1/settings/notifications", form), "Configuration ajoutée");
+    if (!result) return;
     setConfigs([...configs, result]);
     setShowForm(false);
     setForm({ event_type: "", channels: ["IN_APP"], recipients: [], delay_hours: 0, is_active: true });
   };
 
   const remove = async (id: string) => {
-    await apiDelete<void>(`/v1/settings/notifications/${id}`);
+    if (!await mutate(() => apiDelete<void>(`/v1/settings/notifications/${id}`), "Supprimé")) return;
     setConfigs(configs.filter((c) => c.id !== id));
   };
 
@@ -403,8 +408,8 @@ function UsersTab() {
   };
 
   const toggleActive = async (u: AdminUser) => {
-    await apiPut(`/v1/admin/users/${u.id}`, { is_active: !u.is_active });
-    loadUsers(search);
+    if (await mutate(() => apiPut(`/v1/admin/users/${u.id}`, { is_active: !u.is_active }), u.is_active ? "Utilisateur désactivé" : "Utilisateur activé"))
+      loadUsers(search);
   };
 
   const resetPassword = async (userId: string) => {

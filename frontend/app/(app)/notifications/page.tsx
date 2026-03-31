@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPatch, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import type { Notification } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -15,13 +16,14 @@ export default function NotificationsPage() {
   }, []);
 
   const markRead = async (id: string) => {
-    const updated = await apiPatch<Notification>(`/v1/notifications/${id}/read`);
+    const updated = await mutate(() => apiPatch<Notification>(`/v1/notifications/${id}/read`));
+    if (!updated) return;
     setNotifications(notifications.map((n) => (n.id === id ? updated : n)));
   };
 
   const markAllRead = async () => {
-    await apiPost("/v1/notifications/read-all");
-    setNotifications(notifications.map((n) => ({ ...n, read: true })));
+    if (await mutate(() => apiPost("/v1/notifications/read-all"), "Notifications marquées comme lues"))
+      setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;

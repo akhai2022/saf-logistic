@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
@@ -109,8 +110,7 @@ export default function RouteTemplateDetailPage() {
   };
 
   const handleStatusAction = async (action: "activate" | "suspend" | "archive") => {
-    await apiPost(`/v1/route-templates/${id}/${action}`, {});
-    load();
+    if (await mutate(() => apiPost(`/v1/route-templates/${id}/${action}`, {}), "Statut mis à jour")) load();
   };
 
   const marge = (detail.default_sale_amount_ht && detail.default_purchase_amount_ht)

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPut } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import type { Task } from "@/lib/types";
 import Button from "@/components/Button";
@@ -33,13 +34,13 @@ export default function TasksPage() {
   }, [filter]);
 
   const handleResolve = async (taskId: string) => {
-    await apiPut(`/v1/tasks/${taskId}`, { status: "resolved" });
-    setTasks(tasks.map((t) => (t.id === taskId ? { ...t, status: "resolved" } : t)));
+    if (await mutate(() => apiPut(`/v1/tasks/${taskId}`, { status: "resolved" }), "Tâche résolue"))
+      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, status: "resolved" } : t)));
   };
 
   const handleDismiss = async (taskId: string) => {
-    await apiPut(`/v1/tasks/${taskId}`, { status: "dismissed" });
-    setTasks(tasks.map((t) => (t.id === taskId ? { ...t, status: "dismissed" } : t)));
+    if (await mutate(() => apiPut(`/v1/tasks/${taskId}`, { status: "dismissed" }), "Tâche ignorée"))
+      setTasks(tasks.map((t) => (t.id === taskId ? { ...t, status: "dismissed" } : t)));
   };
 
   return (

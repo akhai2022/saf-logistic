@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiGet, apiPut, apiPost, apiPatch } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import type { ClientDetail, ClientContact, ClientAddress } from "@/lib/types";
 import Button from "@/components/Button";
@@ -77,13 +78,13 @@ export default function ClientDetailPage() {
   };
 
   const handleStatusChange = async (newStatut: string) => {
-    await apiPatch(`/v1/masterdata/clients/${id}/status`, { statut: newStatut });
-    apiGet<ClientDetail>(`/v1/masterdata/clients/${id}`).then((c) => { setClient(c); setForm((f) => ({ ...f, statut: c.statut || "" })); });
+    if (await mutate(() => apiPatch(`/v1/masterdata/clients/${id}/status`, { statut: newStatut }), "Statut mis à jour"))
+      apiGet<ClientDetail>(`/v1/masterdata/clients/${id}`).then((c) => { setClient(c); setForm((f) => ({ ...f, statut: c.statut || "" })); });
   };
 
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
-    await apiPost(`/v1/masterdata/clients/${id}/contacts`, contactForm);
+    if (!await mutate(() => apiPost(`/v1/masterdata/clients/${id}/contacts`, contactForm), "Contact ajouté")) return;
     setShowAddContact(false);
     setContactForm({ nom: "", prenom: "", email: "", telephone_mobile: "", fonction: "", is_contact_principal: false });
     apiGet<ClientDetail>(`/v1/masterdata/clients/${id}`).then(setClient);
@@ -91,7 +92,7 @@ export default function ClientDetailPage() {
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    await apiPost(`/v1/masterdata/clients/${id}/addresses`, addressForm);
+    if (!await mutate(() => apiPost(`/v1/masterdata/clients/${id}/addresses`, addressForm), "Adresse ajoutée")) return;
     setShowAddAddress(false);
     setAddressForm({ libelle: "", type: "LIVRAISON", adresse_ligne1: "", code_postal: "", ville: "", contact_site_nom: "", horaires_ouverture: "" });
     apiGet<ClientDetail>(`/v1/masterdata/clients/${id}`).then(setClient);

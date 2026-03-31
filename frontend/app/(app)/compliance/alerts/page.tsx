@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPatch } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import type { ComplianceAlert } from "@/lib/types";
 import Card from "@/components/Card";
@@ -43,8 +44,7 @@ export default function ComplianceAlertsPage() {
 
   const handleAcknowledge = async (alertId: string) => {
     const notes = prompt("Notes (optionnel):");
-    await apiPatch(`/v1/compliance/alerts/${alertId}/acknowledge`, { notes: notes || undefined });
-    reload();
+    if (await mutate(() => apiPatch(`/v1/compliance/alerts/${alertId}/acknowledge`, { notes: notes || undefined }), "Alerte acquittée")) reload();
   };
 
   const fmtDate = (d?: string) => d ? d.split("T")[0] : "—";

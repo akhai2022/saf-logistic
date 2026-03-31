@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiGet, apiPut, apiPost, apiPatch } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import type { VehicleDetail, MaintenanceSchedule, MaintenanceRecord, VehicleCost, CostSummary } from "@/lib/types";
 import Button from "@/components/Button";
@@ -154,16 +155,16 @@ export default function VehicleDetailPage() {
   };
 
   const handleStatusChange = async (newStatut: string) => {
-    await apiPatch(`/v1/masterdata/vehicles/${id}/status`, { statut: newStatut });
-    apiGet<VehicleDetail>(`/v1/masterdata/vehicles/${id}`).then(setVehicle);
+    if (await mutate(() => apiPatch(`/v1/masterdata/vehicles/${id}/status`, { statut: newStatut }), "Statut mis à jour"))
+      apiGet<VehicleDetail>(`/v1/masterdata/vehicles/${id}`).then(setVehicle);
   };
 
   const handleCreateMaintenance = async () => {
     if (!maintForm.libelle || !maintForm.date_debut) return;
-    await apiPost(`/v1/fleet/vehicles/${id}/maintenance`, {
+    if (!await mutate(() => apiPost(`/v1/fleet/vehicles/${id}/maintenance`, {
       ...maintForm,
       cout_total_ht: maintForm.cout_total_ht ? parseFloat(maintForm.cout_total_ht) : null,
-    });
+    }), "Intervention créée")) return;
     setShowMaintForm(false);
     setMaintForm({ type_maintenance: "REVISION", libelle: "", date_debut: "", prestataire: "", cout_total_ht: "" });
     loadFleetData();
@@ -171,10 +172,10 @@ export default function VehicleDetailPage() {
 
   const handleCreateCost = async () => {
     if (!costForm.libelle || !costForm.date_cout || !costForm.montant_ht) return;
-    await apiPost(`/v1/fleet/vehicles/${id}/costs`, {
+    if (!await mutate(() => apiPost(`/v1/fleet/vehicles/${id}/costs`, {
       ...costForm,
       montant_ht: parseFloat(costForm.montant_ht),
-    });
+    }), "Coût ajouté")) return;
     setShowCostForm(false);
     setCostForm({ categorie: "ENTRETIEN", libelle: "", date_cout: "", montant_ht: "", fournisseur: "" });
     loadFleetData();

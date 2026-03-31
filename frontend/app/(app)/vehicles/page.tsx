@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Vehicle } from "@/lib/types";
@@ -59,12 +60,12 @@ export default function VehiclesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const v = await apiPost<Vehicle>("/v1/masterdata/vehicles", {
+    if (!await mutate(() => apiPost<Vehicle>("/v1/masterdata/vehicles", {
       ...form,
       annee_mise_en_circulation: form.annee_mise_en_circulation ? parseInt(form.annee_mise_en_circulation) : null,
       ptac_kg: form.ptac_kg ? parseInt(form.ptac_kg) : null,
       charge_utile_kg: form.charge_utile_kg ? parseInt(form.charge_utile_kg) : null,
-    });
+    }), "Véhicule créé")) return;
     setShowCreate(false);
     refresh();
     setForm({ immatriculation: "", type_entity: "VEHICULE", categorie: "PL_PLUS_19T", marque: "", modele: "", annee_mise_en_circulation: "", carrosserie: "BACHE", ptac_kg: "", charge_utile_kg: "", proprietaire: "PROPRE" });

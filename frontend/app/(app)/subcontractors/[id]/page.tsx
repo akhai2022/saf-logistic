@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiGet, apiPut, apiPost, apiPatch } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import type { SubcontractorDetail } from "@/lib/types";
 import Button from "@/components/Button";
@@ -64,16 +65,16 @@ export default function SubcontractorDetailPage() {
   };
 
   const handleStatusChange = async (newStatut: string) => {
-    await apiPatch(`/v1/masterdata/subcontractors/${id}/status`, { statut: newStatut });
-    apiGet<SubcontractorDetail>(`/v1/masterdata/subcontractors/${id}`).then(setSub);
+    if (await mutate(() => apiPatch(`/v1/masterdata/subcontractors/${id}/status`, { statut: newStatut }), "Statut mis à jour"))
+      apiGet<SubcontractorDetail>(`/v1/masterdata/subcontractors/${id}`).then(setSub);
   };
 
   const handleAddContract = async (e: React.FormEvent) => {
     e.preventDefault();
-    await apiPost(`/v1/masterdata/subcontractors/${id}/contracts`, {
+    if (!await mutate(() => apiPost(`/v1/masterdata/subcontractors/${id}/contracts`, {
       ...contractForm,
       date_fin: contractForm.date_fin || null,
-    });
+    }), "Contrat ajouté")) return;
     setShowAddContract(false);
     setContractForm({ reference: "", type_prestation: "LOT_COMPLET", date_debut: "", date_fin: "", tacite_reconduction: false, statut: "BROUILLON" });
     apiGet<SubcontractorDetail>(`/v1/masterdata/subcontractors/${id}`).then(setSub);

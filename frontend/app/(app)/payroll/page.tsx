@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { apiGet, apiPost, apiUploadFile } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import type { PayrollPeriod } from "@/lib/types";
 import Button from "@/components/Button";
@@ -47,7 +48,8 @@ export default function PayrollPage() {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
-    const p = await apiPost<PayrollPeriod>(`/v1/payroll/periods?year=${year}&month=${month}`);
+    const p = await mutate(() => apiPost<PayrollPeriod>(`/v1/payroll/periods?year=${year}&month=${month}`), "Période créée");
+    if (!p) return;
     setPeriods([p, ...periods]);
     setSelectedPeriod(p.id);
   };
@@ -90,7 +92,8 @@ export default function PayrollPage() {
 
   const handleTransition = async (action: string) => {
     if (!selectedPeriod) return;
-    await apiPost(`/v1/payroll/periods/${selectedPeriod}/${action}`);
+    const label = action === "submit" ? "Soumis" : action === "approve" ? "Approuvé" : "Verrouillé";
+    if (!await mutate(() => apiPost(`/v1/payroll/periods/${selectedPeriod}/${action}`), label)) return;
     const updated = periods.map((p) => p.id === selectedPeriod ? { ...p, status: action === "submit" ? "submitted" : action === "approve" ? "approved" : "locked" } : p);
     setPeriods(updated);
   };

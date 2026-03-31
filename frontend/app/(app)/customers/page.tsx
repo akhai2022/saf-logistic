@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Client } from "@/lib/types";
@@ -47,10 +48,10 @@ export default function CustomersPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const c = await apiPost<Client>("/v1/masterdata/clients", {
+    if (!await mutate(() => apiPost<Client>("/v1/masterdata/clients", {
       ...form,
       delai_paiement_jours: parseInt(form.delai_paiement_jours) || 30,
-    });
+    }), "Client créé")) return;
     setShowCreate(false);
     refresh();
     setForm({

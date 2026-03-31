@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiGet, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { getDownloadUrl } from "@/lib/upload";
 import { useAuth } from "@/lib/auth";
 import type { Invoice } from "@/lib/types";
@@ -22,7 +23,8 @@ export default function InvoiceDetailPage() {
   if (!invoice) return <div className="py-8 text-center text-gray-400">Chargement...</div>;
 
   const handleValidate = async () => {
-    const updated = await apiPost<Invoice>(`/v1/billing/invoices/${id}/validate`);
+    const updated = await mutate(() => apiPost<Invoice>(`/v1/billing/invoices/${id}/validate`), "Facture validée");
+    if (!updated) return;
     setInvoice({ ...invoice, ...updated });
   };
 

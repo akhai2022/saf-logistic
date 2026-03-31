@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Mission, Customer } from "@/lib/types";
@@ -62,7 +63,7 @@ export default function JobsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await apiPost<Mission>("/v1/jobs", {
+    if (!await mutate(() => apiPost<Mission>("/v1/jobs", {
       client_id: form.client_id,
       reference_client: form.reference_client || undefined,
       type_mission: form.type_mission,
@@ -73,7 +74,7 @@ export default function JobsPage() {
       notes_exploitation: form.notes_exploitation || undefined,
       distance_estimee_km: form.distance_estimee_km ? parseFloat(form.distance_estimee_km) : undefined,
       montant_vente_ht: form.montant_vente_ht ? parseFloat(form.montant_vente_ht) : undefined,
-    });
+    }), "Mission créée")) return;
     setShowCreate(false);
     setForm({ client_id: "", reference_client: "", type_mission: "LOT_COMPLET", priorite: "NORMALE", date_chargement_prevue: "", date_livraison_prevue: "", adresse_chargement_contact: "", notes_exploitation: "", distance_estimee_km: "", montant_vente_ht: "" });
     refresh();

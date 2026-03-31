@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Invoice, Customer, Job, CreditNote } from "@/lib/types";
@@ -36,10 +37,10 @@ export default function InvoicesPage() {
 
   const handleCreate = async () => {
     if (!selectedCustomer || selectedJobs.length === 0) return;
-    await apiPost<Invoice>("/v1/billing/invoices", {
+    if (!await mutate(() => apiPost<Invoice>("/v1/billing/invoices", {
       customer_id: selectedCustomer,
       job_ids: selectedJobs,
-    });
+    }), "Facture créée")) return;
     setShowCreate(false);
     setSelectedJobs([]);
     refresh();

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiGet, apiPost, apiDelete } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
@@ -108,8 +109,7 @@ export default function RouteRunDetailPage() {
   };
 
   const handleRemoveMission = async (missionIdToRemove: string) => {
-    await apiDelete(`/v1/route-runs/${id}/missions/${missionIdToRemove}`);
-    load();
+    if (await mutate(() => apiDelete(`/v1/route-runs/${id}/missions/${missionIdToRemove}`), "Mission retirée")) load();
   };
 
   const actions = TRANSITION_ACTIONS[detail.status] || [];

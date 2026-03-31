@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import type { ComplianceTemplate } from "@/lib/types";
 import Card from "@/components/Card";
@@ -50,11 +51,10 @@ export default function ComplianceTemplatesPage() {
       is_active: true,
     };
 
-    if (editId) {
-      await apiPut(`/v1/compliance/templates/${editId}`, payload);
-    } else {
-      await apiPost("/v1/compliance/templates", payload);
-    }
+    const ok = editId
+      ? await mutate(() => apiPut(`/v1/compliance/templates/${editId}`, payload), "Enregistré")
+      : await mutate(() => apiPost("/v1/compliance/templates", payload), "Modèle créé");
+    if (!ok) return;
 
     setShowForm(false);
     setEditId(null);
@@ -77,11 +77,7 @@ export default function ComplianceTemplatesPage() {
   };
 
   const handleToggleActive = async (t: ComplianceTemplate) => {
-    await apiPut(`/v1/compliance/templates/${t.id}`, {
-      ...t,
-      is_active: !t.is_active,
-    });
-    reload();
+    if (await mutate(() => apiPut(`/v1/compliance/templates/${t.id}`, { ...t, is_active: !t.is_active }), "Statut mis à jour")) reload();
   };
 
   return (

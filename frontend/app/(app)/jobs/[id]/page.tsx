@@ -57,6 +57,9 @@ export default function JobDetailPage() {
   const [disputeForm, setDisputeForm] = useState({ type: "AVARIE", description: "", responsabilite: "A_DETERMINER", montant_estime_eur: "" });
   const [showDisputeForm, setShowDisputeForm] = useState(false);
 
+  // POD upload error
+  const [podError, setPodError] = useState("");
+
   const reload = () => apiGet<Mission>(`/v1/jobs/${id}`).then(setMission);
 
   useEffect(() => {
@@ -128,8 +131,6 @@ export default function JobDetailPage() {
     setGoodsForm({ description: "", nature: "PALETTE", quantite: "1", unite: "PALETTE", poids_brut_kg: "", volume_m3: "" });
     reload();
   };
-
-  const [podError, setPodError] = useState("");
 
   const handlePodUpload = async (file: File) => {
     setUploading(true);

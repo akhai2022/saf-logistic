@@ -28,7 +28,10 @@ export default function EntityChecklistPage() {
   const [checklist, setChecklist] = useState<ComplianceChecklist | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadDocType, setUploadDocType] = useState<string | null>(null);
-  const [uploadForm, setUploadForm] = useState({ date_emission: "", date_expiration: "", numero_document: "", organisme_emetteur: "" });
+  const emptyUploadForm = { date_emission: "", date_expiration: "", numero_document: "", organisme_emetteur: "" };
+  const [uploadForm, setUploadForm] = useState(emptyUploadForm);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState("");
 
   const reload = () => {
     apiGet<ComplianceChecklist>(`/v1/compliance/${entityType}/${entityId}`).then(setChecklist);
@@ -38,26 +41,32 @@ export default function EntityChecklistPage() {
 
   if (!checklist) return <div className="py-8 text-center text-gray-400">Chargement...</div>;
 
-  const handleUpload = async (file: File, docType: string) => {
+  const handleSubmitUpload = async (docType: string) => {
+    if (!selectedFile) return;
     setUploading(docType);
+    setUploadError("");
     try {
-      const key = await uploadFile(file, "document", entityId);
+      const key = await uploadFile(selectedFile, "document", entityId);
       await apiPost("/v1/documents", {
         entity_type: entityType,
         entity_id: entityId,
         type_document: docType,
         fichier_s3_key: key,
-        fichier_nom_original: file.name,
-        fichier_taille_octets: file.size,
-        fichier_mime_type: file.type,
+        fichier_nom_original: selectedFile.name,
+        fichier_taille_octets: selectedFile.size,
+        fichier_mime_type: selectedFile.type,
         date_emission: uploadForm.date_emission || undefined,
         date_expiration: uploadForm.date_expiration || undefined,
         numero_document: uploadForm.numero_document || undefined,
         organisme_emetteur: uploadForm.organisme_emetteur || undefined,
       });
       setUploadDocType(null);
-      setUploadForm({ date_emission: "", date_expiration: "", numero_document: "", organisme_emetteur: "" });
+      setUploadForm(emptyUploadForm);
+      setSelectedFile(null);
       reload();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erreur lors de l'envoi";
+      setUploadError(msg);
     } finally { setUploading(null); }
   };
 
@@ -157,22 +166,33 @@ export default function EntityChecklistPage() {
                 </div>
                 {uploadDocType === item.type_document && (
                   <div className="ml-8 mt-2 p-4 bg-gray-50 rounded-lg border space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input label="Date d'émission" type="date" value={uploadForm.date_emission}
-                        onChange={(e) => setUploadForm({ ...uploadForm, date_emission: e.target.value })} />
-                      <Input label="Date d'expiration" type="date" value={uploadForm.date_expiration}
-                        onChange={(e) => setUploadForm({ ...uploadForm, date_expiration: e.target.value })} />
-                      <Input label="N° document" value={uploadForm.numero_document}
-                        onChange={(e) => setUploadForm({ ...uploadForm, numero_document: e.target.value })} />
-                      <Input label="Organisme émetteur" value={uploadForm.organisme_emetteur}
-                        onChange={(e) => setUploadForm({ ...uploadForm, organisme_emetteur: e.target.value })} />
-                    </div>
+                    {uploadError && (
+                      <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">{uploadError}</div>
+                    )}
                     <FilePicker
-                      onFileSelected={(file) => handleUpload(file, item.type_document)}
+                      onFileSelected={(file) => setSelectedFile(file)}
                       accept=".pdf,.jpg,.jpeg,.png"
                       uploading={uploading === item.type_document}
                       label="Sélectionner le document"
                     />
+                    {selectedFile && (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Input label="Date d'émission" type="date" value={uploadForm.date_emission}
+                            onChange={(e) => setUploadForm({ ...uploadForm, date_emission: e.target.value })} />
+                          <Input label="Date d'expiration" type="date" value={uploadForm.date_expiration}
+                            onChange={(e) => setUploadForm({ ...uploadForm, date_expiration: e.target.value })} />
+                          <Input label="N° document" value={uploadForm.numero_document}
+                            onChange={(e) => setUploadForm({ ...uploadForm, numero_document: e.target.value })} />
+                          <Input label="Organisme émetteur" value={uploadForm.organisme_emetteur}
+                            onChange={(e) => setUploadForm({ ...uploadForm, organisme_emetteur: e.target.value })} />
+                        </div>
+                        <Button icon="save" onClick={() => handleSubmitUpload(item.type_document)}
+                          disabled={uploading === item.type_document}>
+                          {uploading === item.type_document ? "Envoi en cours..." : "Enregistrer le document"}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

@@ -956,10 +956,27 @@ async def create_driver(
     did = uuid.uuid4()
     agency_id = body.agency_id or (str(tenant.agency_id) if tenant.agency_id else None)
 
+    # Auto-generate matricule SAF-XXX if not provided
+    matricule = body.matricule
+    if not matricule:
+        row = (await db.execute(
+            text("""
+                SELECT matricule FROM drivers
+                WHERE tenant_id = :tid AND matricule ~ '^SAF-[0-9]+$'
+                ORDER BY CAST(SUBSTRING(matricule FROM 5) AS INTEGER) DESC
+                LIMIT 1
+            """),
+            {"tid": str(tenant.tenant_id)},
+        )).first()
+        next_num = 1
+        if row:
+            next_num = int(row.matricule.split("-")[1]) + 1
+        matricule = f"SAF-{next_num:03d}"
+
     # Check matricule uniqueness
     existing = (await db.execute(
         text("SELECT id FROM drivers WHERE tenant_id = :tid AND matricule = :mat"),
-        {"tid": str(tenant.tenant_id), "mat": body.matricule},
+        {"tid": str(tenant.tenant_id), "mat": matricule},
     )).first()
     if existing:
         raise HTTPException(409, "Ce matricule existe deja.")
@@ -999,7 +1016,7 @@ async def create_driver(
         )
     """), {
         "id": str(did), "tid": str(tenant.tenant_id), "aid": agency_id,
-        "mat": body.matricule,
+        "mat": matricule,
         "fn": body.first_name or body.prenom, "ln": body.last_name or body.nom,
         "lic": body.license_number, "cats": body.license_categories,
         "ph": body.phone or body.telephone_mobile, "em": body.email,

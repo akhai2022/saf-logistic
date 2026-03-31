@@ -22,6 +22,8 @@ export default function ComplianceTab({ entityType, entityId }: ComplianceTabPro
   const [uploading, setUploading] = useState<string | null>(null);
   const [uploadDocType, setUploadDocType] = useState<string | null>(null);
   const [uploadForm, setUploadForm] = useState({ date_emission: "", date_expiration: "" });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState("");
 
   const reload = () => {
     apiGet<ComplianceChecklist>(`/v1/compliance/${entityType}/${entityId}`).then(setChecklist).catch(() => {});
@@ -29,24 +31,30 @@ export default function ComplianceTab({ entityType, entityId }: ComplianceTabPro
 
   useEffect(() => { reload(); }, [entityType, entityId]);
 
-  const handleUpload = async (file: File, docType: string) => {
+  const handleSubmitUpload = async (docType: string) => {
+    if (!selectedFile) return;
     setUploading(docType);
+    setUploadError("");
     try {
-      const key = await uploadFile(file, "document", entityId);
+      const key = await uploadFile(selectedFile, "document", entityId);
       await apiPost("/v1/documents", {
         entity_type: entityType,
         entity_id: entityId,
         type_document: docType,
         fichier_s3_key: key,
-        fichier_nom_original: file.name,
-        fichier_taille_octets: file.size,
-        fichier_mime_type: file.type,
+        fichier_nom_original: selectedFile.name,
+        fichier_taille_octets: selectedFile.size,
+        fichier_mime_type: selectedFile.type,
         date_emission: uploadForm.date_emission || undefined,
         date_expiration: uploadForm.date_expiration || undefined,
       });
       setUploadDocType(null);
       setUploadForm({ date_emission: "", date_expiration: "" });
+      setSelectedFile(null);
       reload();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erreur lors de l'envoi";
+      setUploadError(msg);
     } finally { setUploading(null); }
   };
 
@@ -126,19 +134,30 @@ export default function ComplianceTab({ entityType, entityId }: ComplianceTabPro
                   )}
                 </div>
                 {uploadDocType === item.type_document && (
-                  <div className="ml-8 p-3 bg-gray-50 rounded border space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input label="Date émission" type="date" value={uploadForm.date_emission}
-                        onChange={(e) => setUploadForm({ ...uploadForm, date_emission: e.target.value })} />
-                      <Input label="Date expiration" type="date" value={uploadForm.date_expiration}
-                        onChange={(e) => setUploadForm({ ...uploadForm, date_expiration: e.target.value })} />
-                    </div>
+                  <div className="ml-8 p-3 bg-gray-50 rounded border space-y-3">
+                    {uploadError && (
+                      <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm">{uploadError}</div>
+                    )}
                     <FilePicker
-                      onFileSelected={(file) => handleUpload(file, item.type_document)}
+                      onFileSelected={(file) => setSelectedFile(file)}
                       accept=".pdf,.jpg,.jpeg,.png"
                       uploading={uploading === item.type_document}
-                      label="Sélectionner"
+                      label="Sélectionner un fichier"
                     />
+                    {selectedFile && (
+                      <>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input label="Date émission" type="date" value={uploadForm.date_emission}
+                            onChange={(e) => setUploadForm({ ...uploadForm, date_emission: e.target.value })} />
+                          <Input label="Date expiration" type="date" value={uploadForm.date_expiration}
+                            onChange={(e) => setUploadForm({ ...uploadForm, date_expiration: e.target.value })} />
+                        </div>
+                        <Button icon="save" onClick={() => handleSubmitUpload(item.type_document)}
+                          disabled={uploading === item.type_document}>
+                          {uploading === item.type_document ? "Envoi en cours..." : "Enregistrer"}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

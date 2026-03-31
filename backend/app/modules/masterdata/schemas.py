@@ -372,7 +372,7 @@ class SubcontractorDetail(SubcontractorOut):
 # ══════════════════════════════════════════════════════════════════
 
 class DriverCreate(BaseModel):
-    matricule: str
+    matricule: str | None = None
     civilite: str | None = None
     nom: str
     prenom: str

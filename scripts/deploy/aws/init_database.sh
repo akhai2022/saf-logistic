@@ -48,6 +48,14 @@ if [ -z "$DB_URL" ]; then
   exit 1
 fi
 
+# Validate that the URL points to saf_logistic database
+if ! echo "$DB_URL" | grep -q '/saf_logistic$'; then
+  echo "ERROR: DATABASE_URL must end with /saf_logistic"
+  echo "       Got: $DB_URL"
+  echo "       The URL must point to the saf_logistic database, not zinovia or another DB."
+  exit 1
+fi
+
 aws secretsmanager put-secret-value \
   --secret-id "saf-logistic-prod/database-url" \
   --secret-string "$DB_URL" \

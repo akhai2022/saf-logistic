@@ -25,8 +25,8 @@ ACCOUNT_ID="208030346312"
 CLUSTER="zinovia-fans-prod-cluster"
 
 # ECR repo names (must match ECS task definitions)
-API_REPO="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/zinovia-fans-prod-api"
-WEB_REPO="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/zinovia-fans-prod-web"
+API_REPO="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/saf-logistic-prod-api"
+WEB_REPO="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/saf-logistic-prod-web"
 
 # API URL baked into Next.js bundle at build time
 cd "$TF_DIR"
@@ -39,8 +39,8 @@ echo "╔═══════════════════════�
 echo "║  SAF-Logistic Deploy                      ║"
 echo "╠═══════════════════════════════════════════╣"
 echo "║  Git tag:  $TAG"
-echo "║  API repo: zinovia-fans-prod-api"
-echo "║  Web repo: zinovia-fans-prod-web"
+echo "║  API repo: saf-logistic-prod-api"
+echo "║  Web repo: saf-logistic-prod-web"
 echo "║  API URL:  $API_URL"
 echo "║  Deploy:   $DEPLOY"
 echo "╚═══════════════════════════════════════════╝"
@@ -91,12 +91,13 @@ if [ "$DEPLOY" = true ]; then
   echo ""
   echo "==> Updating ECS task definitions to tag: ${TAG}..."
 
-  for FAMILY in zinovia-fans-prod-api zinovia-fans-prod-web; do
-    if [ "$FAMILY" = "zinovia-fans-prod-api" ]; then
-      NEW_IMAGE="${API_REPO}:${TAG}"
-    else
-      NEW_IMAGE="${WEB_REPO}:${TAG}"
-    fi
+  for FAMILY in saf-logistic-prod-api saf-logistic-prod-web saf-logistic-prod-worker; do
+    case "$FAMILY" in
+      saf-logistic-prod-api|saf-logistic-prod-worker)
+        NEW_IMAGE="${API_REPO}:${TAG}" ;;
+      saf-logistic-prod-web)
+        NEW_IMAGE="${WEB_REPO}:${TAG}" ;;
+    esac
 
     # Get current task def, update image tag, register new revision
     TMPFILE=$(mktemp /tmp/td-XXXXXX.json)
@@ -122,13 +123,13 @@ json.dump(td, open('${TMPFILE}', 'w'))
   echo ""
   echo "==> Waiting for services to stabilize..."
   aws ecs wait services-stable --cluster "$CLUSTER" \
-    --services zinovia-fans-prod-api zinovia-fans-prod-web
+    --services saf-logistic-prod-api saf-logistic-prod-web saf-logistic-prod-worker
 
   echo ""
   echo "╔═══════════════════════════════════════════╗"
   echo "║  Deploy complete!                         ║"
   echo "║  Tag: ${TAG}                              "
-  echo "║  Both services stable.                    ║"
+  echo "║  All services stable.                     ║"
   echo "╚═══════════════════════════════════════════╝"
 else
   echo ""

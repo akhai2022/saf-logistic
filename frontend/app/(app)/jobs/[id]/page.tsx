@@ -129,8 +129,11 @@ export default function JobDetailPage() {
     reload();
   };
 
+  const [podError, setPodError] = useState("");
+
   const handlePodUpload = async (file: File) => {
     setUploading(true);
+    setPodError("");
     try {
       const key = await uploadFile(file, "pod", id);
       await apiPost(`/v1/jobs/${id}/pods`, {
@@ -141,6 +144,9 @@ export default function JobDetailPage() {
         fichier_mime_type: file.type,
       });
       reload();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erreur lors de l'envoi du POD";
+      setPodError(msg);
     } finally { setUploading(false); }
   };
 

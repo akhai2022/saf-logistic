@@ -176,14 +176,15 @@ resource "aws_security_group" "ecs_web" {
 }
 
 # CRITICAL: Allow SAF-Logistic backend tasks to reach the shared RDS
-resource "aws_security_group_rule" "rds_from_saf_backend" {
-  type                     = "ingress"
-  from_port                = 5432
-  to_port                  = 5432
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.ecs_backend.id
-  security_group_id        = var.existing_rds_security_group_id
-  description              = "Allow SAF-Logistic backend (API + Worker) to reach shared RDS"
+# Uses aws_vpc_security_group_ingress_rule (not the deprecated aws_security_group_rule)
+# to avoid state drift that can silently remove the rule.
+resource "aws_vpc_security_group_ingress_rule" "rds_from_saf_backend" {
+  security_group_id            = var.existing_rds_security_group_id
+  referenced_security_group_id = aws_security_group.ecs_backend.id
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+  description                  = "Allow SAF-Logistic backend (API + Worker) to reach shared RDS"
 }
 
 # ──────────────────────────────────────────────
@@ -509,6 +510,18 @@ resource "aws_s3_bucket_public_access_block" "docs" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_cors_configuration" "docs" {
+  bucket = aws_s3_bucket.docs.id
+
+  cors_rule {
+    allowed_origins = ["https://${local.web_fqdn}"]
+    allowed_methods = ["GET", "PUT", "POST", "HEAD"]
+    allowed_headers = ["*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3600
+  }
 }
 
 # ──────────────────────────────────────────────

@@ -46,23 +46,36 @@ export default function DriversPage() {
       .catch(() => {});
   }, []);
 
-  const [form, setForm] = useState({
+  const emptyForm = {
     matricule: "", civilite: "M", nom: "", prenom: "",
     date_naissance: "", telephone_mobile: "", email: "",
     statut_emploi: "SALARIE", type_contrat: "CDI",
     date_entree: "", poste: "",
-  });
+  };
+  const [form, setForm] = useState(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const d = await apiPost<Driver>("/v1/masterdata/drivers", {
-      ...form,
-      date_naissance: form.date_naissance || null,
-      date_entree: form.date_entree || null,
-    });
-    setShowCreate(false);
-    refresh();
-    setForm({ matricule: "", civilite: "M", nom: "", prenom: "", date_naissance: "", telephone_mobile: "", email: "", statut_emploi: "SALARIE", type_contrat: "CDI", date_entree: "", poste: "" });
+    setSubmitting(true);
+    setFormError("");
+    try {
+      await apiPost<Driver>("/v1/masterdata/drivers", {
+        ...form,
+        matricule: form.matricule || null,
+        date_naissance: form.date_naissance || null,
+        date_entree: form.date_entree || null,
+      });
+      setShowCreate(false);
+      refresh();
+      setForm(emptyForm);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erreur lors de la création";
+      setFormError(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -84,7 +97,12 @@ export default function DriversPage() {
       {showCreate && (
         <Card title="Nouveau conducteur" icon="person_add">
           <form onSubmit={handleCreate} className="grid grid-cols-2 gap-4">
-            <Input label="Matricule *" value={form.matricule} onChange={(e) => setForm({ ...form, matricule: e.target.value })} required />
+            {formError && (
+              <div className="col-span-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+                {formError}
+              </div>
+            )}
+            <Input label="Matricule" placeholder="Laisser vide pour auto (SAF-XXX)" value={form.matricule} onChange={(e) => setForm({ ...form, matricule: e.target.value })} />
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">Civilité</label>
               <select value={form.civilite} onChange={(e) => setForm({ ...form, civilite: e.target.value })}>
@@ -112,7 +130,11 @@ export default function DriversPage() {
             </div>
             <Input label="Date d'entrée" type="date" value={form.date_entree} onChange={(e) => setForm({ ...form, date_entree: e.target.value })} />
             <Input label="Poste" value={form.poste} onChange={(e) => setForm({ ...form, poste: e.target.value })} />
-            <div className="col-span-2"><Button type="submit" icon="check">Créer</Button></div>
+            <div className="col-span-2">
+              <Button type="submit" icon="check" disabled={submitting}>
+                {submitting ? "Création en cours..." : "Créer"}
+              </Button>
+            </div>
           </form>
         </Card>
       )}

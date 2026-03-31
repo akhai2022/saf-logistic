@@ -28,6 +28,9 @@ interface RouteRunDetail {
   aggregated_margin_ht?: number;
   notes?: string;
   missions: RouteRunMission[];
+  regulated_at?: string;
+  regulated_by?: string;
+  regulation_source?: string;
 }
 
 interface RouteRunMission {
@@ -38,6 +41,12 @@ interface RouteRunMission {
   customer_name?: string;
   mission_status?: string;
   montant_vente_ht?: number;
+}
+
+interface RegulateResponse {
+  eligible: number;
+  regulated: number;
+  errors: number;
 }
 
 const tabs = ["Vue generale", "Missions"] as const;
@@ -71,6 +80,8 @@ export default function RouteRunDetailPage() {
   const [showAssignForm, setShowAssignForm] = useState(false);
   const [missionId, setMissionId] = useState("");
   const [assigning, setAssigning] = useState(false);
+  const [showRegulateConfirm, setShowRegulateConfirm] = useState(false);
+  const [regulating, setRegulating] = useState(false);
 
   const load = () => {
     apiGet<RouteRunDetail>(`/v1/route-runs/${id}`).then(setDetail);
@@ -79,6 +90,11 @@ export default function RouteRunDetailPage() {
   useEffect(() => { load(); }, [id]);
 
   if (!detail) return <div className="py-8 text-center text-gray-400">Chargement...</div>;
+
+  const today = new Date().toISOString().split("T")[0];
+  const isOverdue = detail.service_date < today
+    && (detail.status === "DISPATCHED" || detail.status === "IN_PROGRESS")
+    && !detail.regulated_at;
 
   const fmtDate = (d?: string) => d ? d.split("T")[0] : "—";
   const fmtDateTime = (d?: string) => d ? d.replace("T", " ").slice(0, 16) : "—";
@@ -91,6 +107,19 @@ export default function RouteRunDetailPage() {
       load();
     } finally {
       setTransitioning(false);
+    }
+  };
+
+  const handleRegulate = async () => {
+    setRegulating(true);
+    setShowRegulateConfirm(false);
+    try {
+      await apiPost<RegulateResponse>("/v1/route-runs/regulate", {
+        run_ids: [id],
+      });
+      load();
+    } finally {
+      setRegulating(false);
     }
   };
 
@@ -120,6 +149,11 @@ export default function RouteRunDetailPage() {
       <PageHeader icon="play_circle" title={`Execution ${detail.code}`} description={`Date de service : ${fmtDate(detail.service_date)}`}>
         <div className="flex items-center gap-2">
           <StatusBadge statut={detail.status} />
+          {detail.regulation_source && (
+            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded font-medium" title={`Regularise le ${fmtDateTime(detail.regulated_at)}`}>
+              Regularise ({detail.regulation_source === "automatic" ? "auto" : "manuel"})
+            </span>
+          )}
           {actions.map((a) => (
             <Button
               key={a.endpoint}
@@ -132,8 +166,38 @@ export default function RouteRunDetailPage() {
               {a.label}
             </Button>
           ))}
+          {isOverdue && (
+            <Button
+              onClick={() => setShowRegulateConfirm(true)}
+              variant="primary"
+              icon="gavel"
+              size="sm"
+              disabled={regulating}
+            >
+              {regulating ? "Regularisation..." : "Regulariser"}
+            </Button>
+          )}
         </div>
       </PageHeader>
+
+      {/* Regulation confirmation */}
+      {showRegulateConfirm && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="font-medium text-blue-900 mb-2">Confirmer la regularisation</h4>
+          <p className="text-sm text-blue-800 mb-3">
+            L&apos;execution <strong>{detail.code}</strong> sera marquee comme <strong>terminee</strong>.
+            Les totaux financiers seront recalcules a partir des missions affectees.
+          </p>
+          <div className="flex gap-2">
+            <Button onClick={handleRegulate} variant="primary" size="sm" icon="check">
+              Confirmer
+            </Button>
+            <Button onClick={() => setShowRegulateConfirm(false)} variant="secondary" size="sm" icon="close">
+              Annuler
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Back link */}
       <button
@@ -212,6 +276,16 @@ export default function RouteRunDetailPage() {
               </div>
             </div>
           </Card>
+
+          {/* Regulation metadata */}
+          {detail.regulated_at && (
+            <Card title="Regularisation" icon="gavel">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><span className="text-gray-500">Regularise le:</span> {fmtDateTime(detail.regulated_at)}</div>
+                <div><span className="text-gray-500">Source:</span> <span className="font-medium">{detail.regulation_source === "automatic" ? "Automatique" : "Manuelle"}</span></div>
+              </div>
+            </Card>
+          )}
 
           {detail.notes && (
             <Card title="Notes" icon="notes" className="lg:col-span-2">

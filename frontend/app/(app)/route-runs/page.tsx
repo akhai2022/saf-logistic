@@ -23,6 +23,8 @@ interface RouteRun {
   nb_missions: number;
   aggregated_sale_amount_ht?: number;
   status: string;
+  regulated_at?: string;
+  regulation_source?: string;
 }
 
 interface DriverOption {
@@ -34,6 +36,14 @@ interface DriverOption {
 interface VehicleOption {
   id: string;
   immatriculation?: string;
+}
+
+interface RegulateResponse {
+  eligible: number;
+  regulated: number;
+  skipped: number;
+  errors: number;
+  details: { run_id: string; code: string; old_status: string }[];
 }
 
 const STATUS_OPTIONS = [
@@ -64,6 +74,12 @@ export default function RouteRunsPage() {
     notes: "",
   });
 
+  // Regulation state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [regulating, setRegulating] = useState(false);
+  const [showRegulateConfirm, setShowRegulateConfirm] = useState(false);
+  const [regulateResult, setRegulateResult] = useState<RegulateResponse | null>(null);
+
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 300);
     return () => clearTimeout(t);
@@ -82,6 +98,56 @@ export default function RouteRunsPage() {
 
   const { items: runs, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } =
     usePaginatedFetch<RouteRun>("/v1/route-runs", filters, { defaultSort: "service_date", defaultOrder: "asc" });
+
+  // Determine which runs are eligible for regulation (past + non-terminal)
+  const isOverdue = (r: RouteRun) => {
+    return r.service_date < today && (r.status === "DISPATCHED" || r.status === "IN_PROGRESS") && !r.regulated_at;
+  };
+  const overdueRuns = runs.filter(isOverdue);
+  const hasOverdue = overdueRuns.length > 0;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === overdueRuns.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(overdueRuns.map((r) => r.id)));
+    }
+  };
+
+  const handleSetOverdueFilter = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    setDateFrom("");
+    setDateTo(yesterday.toISOString().split("T")[0]);
+    setStatusFilter("");
+  };
+
+  const handleRegulate = async () => {
+    setRegulating(true);
+    setShowRegulateConfirm(false);
+    try {
+      const ids = selectedIds.size > 0 ? Array.from(selectedIds) : undefined;
+      const result = await apiPost<RegulateResponse>("/v1/route-runs/regulate", {
+        run_ids: ids,
+      });
+      setRegulateResult(result);
+      setSelectedIds(new Set());
+      refresh();
+    } catch {
+      setRegulateResult(null);
+    } finally {
+      setRegulating(false);
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,7 +221,78 @@ export default function RouteRunsPage() {
               aria-label="Date fin"
             />
           </div>
+          <Button onClick={handleSetOverdueFilter} variant="secondary" icon="warning" size="sm">
+            Executions en retard
+          </Button>
         </div>
+
+        {/* Regulation bar */}
+        {hasOverdue && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-amber-800">
+              <span className="material-symbols-outlined icon-sm">warning</span>
+              <span>
+                <strong>{overdueRuns.length}</strong> execution{overdueRuns.length > 1 ? "s" : ""} en retard
+                {selectedIds.size > 0 && (
+                  <> — <strong>{selectedIds.size}</strong> selectionnee{selectedIds.size > 1 ? "s" : ""}</>
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={toggleSelectAll}
+                variant="secondary"
+                size="sm"
+                icon={selectedIds.size === overdueRuns.length ? "deselect" : "select_all"}
+              >
+                {selectedIds.size === overdueRuns.length ? "Deselectionner" : "Tout selectionner"}
+              </Button>
+              <Button
+                onClick={() => setShowRegulateConfirm(true)}
+                variant="primary"
+                size="sm"
+                icon="gavel"
+                disabled={regulating || selectedIds.size === 0}
+              >
+                {regulating ? "Regularisation..." : "Regulariser"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Regulation confirmation dialog */}
+        {showRegulateConfirm && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Confirmer la regularisation</h4>
+            <p className="text-sm text-blue-800 mb-3">
+              Vous allez regulariser <strong>{selectedIds.size}</strong> execution{selectedIds.size > 1 ? "s" : ""}.
+              Les executions seront marquees comme <strong>terminees</strong> et les totaux financiers seront recalcules.
+            </p>
+            <div className="flex gap-2">
+              <Button onClick={handleRegulate} variant="primary" size="sm" icon="check">
+                Confirmer
+              </Button>
+              <Button onClick={() => setShowRegulateConfirm(false)} variant="secondary" size="sm" icon="close">
+                Annuler
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Regulation result */}
+        {regulateResult && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+            <div className="text-sm text-green-800">
+              <strong>{regulateResult.regulated}</strong> execution{regulateResult.regulated > 1 ? "s" : ""} regularisee{regulateResult.regulated > 1 ? "s" : ""}
+              {regulateResult.errors > 0 && (
+                <span className="text-red-600 ml-2">({regulateResult.errors} erreur{regulateResult.errors > 1 ? "s" : ""})</span>
+              )}
+            </div>
+            <Button onClick={() => setRegulateResult(null)} variant="ghost" size="sm" icon="close">
+              Fermer
+            </Button>
+          </div>
+        )}
 
         {showCreate && (
           <form onSubmit={handleCreate} className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -222,6 +359,7 @@ export default function RouteRunsPage() {
           <table className="w-full text-sm">
             <thead className="table-header">
               <tr>
+                {hasOverdue && <th className="w-8"></th>}
                 <SortableHeader label="Code" field="code" currentSort={sortBy} currentOrder={order as "asc" | "desc"} onSort={handleSort} />
                 <SortableHeader label="Date" field="service_date" currentSort={sortBy} currentOrder={order as "asc" | "desc"} onSort={handleSort} />
                 <th>Modele</th>
@@ -234,31 +372,56 @@ export default function RouteRunsPage() {
               </tr>
             </thead>
             <tbody className="table-body">
-              {runs.map((r) => (
-                <tr key={r.id}>
-                  <td className="font-mono font-medium">
-                    <Link href={`/route-runs/${r.id}`} className="text-primary hover:underline">{r.code}</Link>
-                  </td>
-                  <td className="text-xs">{fmtDate(r.service_date)}</td>
-                  <td className="text-xs">
-                    {r.route_template_id ? (
-                      <Link href={`/route-templates/${r.route_template_id}`} className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline">
-                        {r.template_code || "Modele"}
-                      </Link>
-                    ) : "—"}
-                  </td>
-                  <td className="text-xs">{r.assigned_driver_name || "—"}</td>
-                  <td className="font-mono text-xs">{r.assigned_vehicle_plate || "—"}</td>
-                  <td><span className="text-xs font-medium">{r.nb_missions}</span></td>
-                  <td className="text-xs font-medium">{fmtAmount(r.aggregated_sale_amount_ht)}</td>
-                  <td><StatusBadge statut={r.status} /></td>
-                  <td>
-                    <Link href={`/route-runs/${r.id}`} className="text-primary hover:underline text-xs font-medium">Detail</Link>
-                  </td>
-                </tr>
-              ))}
+              {runs.map((r) => {
+                const overdue = isOverdue(r);
+                return (
+                  <tr key={r.id} className={overdue ? "bg-amber-50/50" : undefined}>
+                    {hasOverdue && (
+                      <td>
+                        {overdue && (
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(r.id)}
+                            onChange={() => toggleSelect(r.id)}
+                            className="rounded border-gray-300"
+                            aria-label={`Selectionner ${r.code}`}
+                          />
+                        )}
+                      </td>
+                    )}
+                    <td className="font-mono font-medium">
+                      <Link href={`/route-runs/${r.id}`} className="text-primary hover:underline">{r.code}</Link>
+                    </td>
+                    <td className="text-xs">{fmtDate(r.service_date)}</td>
+                    <td className="text-xs">
+                      {r.route_template_id ? (
+                        <Link href={`/route-templates/${r.route_template_id}`} className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded hover:underline">
+                          {r.template_code || "Modele"}
+                        </Link>
+                      ) : "—"}
+                    </td>
+                    <td className="text-xs">{r.assigned_driver_name || "—"}</td>
+                    <td className="font-mono text-xs">{r.assigned_vehicle_plate || "—"}</td>
+                    <td><span className="text-xs font-medium">{r.nb_missions}</span></td>
+                    <td className="text-xs font-medium">{fmtAmount(r.aggregated_sale_amount_ht)}</td>
+                    <td>
+                      <div className="flex items-center gap-1">
+                        <StatusBadge statut={r.status} />
+                        {r.regulation_source && (
+                          <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded" title={`Regularise (${r.regulation_source})`}>
+                            REG
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <Link href={`/route-runs/${r.id}`} className="text-primary hover:underline text-xs font-medium">Detail</Link>
+                    </td>
+                  </tr>
+                );
+              })}
               {runs.length === 0 && !loading && (
-                <tr><td colSpan={9} className="text-center text-gray-400 py-8">Aucune execution</td></tr>
+                <tr><td colSpan={hasOverdue ? 10 : 9} className="text-center text-gray-400 py-8">Aucune execution</td></tr>
               )}
             </tbody>
           </table>

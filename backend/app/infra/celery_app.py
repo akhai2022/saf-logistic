@@ -39,5 +39,9 @@ celery_app.conf.update(
             "task": "app.infra.tasks.dunning_check_daily",
             "schedule": 86400.0,  # 24h
         },
+        "route-run-regulation-daily": {
+            "task": "app.infra.tasks.route_run_regulation_daily",
+            "schedule": 86400.0,  # 24h
+        },
     },
 )

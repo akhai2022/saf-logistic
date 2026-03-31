@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
@@ -909,3 +909,45 @@ def cmr_generate_pdf(job_id: str) -> dict:
         db.commit()
 
     return {"pdf_key": key}
+
+
+# ---------------------------------------------------------------------------
+# Route run regulation — daily auto-close overdue executions
+# ---------------------------------------------------------------------------
+@celery_app.task(name="app.infra.tasks.route_run_regulation_daily")
+def route_run_regulation_daily() -> dict:
+    """Daily: regulate route runs with service_date < today that are
+    still in DISPATCHED or IN_PROGRESS. Transitions them to COMPLETED,
+    computes aggregates, and writes audit logs."""
+    from app.modules.route_runs.service import find_eligible_runs, regulate_single_run
+
+    today = date.today()
+    cutoff = today  # service_date < today means yesterday or older
+    now = datetime.now(timezone.utc)
+    stats: dict[str, int] = {"eligible": 0, "regulated": 0, "errors": 0}
+
+    with _session() as db:
+        eligible = find_eligible_runs(db, cutoff)
+        stats["eligible"] = len(eligible)
+
+        for run in eligible:
+            try:
+                regulate_single_run(
+                    db, run, source="automatic", user_id=None, now=now,
+                )
+                stats["regulated"] += 1
+            except Exception:
+                logger.exception(
+                    "Failed to regulate run %s (tenant=%s)", run.id, run.tenant_id,
+                )
+                stats["errors"] += 1
+
+        db.commit()
+
+    if stats["regulated"] > 0:
+        logger.info(
+            "Route run regulation: %d/%d runs regulated, %d errors",
+            stats["regulated"], stats["eligible"], stats["errors"],
+        )
+
+    return stats

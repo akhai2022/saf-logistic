@@ -68,6 +68,9 @@ class RouteRunOut(BaseModel):
     nb_missions: int = 0
     notes: str | None = None
     created_at: str | None = None
+    regulated_at: str | None = None
+    regulated_by: str | None = None
+    regulation_source: str | None = None
 
 
 class RouteRunDetail(RouteRunOut):
@@ -81,3 +84,27 @@ class AssignMissionRequest(BaseModel):
 
 class ReorderRequest(BaseModel):
     mission_ids: list[str]  # ordered list of mission IDs
+
+
+class RegulateRequest(BaseModel):
+    run_ids: list[str] | None = None  # explicit IDs; if None, regulate all eligible
+    preview: bool = False  # if True, return eligible runs without regulating
+
+
+class RegulatedRunResult(BaseModel):
+    run_id: str
+    code: str
+    service_date: str
+    old_status: str
+    new_status: str
+    aggregated_sale_amount_ht: float
+    aggregated_purchase_amount_ht: float
+    aggregated_margin_ht: float
+
+
+class RegulateResponse(BaseModel):
+    eligible: int
+    regulated: int
+    skipped: int
+    errors: int
+    details: list[RegulatedRunResult]

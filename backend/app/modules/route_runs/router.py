@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -15,6 +15,9 @@ from app.core.tenant import TenantContext, get_tenant
 from app.modules.route_runs.schemas import (
     RUN_TRANSITIONS,
     AssignMissionRequest,
+    RegulateRequest,
+    RegulateResponse,
+    RegulatedRunResult,
     ReorderRequest,
     RouteRunCreate,
     RouteRunDetail,
@@ -61,6 +64,9 @@ def _run_from_row(r) -> RouteRunOut:
         nb_missions=getattr(r, "nb_missions", 0) or 0,
         notes=r.notes,
         created_at=r.created_at.isoformat() if r.created_at else None,
+        regulated_at=r.regulated_at.isoformat() if getattr(r, "regulated_at", None) else None,
+        regulated_by=str(r.regulated_by) if getattr(r, "regulated_by", None) else None,
+        regulation_source=getattr(r, "regulation_source", None),
     )
 
 
@@ -140,6 +146,156 @@ async def create_run(
     row = (await db.execute(text(_BASE_SELECT + " WHERE rr.id = :id"), {"id": str(run_id)})).first()
     return _run_from_row(row)
 
+
+# ── Regulation ────────────────────────────────────────────────────
+
+@router.post("/regulate", response_model=RegulateResponse)
+async def regulate_runs(
+    body: RegulateRequest,
+    tenant: TenantContext = Depends(get_tenant),
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk-regulate overdue route runs for this tenant.
+
+    Eligible: service_date < today AND status IN (DISPATCHED, IN_PROGRESS).
+    If body.run_ids is provided, only those runs are considered.
+    If body.preview is True, returns eligible runs without modifying them.
+    """
+    tid = str(tenant.tenant_id)
+    today = date.today()
+    now = datetime.now(timezone.utc)
+
+    # Build eligibility query
+    q = """
+        SELECT rr.id, rr.tenant_id, rr.code, rr.service_date, rr.status,
+               rr.planned_start_at, rr.planned_end_at,
+               rr.actual_start_at, rr.actual_end_at,
+               rr.regulated_at
+        FROM route_runs rr
+        WHERE rr.service_date < :cutoff
+          AND rr.status IN ('DISPATCHED', 'IN_PROGRESS')
+          AND rr.regulated_at IS NULL
+          AND rr.tenant_id = :tid
+    """
+    params: dict[str, Any] = {"cutoff": today, "tid": tid}
+    if body.run_ids:
+        q += " AND rr.id = ANY(:ids)"
+        params["ids"] = body.run_ids
+    q += " ORDER BY rr.service_date ASC"
+
+    eligible = (await db.execute(text(q), params)).fetchall()
+
+    if body.preview:
+        return RegulateResponse(
+            eligible=len(eligible),
+            regulated=0,
+            skipped=0,
+            errors=0,
+            details=[RegulatedRunResult(
+                run_id=str(r.id), code=r.code,
+                service_date=r.service_date.isoformat(),
+                old_status=r.status, new_status="COMPLETED",
+                aggregated_sale_amount_ht=0, aggregated_purchase_amount_ht=0,
+                aggregated_margin_ht=0,
+            ) for r in eligible],
+        )
+
+    user_id = user.get("id")
+    regulated = []
+    errors = 0
+
+    for run in eligible:
+        try:
+            # Aggregate totals from assigned missions
+            totals = (await db.execute(text("""
+                SELECT COALESCE(SUM(j.montant_vente_ht), 0) AS sale,
+                       COALESCE(SUM(j.montant_achat_ht), 0) AS purchase
+                FROM route_run_missions rrm
+                JOIN jobs j ON rrm.mission_id = j.id
+                WHERE rrm.route_run_id = :rid
+            """), {"rid": str(run.id)})).first()
+
+            sale = float(totals.sale) if totals else 0.0
+            purchase = float(totals.purchase) if totals else 0.0
+            margin = sale - purchase
+            service_date = run.service_date
+
+            # Determine actual_start_at
+            actual_start = run.actual_start_at
+            if actual_start is None:
+                actual_start = run.planned_start_at or datetime(
+                    service_date.year, service_date.month, service_date.day,
+                    8, 0, tzinfo=timezone.utc,
+                )
+
+            # Determine actual_end_at
+            actual_end = run.actual_end_at
+            if actual_end is None:
+                actual_end = run.planned_end_at or datetime(
+                    service_date.year, service_date.month, service_date.day,
+                    23, 59, tzinfo=timezone.utc,
+                )
+
+            # Update run
+            await db.execute(text("""
+                UPDATE route_runs SET
+                    status = 'COMPLETED',
+                    actual_start_at = :start, actual_end_at = :end,
+                    aggregated_sale_amount_ht = :sale,
+                    aggregated_purchase_amount_ht = :purchase,
+                    aggregated_margin_ht = :margin,
+                    regulated_at = :now, regulated_by = :uid,
+                    regulation_source = 'manual', updated_at = :now
+                WHERE id = :id AND tenant_id = :tid
+            """), {
+                "id": str(run.id), "tid": tid,
+                "start": actual_start, "end": actual_end,
+                "sale": sale, "purchase": purchase, "margin": margin,
+                "now": now, "uid": user_id,
+            })
+
+            # Audit log
+            from app.core.audit import log_audit
+            await log_audit(
+                db, tenant.tenant_id,
+                user_id=uuid.UUID(user_id) if user_id else None,
+                user_email=user.get("email"),
+                action="REGULATE",
+                entity_type="route_run",
+                entity_id=str(run.id),
+                old_value={"status": run.status},
+                new_value={
+                    "status": "COMPLETED",
+                    "aggregated_sale_amount_ht": sale,
+                    "aggregated_purchase_amount_ht": purchase,
+                },
+                metadata={"regulation_source": "manual", "service_date": service_date.isoformat()},
+            )
+
+            regulated.append(RegulatedRunResult(
+                run_id=str(run.id), code=run.code,
+                service_date=service_date.isoformat(),
+                old_status=run.status, new_status="COMPLETED",
+                aggregated_sale_amount_ht=sale,
+                aggregated_purchase_amount_ht=purchase,
+                aggregated_margin_ht=margin,
+            ))
+        except Exception:
+            errors += 1
+
+    await db.commit()
+
+    return RegulateResponse(
+        eligible=len(eligible),
+        regulated=len(regulated),
+        skipped=0,
+        errors=errors,
+        details=regulated,
+    )
+
+
+# ── Detail / Update ──────────────────────────────────────────────
 
 @router.get("/{run_id}", response_model=RouteRunDetail)
 async def get_run(

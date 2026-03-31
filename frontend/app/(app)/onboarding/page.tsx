@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -30,8 +31,9 @@ export default function OnboardingPage() {
   const handleDemoSetup = async () => {
     setLoading(true);
     try {
-      await apiPost("/v1/onboarding/demo-setup");
-      apiGet<OnboardingStatus>("/v1/onboarding/status").then(setStatus);
+      if (await mutate(() => apiPost("/v1/onboarding/demo-setup"), "Donnees demo installees")) {
+        apiGet<OnboardingStatus>("/v1/onboarding/status").then(setStatus);
+      }
     } finally {
       setLoading(false);
     }

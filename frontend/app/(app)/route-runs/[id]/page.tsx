@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiGet, apiPost, apiDelete } from "@/lib/api";
@@ -83,11 +83,11 @@ export default function RouteRunDetailPage() {
   const [showRegulateConfirm, setShowRegulateConfirm] = useState(false);
   const [regulating, setRegulating] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     apiGet<RouteRunDetail>(`/v1/route-runs/${id}`).then(setDetail);
-  };
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   if (!detail) return <div className="py-8 text-center text-gray-400">Chargement...</div>;
 
@@ -103,8 +103,9 @@ export default function RouteRunDetailPage() {
   const handleTransition = async (endpoint: string) => {
     setTransitioning(true);
     try {
-      await apiPost(`/v1/route-runs/${id}/${endpoint}`, {});
-      load();
+      if (await mutate(() => apiPost(`/v1/route-runs/${id}/${endpoint}`, {}), "Statut mis a jour")) {
+        load();
+      }
     } finally {
       setTransitioning(false);
     }
@@ -114,10 +115,9 @@ export default function RouteRunDetailPage() {
     setRegulating(true);
     setShowRegulateConfirm(false);
     try {
-      await apiPost<RegulateResponse>("/v1/route-runs/regulate", {
-        run_ids: [id],
-      });
-      load();
+      if (await mutate(() => apiPost<RegulateResponse>("/v1/route-runs/regulate", { run_ids: [id] }), "Regularisation effectuee")) {
+        load();
+      }
     } finally {
       setRegulating(false);
     }
@@ -128,10 +128,11 @@ export default function RouteRunDetailPage() {
     if (!missionId.trim()) return;
     setAssigning(true);
     try {
-      await apiPost(`/v1/route-runs/${id}/assign-mission`, { mission_id: missionId.trim() });
-      setMissionId("");
-      setShowAssignForm(false);
-      load();
+      if (await mutate(() => apiPost(`/v1/route-runs/${id}/assign-mission`, { mission_id: missionId.trim() }), "Mission affectee")) {
+        setMissionId("");
+        setShowAssignForm(false);
+        load();
+      }
     } finally {
       setAssigning(false);
     }

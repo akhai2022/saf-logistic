@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { apiGet, apiPatch } from "@/lib/api";
 import { mutate } from "@/lib/mutate";
@@ -34,13 +34,13 @@ export default function ComplianceAlertsPage() {
   const [alerts, setAlerts] = useState<ComplianceAlert[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
 
-  const reload = () => {
+  const reload = useCallback(() => {
     let url = "/v1/compliance/alerts?limit=100";
     if (statusFilter) url += `&statut=${statusFilter}`;
     apiGet<ComplianceAlert[]>(url).then(setAlerts);
-  };
+  }, [statusFilter]);
 
-  useEffect(() => { reload(); }, [statusFilter]);
+  useEffect(() => { reload(); }, [reload]);
 
   const handleAcknowledge = async (alertId: string) => {
     const notes = prompt("Notes (optionnel):");

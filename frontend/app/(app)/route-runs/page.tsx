@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
@@ -136,14 +137,15 @@ export default function RouteRunsPage() {
     setShowRegulateConfirm(false);
     try {
       const ids = selectedIds.size > 0 ? Array.from(selectedIds) : undefined;
-      const result = await apiPost<RegulateResponse>("/v1/route-runs/regulate", {
-        run_ids: ids,
-      });
-      setRegulateResult(result);
-      setSelectedIds(new Set());
-      refresh();
-    } catch {
-      setRegulateResult(null);
+      const result = await mutate(
+        () => apiPost<RegulateResponse>("/v1/route-runs/regulate", { run_ids: ids }),
+        "Regularisation effectuee",
+      );
+      if (result) {
+        setRegulateResult(result);
+        setSelectedIds(new Set());
+        refresh();
+      }
     } finally {
       setRegulating(false);
     }
@@ -153,15 +155,20 @@ export default function RouteRunsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await apiPost("/v1/route-runs", {
-        service_date: form.service_date,
-        assigned_driver_id: form.assigned_driver_id || null,
-        assigned_vehicle_id: form.assigned_vehicle_id || null,
-        notes: form.notes || null,
-      });
-      setShowCreate(false);
-      setForm({ service_date: "", assigned_driver_id: "", assigned_vehicle_id: "", notes: "" });
-      refresh();
+      const result = await mutate(
+        () => apiPost("/v1/route-runs", {
+          service_date: form.service_date,
+          assigned_driver_id: form.assigned_driver_id || null,
+          assigned_vehicle_id: form.assigned_vehicle_id || null,
+          notes: form.notes || null,
+        }),
+        "Execution creee",
+      );
+      if (result) {
+        setShowCreate(false);
+        setForm({ service_date: "", assigned_driver_id: "", assigned_vehicle_id: "", notes: "" });
+        refresh();
+      }
     } finally {
       setSaving(false);
     }

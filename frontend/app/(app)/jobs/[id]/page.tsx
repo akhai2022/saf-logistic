@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiGet, apiPost, apiPatch, apiDelete } from "@/lib/api";
 import { mutate } from "@/lib/mutate";
@@ -61,14 +61,14 @@ export default function JobDetailPage() {
   // POD upload error
   const [podError, setPodError] = useState("");
 
-  const reload = () => apiGet<Mission>(`/v1/jobs/${id}`).then(setMission);
+  const reload = useCallback(() => apiGet<Mission>(`/v1/jobs/${id}`).then(setMission), [id]);
 
   useEffect(() => {
     reload();
     apiGet<Driver[]>("/v1/masterdata/drivers").then(setDrivers);
     apiGet<Vehicle[]>("/v1/masterdata/vehicles").then(setVehicles);
     apiGet<Subcontractor[]>("/v1/masterdata/subcontractors").then(setSubcontractors).catch(() => {});
-  }, [id]);
+  }, [reload]);
 
   if (!mission) return <div className="py-8 text-center text-gray-400">Chargement...</div>;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
 import { uploadFile } from "@/lib/upload";
@@ -25,11 +25,11 @@ export default function ComplianceTab({ entityType, entityId }: ComplianceTabPro
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState("");
 
-  const reload = () => {
+  const reload = useCallback(() => {
     apiGet<ComplianceChecklist>(`/v1/compliance/${entityType}/${entityId}`).then(setChecklist).catch(() => {});
-  };
+  }, [entityType, entityId]);
 
-  useEffect(() => { reload(); }, [entityType, entityId]);
+  useEffect(() => { reload(); }, [reload]);
 
   const handleSubmitUpload = async (docType: string) => {
     if (!selectedFile) return;

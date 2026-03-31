@@ -96,8 +96,8 @@ function CompanyTab() {
   const save = async () => {
     setSaving(true);
     try {
-      const result = await apiPut<CompanySettings>("/v1/settings/company", form);
-      setData(result);
+      const result = await mutate(() => apiPut<CompanySettings>("/v1/settings/company", form), "Enregistre");
+      if (result) setData(result);
     } finally {
       setSaving(false);
     }
@@ -377,10 +377,11 @@ function UsersTab() {
   const createUser = async () => {
     setSaving(true);
     try {
-      await apiPost("/v1/admin/users", createForm);
-      setShowCreateForm(false);
-      setCreateForm({ email: "", password: "", full_name: "", role_id: "", agency_id: "" });
-      loadUsers(search);
+      if (await mutate(() => apiPost("/v1/admin/users", createForm), "Utilisateur cree")) {
+        setShowCreateForm(false);
+        setCreateForm({ email: "", password: "", full_name: "", role_id: "", agency_id: "" });
+        loadUsers(search);
+      }
     } finally {
       setSaving(false);
     }
@@ -399,9 +400,10 @@ function UsersTab() {
   const saveEdit = async (userId: string) => {
     setSaving(true);
     try {
-      await apiPut(`/v1/admin/users/${userId}`, editForm);
-      setEditingId(null);
-      loadUsers(search);
+      if (await mutate(() => apiPut(`/v1/admin/users/${userId}`, editForm), "Utilisateur mis a jour")) {
+        setEditingId(null);
+        loadUsers(search);
+      }
     } finally {
       setSaving(false);
     }
@@ -416,9 +418,10 @@ function UsersTab() {
     if (resetPwd.length < 8) return;
     setSaving(true);
     try {
-      await apiPost(`/v1/admin/users/${userId}/reset-password`, { new_password: resetPwd });
-      setResetId(null);
-      setResetPwd("");
+      if (await mutate(() => apiPost(`/v1/admin/users/${userId}/reset-password`, { new_password: resetPwd }), "Mot de passe reinitialise")) {
+        setResetId(null);
+        setResetPwd("");
+      }
     } finally {
       setSaving(false);
     }

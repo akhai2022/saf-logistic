@@ -133,7 +133,7 @@ export default function AuditPage() {
         })()}
 
         {logs.length === 0 && !loading && (
-          <div className="text-center py-8 text-gray-400">Aucun enregistrement d'audit</div>
+          <div className="text-center py-8 text-gray-400">Aucun enregistrement d&apos;audit</div>
         )}
         <Pagination offset={offset} limit={limit} currentCount={logs.length} onPrev={onPrev} onNext={onNext} />
       </Card>

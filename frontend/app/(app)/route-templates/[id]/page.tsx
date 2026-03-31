@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
@@ -86,13 +86,13 @@ export default function RouteTemplateDetailPage() {
   const [genForm, setGenForm] = useState({ start_date: "", end_date: "", auto_create_missions: false });
   const [genResult, setGenResult] = useState<{ generated: number } | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     apiGet<RouteTemplateDetail>(`/v1/route-templates/${id}`).then(setDetail);
     apiGet<Run[]>(`/v1/route-templates/${id}/runs`).then(setRuns).catch(() => setRuns([]));
     apiGet<Mission[]>(`/v1/route-templates/${id}/missions`).then(setMissions).catch(() => setMissions([]));
-  };
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   if (!detail) return <div className="py-8 text-center text-gray-400">Chargement...</div>;
 

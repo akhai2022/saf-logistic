@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import type { TenantListItem, CreateTenantPayload } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -34,14 +35,15 @@ export default function TenantsPage() {
   const create = async () => {
     setSaving(true);
     try {
-      await apiPost("/v1/admin/tenants", form);
-      setShowForm(false);
-      setForm({
-        name: "", siren: "", address: "",
-        admin_email: "", admin_password: "", admin_full_name: "",
-        agency_name: "Agence principale", agency_code: "HQ",
-      });
-      loadTenants();
+      if (await mutate(() => apiPost("/v1/admin/tenants", form), "Entreprise creee avec succes")) {
+        setShowForm(false);
+        setForm({
+          name: "", siren: "", address: "",
+          admin_email: "", admin_password: "", admin_full_name: "",
+          agency_name: "Agence principale", agency_code: "HQ",
+        });
+        loadTenants();
+      }
     } finally {
       setSaving(false);
     }

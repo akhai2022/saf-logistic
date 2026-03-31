@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
 import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import Button from "@/components/Button";
@@ -164,15 +165,16 @@ export default function DunningPage() {
     if (!relanceTarget) return;
     setSubmittingRelance(true);
     try {
-      await apiPost("/v1/billing/dunning/actions", {
+      if (await mutate(() => apiPost("/v1/billing/dunning/actions", {
         invoice_id: relanceTarget.invoice_id,
         date_relance: relanceForm.date_relance,
         mode: relanceForm.mode,
         notes: relanceForm.notes || undefined,
-      });
-      setShowRelanceModal(false);
-      setRelanceTarget(null);
-      refreshOverdue();
+      }), "Relance enregistree")) {
+        setShowRelanceModal(false);
+        setRelanceTarget(null);
+        refreshOverdue();
+      }
     } finally {
       setSubmittingRelance(false);
     }
@@ -207,13 +209,14 @@ export default function DunningPage() {
       template: levelForm.template || undefined,
     };
     try {
-      if (editingLevel) {
-        await apiPut(`/v1/billing/dunning/levels/${editingLevel.id}`, payload);
-      } else {
-        await apiPost("/v1/billing/dunning/levels", payload);
+      const successMsg = editingLevel ? "Niveau mis a jour" : "Niveau cree";
+      const result = editingLevel
+        ? await mutate(() => apiPut(`/v1/billing/dunning/levels/${editingLevel.id}`, payload), successMsg)
+        : await mutate(() => apiPost("/v1/billing/dunning/levels", payload), successMsg);
+      if (result !== undefined) {
+        setShowLevelModal(false);
+        fetchLevels();
       }
-      setShowLevelModal(false);
-      fetchLevels();
     } finally {
       setSubmittingLevel(false);
     }

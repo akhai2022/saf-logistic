@@ -153,7 +153,7 @@ export default function MaintenanceListPage() {
               <label className="text-sm font-medium text-gray-700 block mb-1">Notes</label>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={inp} rows={2} />
             </div>
-            <Button type="submit" icon="check" disabled={!form.vehicle_id || !form.libelle}>Creer l'intervention</Button>
+            <Button type="submit" icon="check" disabled={!form.vehicle_id || !form.libelle}>Creer l&apos;intervention</Button>
           </form>
         </Card>
       )}

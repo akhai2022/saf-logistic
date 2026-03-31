@@ -255,7 +255,7 @@ export default function ReportsPage() {
               <span className="material-symbols-outlined text-amber-600" style={{ fontSize: 20 }}>no_crash</span>
               <div>
                 <div className="text-sm font-medium text-amber-800">Vehicules inutilises</div>
-                <div className="text-xs text-amber-600">{data.vehicle_utilization.filter((v) => v.missions === 0).length} vehicule(s) actif(s) sans mission. Potentiel de reduction de flotte ou d'augmentation d'activite.</div>
+                <div className="text-xs text-amber-600">{data.vehicle_utilization.filter((v) => v.missions === 0).length} vehicule(s) actif(s) sans mission. Potentiel de reduction de flotte ou d&apos;augmentation d&apos;activite.</div>
               </div>
             </div>
           )}

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { apiGet, apiPut, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import type { TenantDetail, AdminUser } from "@/lib/types";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -32,7 +33,7 @@ export default function TenantDetailPage() {
   const [newPassword, setNewPassword] = useState("");
   const [actionMsg, setActionMsg] = useState("");
 
-  const load = () => {
+  const load = useCallback(() => {
     apiGet<TenantDetail>(`/v1/admin/tenants/${tenantId}`).then((t) => {
       setTenant(t);
       setForm({ name: t.name || "", siren: t.siren || "", address: t.address || "" });
@@ -40,15 +41,16 @@ export default function TenantDetailPage() {
     apiGet<AdminUser[]>(`/v1/admin/tenants/${tenantId}/users`).then(setUsers);
     apiGet<Role[]>("/v1/admin/roles").then(setRoles).catch(() => {});
     apiGet<Agency[]>("/v1/admin/agencies").then(setAgencies).catch(() => {});
-  };
+  }, [tenantId]);
 
-  useEffect(() => { load(); }, [tenantId]);
+  useEffect(() => { load(); }, [load]);
 
   const saveInfo = async () => {
     setSaving(true);
     try {
-      await apiPut(`/v1/admin/tenants/${tenantId}`, form);
-      setTenant((prev) => (prev ? { ...prev, ...form } : prev));
+      if (await mutate(() => apiPut(`/v1/admin/tenants/${tenantId}`, form), "Enregistre")) {
+        setTenant((prev) => (prev ? { ...prev, ...form } : prev));
+      }
     } finally {
       setSaving(false);
     }
@@ -58,13 +60,11 @@ export default function TenantDetailPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await apiPost("/v1/admin/users", userForm);
-      setShowCreateUser(false);
-      setUserForm({ email: "", password: "", full_name: "", role_id: "", agency_id: "" });
-      setActionMsg("Utilisateur cree");
-      load();
-    } catch (err: unknown) {
-      setActionMsg("Erreur: " + String(err));
+      if (await mutate(() => apiPost("/v1/admin/users", userForm), "Utilisateur cree")) {
+        setShowCreateUser(false);
+        setUserForm({ email: "", password: "", full_name: "", role_id: "", agency_id: "" });
+        load();
+      }
     } finally {
       setSaving(false);
     }
@@ -75,23 +75,15 @@ export default function TenantDetailPage() {
       setActionMsg("Le mot de passe doit contenir au moins 8 caracteres");
       return;
     }
-    try {
-      await apiPost(`/v1/admin/users/${userId}/reset-password`, { new_password: newPassword });
+    if (await mutate(() => apiPost(`/v1/admin/users/${userId}/reset-password`, { new_password: newPassword }), "Mot de passe reinitialise")) {
       setResetTarget(null);
       setNewPassword("");
-      setActionMsg("Mot de passe reinitialise");
-    } catch (err: unknown) {
-      setActionMsg("Erreur: " + String(err));
     }
   };
 
   const toggleActive = async (userId: string, currentActive: boolean) => {
-    try {
-      await apiPut(`/v1/admin/users/${userId}`, { is_active: !currentActive });
-      setActionMsg(currentActive ? "Utilisateur desactive" : "Utilisateur active");
+    if (await mutate(() => apiPut(`/v1/admin/users/${userId}`, { is_active: !currentActive }), currentActive ? "Utilisateur desactive" : "Utilisateur active")) {
       load();
-    } catch (err: unknown) {
-      setActionMsg("Erreur: " + String(err));
     }
   };
 

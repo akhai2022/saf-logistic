@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
 import { mutate } from "@/lib/mutate";
@@ -29,13 +29,13 @@ export default function ComplianceTemplatesPage() {
     duree_validite_defaut_jours: "", ordre_affichage: "0",
   });
 
-  const reload = () => {
+  const reload = useCallback(() => {
     let url = "/v1/compliance/templates";
     if (entityFilter) url += `?entity_type=${entityFilter}`;
     apiGet<ComplianceTemplate[]>(url).then(setTemplates);
-  };
+  }, [entityFilter]);
 
-  useEffect(() => { reload(); }, [entityFilter]);
+  useEffect(() => { reload(); }, [reload]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -264,7 +264,7 @@ export default function OcrPage() {
       setPollingId(null);
       refresh();
     }
-  }, [polledJob]);
+  }, [polledJob, refresh]);
 
   const handleUpload = async (file: File) => {
     setUploading(true);

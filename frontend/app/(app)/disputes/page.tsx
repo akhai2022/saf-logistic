@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import { useAuth } from "@/lib/auth";
+import { toast } from "sonner";
 import { usePaginatedFetch } from "@/lib/usePaginatedFetch";
 import type { Dispute } from "@/lib/types";
 import Card from "@/components/Card";
@@ -43,17 +45,17 @@ export default function DisputesPage() {
   );
 
   const handleStatusChange = async (disputeId: string, missionId: string, newStatut: string) => {
+    // Try mission-scoped endpoint first, fallback to direct endpoint
     try {
       await apiPost(`/v1/jobs/${missionId}/disputes/${disputeId}/transition`, { statut: newStatut });
+      toast.success("Statut mis a jour");
       refresh();
+      return;
     } catch {
       // Fallback: try direct status update
-      try {
-        await apiPost(`/v1/jobs/disputes/${disputeId}/transition`, { statut: newStatut });
-        refresh();
-      } catch {
-        alert("Erreur lors du changement de statut");
-      }
+    }
+    if (await mutate(() => apiPost(`/v1/jobs/disputes/${disputeId}/transition`, { statut: newStatut }), "Statut mis a jour")) {
+      refresh();
     }
   };
 

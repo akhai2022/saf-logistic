@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
@@ -33,11 +33,11 @@ export default function EntityChecklistPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState("");
 
-  const reload = () => {
+  const reload = useCallback(() => {
     apiGet<ComplianceChecklist>(`/v1/compliance/${entityType}/${entityId}`).then(setChecklist);
-  };
+  }, [entityType, entityId]);
 
-  useEffect(() => { reload(); }, [entityType, entityId]);
+  useEffect(() => { reload(); }, [reload]);
 
   if (!checklist) return <div className="py-8 text-center text-gray-400">Chargement...</div>;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiGet, apiPost } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -115,15 +115,31 @@ export default function SupplierInvoiceDetailPage() {
 
   // ── Fetch invoice detail ───────────────────────────────────────
 
-  const fetchInvoice = () => {
+  const fetchInvoice = useCallback(() => {
     setLoading(true);
     apiGet<SupplierInvoiceDetail>(`/v1/billing/supplier-invoices/${id}`)
       .then(setInvoice)
       .catch(() => setInvoice(null))
       .finally(() => setLoading(false));
-  };
+  }, [id]);
 
-  const fetchMatchData = () => {
+  const fetchSuggestions = useCallback(() => {
+    apiGet<SuggestedMatch[]>(`/v1/billing/supplier-invoices/${id}/suggested-matches`)
+      .then((data) => {
+        setSuggestions(data);
+        // Pre-fill montant values
+        const prefilledMontants: Record<string, string> = {};
+        data.forEach((s) => {
+          prefilledMontants[s.mission_id] = s.montant_achat_ht != null
+            ? String(s.montant_achat_ht)
+            : "";
+        });
+        setMontantValues(prefilledMontants);
+      })
+      .catch(() => setSuggestions([]));
+  }, [id]);
+
+  const fetchMatchData = useCallback(() => {
     // Try to get existing matchings first
     apiGet<ExistingMatching[]>(`/v1/billing/supplier-invoices/${id}/matchings`)
       .then((data) => {
@@ -139,28 +155,12 @@ export default function SupplierInvoiceDetailPage() {
         setExistingMatchings([]);
         fetchSuggestions();
       });
-  };
-
-  const fetchSuggestions = () => {
-    apiGet<SuggestedMatch[]>(`/v1/billing/supplier-invoices/${id}/suggested-matches`)
-      .then((data) => {
-        setSuggestions(data);
-        // Pre-fill montant values
-        const prefilledMontants: Record<string, string> = {};
-        data.forEach((s) => {
-          prefilledMontants[s.mission_id] = s.montant_achat_ht != null
-            ? String(s.montant_achat_ht)
-            : "";
-        });
-        setMontantValues(prefilledMontants);
-      })
-      .catch(() => setSuggestions([]));
-  };
+  }, [id, fetchSuggestions]);
 
   useEffect(() => {
     fetchInvoice();
     fetchMatchData();
-  }, [id]);
+  }, [fetchInvoice, fetchMatchData]);
 
   // ── Matching actions ──────────────────────────────────────────
 

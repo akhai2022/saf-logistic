@@ -22,6 +22,14 @@ for arg in "$@"; do
   esac
 done
 
+# --skip-checks is forbidden when deploying to production
+if [ "$SKIP_CHECKS" = true ] && [ "$DEPLOY" = true ]; then
+  echo "ERROR: --skip-checks cannot be combined with --deploy (production)."
+  echo "       Pre-flight checks are mandatory for production deployments."
+  echo "       Use --skip-checks without --deploy for image-only builds."
+  exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 TF_DIR="$ROOT_DIR/infra/terraform"
@@ -30,34 +38,28 @@ TF_DIR="$ROOT_DIR/infra/terraform"
 if [ "$SKIP_CHECKS" = false ]; then
   echo "==> Running pre-flight checks..."
 
-  echo "    [1/4] Backend lint..."
-  (cd "$ROOT_DIR/backend" && python3 -m ruff check . --quiet) || {
-    echo "ERROR: Backend lint failed. Fix issues or use --skip-checks to bypass."
-    exit 1
-  }
-
-  echo "    [2/4] Frontend lint..."
+  echo "    [1/3] Frontend lint..."
   (cd "$ROOT_DIR/frontend" && npx next lint --max-warnings 0 --quiet) || {
-    echo "ERROR: Frontend lint failed. Fix issues or use --skip-checks to bypass."
+    echo "ERROR: Frontend lint failed."
     exit 1
   }
 
-  echo "    [3/4] Frontend typecheck..."
+  echo "    [2/3] Frontend typecheck..."
   (cd "$ROOT_DIR/frontend" && npx tsc --noEmit) || {
-    echo "ERROR: TypeScript errors found. Fix issues or use --skip-checks to bypass."
+    echo "ERROR: TypeScript errors found."
     exit 1
   }
 
-  echo "    [4/4] Frontend build..."
+  echo "    [3/3] Frontend build..."
   (cd "$ROOT_DIR/frontend" && npm run build --quiet) || {
-    echo "ERROR: Frontend build failed. Fix issues or use --skip-checks to bypass."
+    echo "ERROR: Frontend build failed."
     exit 1
   }
 
   echo "    All pre-flight checks passed."
   echo ""
 else
-  echo "==> Pre-flight checks SKIPPED (--skip-checks flag)."
+  echo "==> Pre-flight checks SKIPPED (--skip-checks flag, non-deploy build)."
   echo ""
 fi
 

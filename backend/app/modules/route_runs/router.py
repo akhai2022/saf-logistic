@@ -90,11 +90,13 @@ async def list_runs(
         q += " AND rr.route_template_id = :rtid"
         params["rtid"] = template_id
     if date_from:
+        from datetime import date as datemod
         q += " AND rr.service_date >= :df"
-        params["df"] = date_from
+        params["df"] = datemod.fromisoformat(date_from) if isinstance(date_from, str) else date_from
     if date_to:
+        from datetime import date as datemod
         q += " AND rr.service_date <= :dt"
-        params["dt"] = date_to
+        params["dt"] = datemod.fromisoformat(date_to) if isinstance(date_to, str) else date_to
     if search:
         q += " AND (rr.code ILIKE :s OR rt.code ILIKE :s OR rt.label ILIKE :s)"
         params["s"] = f"%{search}%"

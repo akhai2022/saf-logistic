@@ -1,0 +1,2262 @@
+{
+  "version": 4,
+  "terraform_version": "1.9.8",
+  "serial": 48,
+  "lineage": "8980684e-2872-3861-4846-75867969cffd",
+  "outputs": {
+    "api_service_name": {
+      "value": "saf-logistic-prod-api",
+      "type": "string"
+    },
+    "api_url": {
+      "value": "https://api-saf.dataforgeai.fr",
+      "type": "string"
+    },
+    "backend_security_group_id": {
+      "value": "sg-01b71d9b34331faf4",
+      "type": "string"
+    },
+    "ecr_api_url": {
+      "value": "208030346312.dkr.ecr.us-east-1.amazonaws.com/saf-logistic-prod-api",
+      "type": "string"
+    },
+    "ecr_web_url": {
+      "value": "208030346312.dkr.ecr.us-east-1.amazonaws.com/saf-logistic-prod-web",
+      "type": "string"
+    },
+    "ecs_cluster_name": {
+      "value": "zinovia-fans-prod-cluster",
+      "type": "string"
+    },
+    "migration_task_definition": {
+      "value": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-migration:1",
+      "type": "string"
+    },
+    "s3_bucket_name": {
+      "value": "saf-logistic-prod-docs",
+      "type": "string"
+    },
+    "web_service_name": {
+      "value": "saf-logistic-prod-web",
+      "type": "string"
+    },
+    "web_url": {
+      "value": "https://saf.dataforgeai.fr",
+      "type": "string"
+    },
+    "worker_service_name": {
+      "value": "saf-logistic-prod-worker",
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "mode": "data",
+      "type": "aws_caller_identity",
+      "name": "current",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "account_id": "208030346312",
+            "arn": "arn:aws:iam::208030346312:user/zinovia",
+            "id": "208030346312",
+            "user_id": "AIDATA34TFREN4WISOUN6"
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "data",
+      "type": "aws_lb",
+      "name": "formation",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "access_logs": [
+              {
+                "bucket": "",
+                "enabled": false,
+                "prefix": ""
+              }
+            ],
+            "arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:loadbalancer/app/zinovia-formation-prod-alb/476ee206c7d3240a",
+            "arn_suffix": "app/zinovia-formation-prod-alb/476ee206c7d3240a",
+            "client_keep_alive": 3600,
+            "connection_logs": [
+              {
+                "bucket": "",
+                "enabled": false,
+                "prefix": ""
+              }
+            ],
+            "customer_owned_ipv4_pool": "",
+            "desync_mitigation_mode": "defensive",
+            "dns_name": "zinovia-formation-prod-alb-635329215.us-east-1.elb.amazonaws.com",
+            "dns_record_client_routing_policy": null,
+            "drop_invalid_header_fields": true,
+            "enable_cross_zone_load_balancing": true,
+            "enable_deletion_protection": true,
+            "enable_http2": true,
+            "enable_tls_version_and_cipher_suite_headers": false,
+            "enable_waf_fail_open": false,
+            "enable_xff_client_port": false,
+            "enable_zonal_shift": false,
+            "enforce_security_group_inbound_rules_on_private_link_traffic": "",
+            "id": "arn:aws:elasticloadbalancing:us-east-1:208030346312:loadbalancer/app/zinovia-formation-prod-alb/476ee206c7d3240a",
+            "idle_timeout": 60,
+            "internal": false,
+            "ip_address_type": "ipv4",
+            "ipam_pools": [],
+            "load_balancer_type": "application",
+            "name": "zinovia-formation-prod-alb",
+            "preserve_host_header": false,
+            "security_groups": [
+              "sg-01c313d439bc1ca11"
+            ],
+            "subnet_mapping": [
+              {
+                "allocation_id": "",
+                "ipv6_address": "",
+                "outpost_id": "",
+                "private_ipv4_address": "",
+                "subnet_id": "subnet-05958df9bb663b259"
+              },
+              {
+                "allocation_id": "",
+                "ipv6_address": "",
+                "outpost_id": "",
+                "private_ipv4_address": "",
+                "subnet_id": "subnet-08b23492b33c92edd"
+              },
+              {
+                "allocation_id": "",
+                "ipv6_address": "",
+                "outpost_id": "",
+                "private_ipv4_address": "",
+                "subnet_id": "subnet-0e84157288b0410a7"
+              }
+            ],
+            "subnets": [
+              "subnet-05958df9bb663b259",
+              "subnet-08b23492b33c92edd",
+              "subnet-0e84157288b0410a7"
+            ],
+            "tags": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "zinovia",
+              "Project": "zinovia-formation"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-04096ae7aea767aa8",
+            "xff_header_processing_mode": "append",
+            "zone_id": "Z35SXDOTRQ7X7K"
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "data",
+      "type": "aws_lb_listener",
+      "name": "formation_https",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "alpn_policy": null,
+            "arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:listener/app/zinovia-formation-prod-alb/476ee206c7d3240a/c6f9329dacf4fe67",
+            "certificate_arn": "arn:aws:acm:us-east-1:208030346312:certificate/033c5816-9146-4e16-ba47-deb995fac892",
+            "default_action": [
+              {
+                "authenticate_cognito": [],
+                "authenticate_oidc": [],
+                "fixed_response": [
+                  {
+                    "content_type": "application/json",
+                    "message_body": "{\"error\":\"Not Found\"}",
+                    "status_code": "404"
+                  }
+                ],
+                "forward": [],
+                "order": 1,
+                "redirect": [],
+                "target_group_arn": "",
+                "type": "fixed-response"
+              }
+            ],
+            "id": "arn:aws:elasticloadbalancing:us-east-1:208030346312:listener/app/zinovia-formation-prod-alb/476ee206c7d3240a/c6f9329dacf4fe67",
+            "load_balancer_arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:loadbalancer/app/zinovia-formation-prod-alb/476ee206c7d3240a",
+            "mutual_authentication": [
+              {
+                "advertise_trust_store_ca_names": "",
+                "ignore_client_certificate_expiry": false,
+                "mode": "off",
+                "trust_store_arn": ""
+              }
+            ],
+            "port": 443,
+            "protocol": "HTTPS",
+            "ssl_policy": "ELBSecurityPolicy-TLS13-1-2-2021-06",
+            "tags": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "zinovia",
+              "Project": "zinovia-formation"
+            },
+            "timeouts": null
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "data",
+      "type": "aws_route53_zone",
+      "name": "main",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:route53:::hostedzone/Z02751902GJ3XMJM896MH",
+            "caller_reference": "terraform-20260317234932097200000006",
+            "comment": "Managed by Terraform",
+            "id": "Z02751902GJ3XMJM896MH",
+            "linked_service_description": null,
+            "linked_service_principal": null,
+            "name": "dataforgeai.fr",
+            "name_servers": [
+              "ns-1441.awsdns-52.org",
+              "ns-400.awsdns-50.com",
+              "ns-1970.awsdns-54.co.uk",
+              "ns-682.awsdns-21.net"
+            ],
+            "primary_name_server": "ns-1441.awsdns-52.org",
+            "private_zone": false,
+            "resource_record_set_count": 12,
+            "tags": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "zinovia",
+              "Project": "zinovia-formation"
+            },
+            "vpc_id": null,
+            "zone_id": "Z02751902GJ3XMJM896MH"
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "data",
+      "type": "aws_vpc",
+      "name": "existing",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-east-1:208030346312:vpc/vpc-04096ae7aea767aa8",
+            "cidr_block": "10.0.0.0/16",
+            "cidr_block_associations": [
+              {
+                "association_id": "vpc-cidr-assoc-0f293fbb152804db1",
+                "cidr_block": "10.0.0.0/16",
+                "state": "associated"
+              }
+            ],
+            "default": false,
+            "dhcp_options_id": "dopt-04598215c5a7efe3d",
+            "enable_dns_hostnames": true,
+            "enable_dns_support": true,
+            "enable_network_address_usage_metrics": false,
+            "filter": null,
+            "id": "vpc-04096ae7aea767aa8",
+            "instance_tenancy": "default",
+            "ipv6_association_id": "",
+            "ipv6_cidr_block": "",
+            "main_route_table_id": "rtb-0b57dd0d45c3180f9",
+            "owner_id": "208030346312",
+            "state": null,
+            "tags": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Name": "zinovia-fans-prod-vpc",
+              "Project": "zinovia-fans"
+            },
+            "timeouts": null
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_acm_certificate",
+      "name": "saf",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:acm:us-east-1:208030346312:certificate/e7c788fb-afa6-4833-9a1d-67848cef398a",
+            "certificate_authority_arn": "",
+            "certificate_body": null,
+            "certificate_chain": null,
+            "domain_name": "saf.dataforgeai.fr",
+            "domain_validation_options": [
+              {
+                "domain_name": "api-saf.dataforgeai.fr",
+                "resource_record_name": "_851942c0180e9a80256c54a45be47d2b.api-saf.dataforgeai.fr.",
+                "resource_record_type": "CNAME",
+                "resource_record_value": "_f5ca3406230e5dda2cb1ef3b83d41ac9.jkddzztszm.acm-validations.aws."
+              },
+              {
+                "domain_name": "saf.dataforgeai.fr",
+                "resource_record_name": "_bfaab2c07bde4898400cb7cc79e8472f.saf.dataforgeai.fr.",
+                "resource_record_type": "CNAME",
+                "resource_record_value": "_6abbb7a81a20aa4eb49859ddac24d676.jkddzztszm.acm-validations.aws."
+              }
+            ],
+            "early_renewal_duration": "",
+            "id": "arn:aws:acm:us-east-1:208030346312:certificate/e7c788fb-afa6-4833-9a1d-67848cef398a",
+            "key_algorithm": "RSA_2048",
+            "not_after": "2026-10-07T23:59:59Z",
+            "not_before": "2026-03-24T00:00:00Z",
+            "options": [
+              {
+                "certificate_transparency_logging_preference": "ENABLED"
+              }
+            ],
+            "pending_renewal": false,
+            "private_key": null,
+            "renewal_eligibility": "ELIGIBLE",
+            "renewal_summary": [],
+            "status": "ISSUED",
+            "subject_alternative_names": [
+              "api-saf.dataforgeai.fr",
+              "saf.dataforgeai.fr"
+            ],
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "type": "AMAZON_ISSUED",
+            "validation_emails": [],
+            "validation_method": "DNS",
+            "validation_option": []
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "private_key"
+              }
+            ]
+          ],
+          "private": "bnVsbA==",
+          "create_before_destroy": true
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_acm_certificate_validation",
+      "name": "saf",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "certificate_arn": "arn:aws:acm:us-east-1:208030346312:certificate/e7c788fb-afa6-4833-9a1d-67848cef398a",
+            "id": "2026-03-24 21:17:18.145 +0000 UTC",
+            "timeouts": null,
+            "validation_record_fqdns": [
+              "_851942c0180e9a80256c54a45be47d2b.api-saf.dataforgeai.fr",
+              "_bfaab2c07bde4898400cb7cc79e8472f.saf.dataforgeai.fr"
+            ]
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo0NTAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "aws_acm_certificate.saf",
+            "aws_route53_record.acm_validation",
+            "data.aws_route53_zone.main"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_cloudwatch_log_group",
+      "name": "api",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:logs:us-east-1:208030346312:log-group:/ecs/saf-logistic-prod-api",
+            "id": "/ecs/saf-logistic-prod-api",
+            "kms_key_id": "",
+            "log_group_class": "STANDARD",
+            "name": "/ecs/saf-logistic-prod-api",
+            "name_prefix": "",
+            "retention_in_days": 30,
+            "skip_destroy": false,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_cloudwatch_log_group",
+      "name": "migration",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:logs:us-east-1:208030346312:log-group:/ecs/saf-logistic-prod-migration",
+            "id": "/ecs/saf-logistic-prod-migration",
+            "kms_key_id": "",
+            "log_group_class": "STANDARD",
+            "name": "/ecs/saf-logistic-prod-migration",
+            "name_prefix": "",
+            "retention_in_days": 14,
+            "skip_destroy": false,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_cloudwatch_log_group",
+      "name": "web",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:logs:us-east-1:208030346312:log-group:/ecs/saf-logistic-prod-web",
+            "id": "/ecs/saf-logistic-prod-web",
+            "kms_key_id": "",
+            "log_group_class": "STANDARD",
+            "name": "/ecs/saf-logistic-prod-web",
+            "name_prefix": "",
+            "retention_in_days": 30,
+            "skip_destroy": false,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_cloudwatch_log_group",
+      "name": "worker",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:logs:us-east-1:208030346312:log-group:/ecs/saf-logistic-prod-worker",
+            "id": "/ecs/saf-logistic-prod-worker",
+            "kms_key_id": "",
+            "log_group_class": "STANDARD",
+            "name": "/ecs/saf-logistic-prod-worker",
+            "name_prefix": "",
+            "retention_in_days": 30,
+            "skip_destroy": false,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecr_lifecycle_policy",
+      "name": "api",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "saf-logistic-prod-api",
+            "policy": "{\"rules\":[{\"action\":{\"type\":\"expire\"},\"description\":\"Keep last 10 images\",\"rulePriority\":1,\"selection\":{\"countNumber\":10,\"countType\":\"imageCountMoreThan\",\"tagStatus\":\"any\"}}]}",
+            "registry_id": "208030346312",
+            "repository": "saf-logistic-prod-api"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_ecr_repository.api"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecr_lifecycle_policy",
+      "name": "web",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "saf-logistic-prod-web",
+            "policy": "{\"rules\":[{\"action\":{\"type\":\"expire\"},\"description\":\"Keep last 10 images\",\"rulePriority\":1,\"selection\":{\"countNumber\":10,\"countType\":\"imageCountMoreThan\",\"tagStatus\":\"any\"}}]}",
+            "registry_id": "208030346312",
+            "repository": "saf-logistic-prod-web"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_ecr_repository.web"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecr_repository",
+      "name": "api",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:ecr:us-east-1:208030346312:repository/saf-logistic-prod-api",
+            "encryption_configuration": [
+              {
+                "encryption_type": "AES256",
+                "kms_key": ""
+              }
+            ],
+            "force_delete": true,
+            "id": "saf-logistic-prod-api",
+            "image_scanning_configuration": [
+              {
+                "scan_on_push": true
+              }
+            ],
+            "image_tag_mutability": "MUTABLE",
+            "name": "saf-logistic-prod-api",
+            "registry_id": "208030346312",
+            "repository_url": "208030346312.dkr.ecr.us-east-1.amazonaws.com/saf-logistic-prod-api",
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiZGVsZXRlIjoxMjAwMDAwMDAwMDAwfX0="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecr_repository",
+      "name": "web",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:ecr:us-east-1:208030346312:repository/saf-logistic-prod-web",
+            "encryption_configuration": [
+              {
+                "encryption_type": "AES256",
+                "kms_key": ""
+              }
+            ],
+            "force_delete": true,
+            "id": "saf-logistic-prod-web",
+            "image_scanning_configuration": [
+              {
+                "scan_on_push": true
+              }
+            ],
+            "image_tag_mutability": "MUTABLE",
+            "name": "saf-logistic-prod-web",
+            "registry_id": "208030346312",
+            "repository_url": "208030346312.dkr.ecr.us-east-1.amazonaws.com/saf-logistic-prod-web",
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiZGVsZXRlIjoxMjAwMDAwMDAwMDAwfX0="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecs_service",
+      "name": "api",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "alarms": [],
+            "availability_zone_rebalancing": "DISABLED",
+            "capacity_provider_strategy": [],
+            "cluster": "arn:aws:ecs:us-east-1:208030346312:cluster/zinovia-fans-prod-cluster",
+            "deployment_circuit_breaker": [
+              {
+                "enable": true,
+                "rollback": true
+              }
+            ],
+            "deployment_controller": [
+              {
+                "type": "ECS"
+              }
+            ],
+            "deployment_maximum_percent": 200,
+            "deployment_minimum_healthy_percent": 100,
+            "desired_count": 1,
+            "enable_ecs_managed_tags": false,
+            "enable_execute_command": true,
+            "force_delete": null,
+            "force_new_deployment": null,
+            "health_check_grace_period_seconds": 30,
+            "iam_role": "/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS",
+            "id": "arn:aws:ecs:us-east-1:208030346312:service/zinovia-fans-prod-cluster/saf-logistic-prod-api",
+            "launch_type": "FARGATE",
+            "load_balancer": [
+              {
+                "container_name": "api",
+                "container_port": 8000,
+                "elb_name": "",
+                "target_group_arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:targetgroup/saf-logistic-prod-api-tg/b83c068102beaed7"
+              }
+            ],
+            "name": "saf-logistic-prod-api",
+            "network_configuration": [
+              {
+                "assign_public_ip": false,
+                "security_groups": [
+                  "sg-01b71d9b34331faf4"
+                ],
+                "subnets": [
+                  "subnet-0258626a5bc51d490",
+                  "subnet-042c9a22dba8de4df",
+                  "subnet-0a9e6fae7d748035c"
+                ]
+              }
+            ],
+            "ordered_placement_strategy": [],
+            "placement_constraints": [],
+            "platform_version": "LATEST",
+            "propagate_tags": "NONE",
+            "scheduling_strategy": "REPLICA",
+            "service_connect_configuration": [],
+            "service_registries": [],
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "task_definition": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-api:1",
+            "timeouts": null,
+            "triggers": {},
+            "volume_configuration": [],
+            "vpc_lattice_configurations": [],
+            "wait_for_steady_state": false
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "aws_cloudwatch_log_group.api",
+            "aws_ecr_repository.api",
+            "aws_ecs_task_definition.api",
+            "aws_iam_role.ecs_execution",
+            "aws_iam_role.ecs_task",
+            "aws_lb_listener_rule.api",
+            "aws_lb_target_group.api",
+            "aws_s3_bucket.docs",
+            "aws_secretsmanager_secret.app_secret_key",
+            "aws_secretsmanager_secret.database_url",
+            "aws_security_group.ecs_backend",
+            "data.aws_lb.formation",
+            "data.aws_lb_listener.formation_https",
+            "data.aws_vpc.existing"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecs_service",
+      "name": "web",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "alarms": [],
+            "availability_zone_rebalancing": "DISABLED",
+            "capacity_provider_strategy": [],
+            "cluster": "arn:aws:ecs:us-east-1:208030346312:cluster/zinovia-fans-prod-cluster",
+            "deployment_circuit_breaker": [
+              {
+                "enable": true,
+                "rollback": true
+              }
+            ],
+            "deployment_controller": [
+              {
+                "type": "ECS"
+              }
+            ],
+            "deployment_maximum_percent": 200,
+            "deployment_minimum_healthy_percent": 100,
+            "desired_count": 1,
+            "enable_ecs_managed_tags": false,
+            "enable_execute_command": true,
+            "force_delete": null,
+            "force_new_deployment": null,
+            "health_check_grace_period_seconds": 30,
+            "iam_role": "/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS",
+            "id": "arn:aws:ecs:us-east-1:208030346312:service/zinovia-fans-prod-cluster/saf-logistic-prod-web",
+            "launch_type": "FARGATE",
+            "load_balancer": [
+              {
+                "container_name": "web",
+                "container_port": 3000,
+                "elb_name": "",
+                "target_group_arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:targetgroup/saf-logistic-prod-web-tg/07686b2b031cc806"
+              }
+            ],
+            "name": "saf-logistic-prod-web",
+            "network_configuration": [
+              {
+                "assign_public_ip": false,
+                "security_groups": [
+                  "sg-047a00046f04ac315"
+                ],
+                "subnets": [
+                  "subnet-0258626a5bc51d490",
+                  "subnet-042c9a22dba8de4df",
+                  "subnet-0a9e6fae7d748035c"
+                ]
+              }
+            ],
+            "ordered_placement_strategy": [],
+            "placement_constraints": [],
+            "platform_version": "LATEST",
+            "propagate_tags": "NONE",
+            "scheduling_strategy": "REPLICA",
+            "service_connect_configuration": [],
+            "service_registries": [],
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "task_definition": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-web:1",
+            "timeouts": null,
+            "triggers": {},
+            "volume_configuration": [],
+            "vpc_lattice_configurations": [],
+            "wait_for_steady_state": false
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "aws_cloudwatch_log_group.web",
+            "aws_ecr_repository.web",
+            "aws_ecs_task_definition.web",
+            "aws_iam_role.ecs_execution",
+            "aws_iam_role.ecs_task",
+            "aws_lb_listener_rule.web",
+            "aws_lb_target_group.web",
+            "aws_security_group.ecs_web",
+            "data.aws_lb.formation",
+            "data.aws_lb_listener.formation_https",
+            "data.aws_vpc.existing"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecs_service",
+      "name": "worker",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "alarms": [],
+            "availability_zone_rebalancing": "DISABLED",
+            "capacity_provider_strategy": [],
+            "cluster": "arn:aws:ecs:us-east-1:208030346312:cluster/zinovia-fans-prod-cluster",
+            "deployment_circuit_breaker": [
+              {
+                "enable": true,
+                "rollback": true
+              }
+            ],
+            "deployment_controller": [
+              {
+                "type": "ECS"
+              }
+            ],
+            "deployment_maximum_percent": 200,
+            "deployment_minimum_healthy_percent": 100,
+            "desired_count": 1,
+            "enable_ecs_managed_tags": false,
+            "enable_execute_command": true,
+            "force_delete": null,
+            "force_new_deployment": null,
+            "health_check_grace_period_seconds": 0,
+            "iam_role": "/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS",
+            "id": "arn:aws:ecs:us-east-1:208030346312:service/zinovia-fans-prod-cluster/saf-logistic-prod-worker",
+            "launch_type": "FARGATE",
+            "load_balancer": [],
+            "name": "saf-logistic-prod-worker",
+            "network_configuration": [
+              {
+                "assign_public_ip": false,
+                "security_groups": [
+                  "sg-01b71d9b34331faf4"
+                ],
+                "subnets": [
+                  "subnet-0258626a5bc51d490",
+                  "subnet-042c9a22dba8de4df",
+                  "subnet-0a9e6fae7d748035c"
+                ]
+              }
+            ],
+            "ordered_placement_strategy": [],
+            "placement_constraints": [],
+            "platform_version": "LATEST",
+            "propagate_tags": "NONE",
+            "scheduling_strategy": "REPLICA",
+            "service_connect_configuration": [],
+            "service_registries": [],
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "task_definition": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-worker:1",
+            "timeouts": null,
+            "triggers": {},
+            "volume_configuration": [],
+            "vpc_lattice_configurations": [],
+            "wait_for_steady_state": false
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "aws_cloudwatch_log_group.worker",
+            "aws_ecr_repository.api",
+            "aws_ecs_task_definition.worker",
+            "aws_iam_role.ecs_execution",
+            "aws_iam_role.ecs_task",
+            "aws_s3_bucket.docs",
+            "aws_secretsmanager_secret.app_secret_key",
+            "aws_secretsmanager_secret.database_url",
+            "aws_security_group.ecs_backend",
+            "data.aws_vpc.existing"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecs_task_definition",
+      "name": "api",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-api:1",
+            "arn_without_revision": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-api",
+            "container_definitions": "[{\"environment\":[{\"name\":\"CELERY_BROKER_URL\",\"value\":\"redis://zinovia-fans-prod-redis.mlwucg.ng.0001.use1.cache.amazonaws.com:6379/3\"},{\"name\":\"CELERY_RESULT_BACKEND\",\"value\":\"redis://zinovia-fans-prod-redis.mlwucg.ng.0001.use1.cache.amazonaws.com:6379/4\"},{\"name\":\"CORS_ORIGINS\",\"value\":\"https://saf.dataforgeai.fr\"},{\"name\":\"ENVIRONMENT\",\"value\":\"prod\"},{\"name\":\"OCR_PROVIDER\",\"value\":\"MOCK\"},{\"name\":\"S3_ACCESS_KEY\",\"value\":\"\"},{\"name\":\"S3_BUCKET\",\"value\":\"saf-logistic-prod-docs\"},{\"name\":\"S3_ENDPOINT_URL\",\"value\":\"\"},{\"name\":\"S3_REGION\",\"value\":\"us-east-1\"},{\"name\":\"S3_SECRET_KEY\",\"value\":\"\"},{\"name\":\"S3_USE_PATH_STYLE\",\"value\":\"false\"}],\"essential\":true,\"healthCheck\":{\"command\":[\"CMD-SHELL\",\"curl -f http://localhost:8000/health || exit 1\"],\"interval\":15,\"retries\":3,\"startPeriod\":10,\"timeout\":5},\"image\":\"208030346312.dkr.ecr.us-east-1.amazonaws.com/saf-logistic-prod-api:latest\",\"logConfiguration\":{\"logDriver\":\"awslogs\",\"options\":{\"awslogs-group\":\"/ecs/saf-logistic-prod-api\",\"awslogs-region\":\"us-east-1\",\"awslogs-stream-prefix\":\"api\"}},\"mountPoints\":[],\"name\":\"api\",\"portMappings\":[{\"containerPort\":8000,\"hostPort\":8000,\"protocol\":\"tcp\"}],\"secrets\":[{\"name\":\"APP_SECRET_KEY\",\"valueFrom\":\"arn:aws:secretsmanager:us-east-1:208030346312:secret:saf-logistic-prod/app-secret-key-jCYuIE\"},{\"name\":\"DATABASE_URL\",\"valueFrom\":\"arn:aws:secretsmanager:us-east-1:208030346312:secret:saf-logistic-prod/database-url-pmkmzu\"}],\"systemControls\":[],\"volumesFrom\":[]}]",
+            "cpu": "512",
+            "enable_fault_injection": false,
+            "ephemeral_storage": [],
+            "execution_role_arn": "arn:aws:iam::208030346312:role/saf-logistic-prod-ecs-exec-role",
+            "family": "saf-logistic-prod-api",
+            "id": "saf-logistic-prod-api",
+            "inference_accelerator": [],
+            "ipc_mode": "",
+            "memory": "1024",
+            "network_mode": "awsvpc",
+            "pid_mode": "",
+            "placement_constraints": [],
+            "proxy_configuration": [],
+            "requires_compatibilities": [
+              "FARGATE"
+            ],
+            "revision": 1,
+            "runtime_platform": [],
+            "skip_destroy": false,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "task_role_arn": "arn:aws:iam::208030346312:role/saf-logistic-prod-ecs-task-role",
+            "track_latest": false,
+            "volume": []
+          },
+          "sensitive_attributes": [],
+          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjEifQ==",
+          "dependencies": [
+            "aws_cloudwatch_log_group.api",
+            "aws_ecr_repository.api",
+            "aws_iam_role.ecs_execution",
+            "aws_iam_role.ecs_task",
+            "aws_s3_bucket.docs",
+            "aws_secretsmanager_secret.app_secret_key",
+            "aws_secretsmanager_secret.database_url"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecs_task_definition",
+      "name": "migration",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-migration:1",
+            "arn_without_revision": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-migration",
+            "container_definitions": "[{\"command\":[\"alembic\",\"upgrade\",\"head\"],\"environment\":[{\"name\":\"ENVIRONMENT\",\"value\":\"prod\"}],\"essential\":true,\"image\":\"208030346312.dkr.ecr.us-east-1.amazonaws.com/saf-logistic-prod-api:latest\",\"logConfiguration\":{\"logDriver\":\"awslogs\",\"options\":{\"awslogs-group\":\"/ecs/saf-logistic-prod-migration\",\"awslogs-region\":\"us-east-1\",\"awslogs-stream-prefix\":\"migrate\"}},\"mountPoints\":[],\"name\":\"migration\",\"portMappings\":[],\"secrets\":[{\"name\":\"DATABASE_URL\",\"valueFrom\":\"arn:aws:secretsmanager:us-east-1:208030346312:secret:saf-logistic-prod/database-url-pmkmzu\"}],\"systemControls\":[],\"volumesFrom\":[]}]",
+            "cpu": "256",
+            "enable_fault_injection": false,
+            "ephemeral_storage": [],
+            "execution_role_arn": "arn:aws:iam::208030346312:role/saf-logistic-prod-ecs-exec-role",
+            "family": "saf-logistic-prod-migration",
+            "id": "saf-logistic-prod-migration",
+            "inference_accelerator": [],
+            "ipc_mode": "",
+            "memory": "512",
+            "network_mode": "awsvpc",
+            "pid_mode": "",
+            "placement_constraints": [],
+            "proxy_configuration": [],
+            "requires_compatibilities": [
+              "FARGATE"
+            ],
+            "revision": 1,
+            "runtime_platform": [],
+            "skip_destroy": false,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "task_role_arn": "arn:aws:iam::208030346312:role/saf-logistic-prod-ecs-task-role",
+            "track_latest": false,
+            "volume": []
+          },
+          "sensitive_attributes": [],
+          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjEifQ==",
+          "dependencies": [
+            "aws_cloudwatch_log_group.migration",
+            "aws_ecr_repository.api",
+            "aws_iam_role.ecs_execution",
+            "aws_iam_role.ecs_task",
+            "aws_secretsmanager_secret.database_url"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecs_task_definition",
+      "name": "web",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-web:1",
+            "arn_without_revision": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-web",
+            "container_definitions": "[{\"environment\":[{\"name\":\"NEXT_PUBLIC_API_URL\",\"value\":\"https://api-saf.dataforgeai.fr\"},{\"name\":\"NODE_ENV\",\"value\":\"production\"}],\"essential\":true,\"healthCheck\":{\"command\":[\"CMD-SHELL\",\"wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1\"],\"interval\":15,\"retries\":3,\"startPeriod\":10,\"timeout\":5},\"image\":\"208030346312.dkr.ecr.us-east-1.amazonaws.com/saf-logistic-prod-web:latest\",\"logConfiguration\":{\"logDriver\":\"awslogs\",\"options\":{\"awslogs-group\":\"/ecs/saf-logistic-prod-web\",\"awslogs-region\":\"us-east-1\",\"awslogs-stream-prefix\":\"web\"}},\"mountPoints\":[],\"name\":\"web\",\"portMappings\":[{\"containerPort\":3000,\"hostPort\":3000,\"protocol\":\"tcp\"}],\"systemControls\":[],\"volumesFrom\":[]}]",
+            "cpu": "256",
+            "enable_fault_injection": false,
+            "ephemeral_storage": [],
+            "execution_role_arn": "arn:aws:iam::208030346312:role/saf-logistic-prod-ecs-exec-role",
+            "family": "saf-logistic-prod-web",
+            "id": "saf-logistic-prod-web",
+            "inference_accelerator": [],
+            "ipc_mode": "",
+            "memory": "512",
+            "network_mode": "awsvpc",
+            "pid_mode": "",
+            "placement_constraints": [],
+            "proxy_configuration": [],
+            "requires_compatibilities": [
+              "FARGATE"
+            ],
+            "revision": 1,
+            "runtime_platform": [],
+            "skip_destroy": false,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "task_role_arn": "arn:aws:iam::208030346312:role/saf-logistic-prod-ecs-task-role",
+            "track_latest": false,
+            "volume": []
+          },
+          "sensitive_attributes": [],
+          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjEifQ==",
+          "dependencies": [
+            "aws_cloudwatch_log_group.web",
+            "aws_ecr_repository.web",
+            "aws_iam_role.ecs_execution",
+            "aws_iam_role.ecs_task"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecs_task_definition",
+      "name": "worker",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-worker:1",
+            "arn_without_revision": "arn:aws:ecs:us-east-1:208030346312:task-definition/saf-logistic-prod-worker",
+            "container_definitions": "[{\"command\":[\"celery\",\"-A\",\"app.infra.tasks_register\",\"worker\",\"-l\",\"INFO\",\"-Q\",\"default\",\"--beat\"],\"environment\":[{\"name\":\"CELERY_BROKER_URL\",\"value\":\"redis://zinovia-fans-prod-redis.mlwucg.ng.0001.use1.cache.amazonaws.com:6379/3\"},{\"name\":\"CELERY_RESULT_BACKEND\",\"value\":\"redis://zinovia-fans-prod-redis.mlwucg.ng.0001.use1.cache.amazonaws.com:6379/4\"},{\"name\":\"ENVIRONMENT\",\"value\":\"prod\"},{\"name\":\"OCR_PROVIDER\",\"value\":\"MOCK\"},{\"name\":\"S3_ACCESS_KEY\",\"value\":\"\"},{\"name\":\"S3_BUCKET\",\"value\":\"saf-logistic-prod-docs\"},{\"name\":\"S3_ENDPOINT_URL\",\"value\":\"\"},{\"name\":\"S3_REGION\",\"value\":\"us-east-1\"},{\"name\":\"S3_SECRET_KEY\",\"value\":\"\"},{\"name\":\"S3_USE_PATH_STYLE\",\"value\":\"false\"}],\"essential\":true,\"image\":\"208030346312.dkr.ecr.us-east-1.amazonaws.com/saf-logistic-prod-api:latest\",\"logConfiguration\":{\"logDriver\":\"awslogs\",\"options\":{\"awslogs-group\":\"/ecs/saf-logistic-prod-worker\",\"awslogs-region\":\"us-east-1\",\"awslogs-stream-prefix\":\"worker\"}},\"mountPoints\":[],\"name\":\"worker\",\"portMappings\":[],\"secrets\":[{\"name\":\"APP_SECRET_KEY\",\"valueFrom\":\"arn:aws:secretsmanager:us-east-1:208030346312:secret:saf-logistic-prod/app-secret-key-jCYuIE\"},{\"name\":\"DATABASE_URL\",\"valueFrom\":\"arn:aws:secretsmanager:us-east-1:208030346312:secret:saf-logistic-prod/database-url-pmkmzu\"}],\"systemControls\":[],\"volumesFrom\":[]}]",
+            "cpu": "512",
+            "enable_fault_injection": false,
+            "ephemeral_storage": [],
+            "execution_role_arn": "arn:aws:iam::208030346312:role/saf-logistic-prod-ecs-exec-role",
+            "family": "saf-logistic-prod-worker",
+            "id": "saf-logistic-prod-worker",
+            "inference_accelerator": [],
+            "ipc_mode": "",
+            "memory": "1024",
+            "network_mode": "awsvpc",
+            "pid_mode": "",
+            "placement_constraints": [],
+            "proxy_configuration": [],
+            "requires_compatibilities": [
+              "FARGATE"
+            ],
+            "revision": 1,
+            "runtime_platform": [],
+            "skip_destroy": false,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "task_role_arn": "arn:aws:iam::208030346312:role/saf-logistic-prod-ecs-task-role",
+            "track_latest": false,
+            "volume": []
+          },
+          "sensitive_attributes": [],
+          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjEifQ==",
+          "dependencies": [
+            "aws_cloudwatch_log_group.worker",
+            "aws_ecr_repository.api",
+            "aws_iam_role.ecs_execution",
+            "aws_iam_role.ecs_task",
+            "aws_s3_bucket.docs",
+            "aws_secretsmanager_secret.app_secret_key",
+            "aws_secretsmanager_secret.database_url"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_iam_policy",
+      "name": "ecs_execution_secrets",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:iam::208030346312:policy/saf-logistic-prod-ecs-exec-secrets",
+            "attachment_count": 1,
+            "description": "",
+            "id": "arn:aws:iam::208030346312:policy/saf-logistic-prod-ecs-exec-secrets",
+            "name": "saf-logistic-prod-ecs-exec-secrets",
+            "name_prefix": "",
+            "path": "/",
+            "policy": "{\"Statement\":[{\"Action\":[\"secretsmanager:GetSecretValue\"],\"Effect\":\"Allow\",\"Resource\":[\"arn:aws:secretsmanager:us-east-1:208030346312:secret:saf-logistic-prod/*\"]}],\"Version\":\"2012-10-17\"}",
+            "policy_id": "ANPATA34TFRECFVGAGSKY",
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "data.aws_caller_identity.current"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_iam_policy",
+      "name": "ecs_task",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:iam::208030346312:policy/saf-logistic-prod-ecs-task-policy",
+            "attachment_count": 1,
+            "description": "",
+            "id": "arn:aws:iam::208030346312:policy/saf-logistic-prod-ecs-task-policy",
+            "name": "saf-logistic-prod-ecs-task-policy",
+            "name_prefix": "",
+            "path": "/",
+            "policy": "{\"Statement\":[{\"Action\":[\"logs:CreateLogStream\",\"logs:PutLogEvents\"],\"Effect\":\"Allow\",\"Resource\":\"*\"},{\"Action\":[\"ssmmessages:CreateControlChannel\",\"ssmmessages:CreateDataChannel\",\"ssmmessages:OpenControlChannel\",\"ssmmessages:OpenDataChannel\"],\"Effect\":\"Allow\",\"Resource\":\"*\"},{\"Action\":[\"s3:GetObject\",\"s3:PutObject\",\"s3:DeleteObject\",\"s3:ListBucket\",\"s3:HeadBucket\"],\"Effect\":\"Allow\",\"Resource\":[\"arn:aws:s3:::saf-logistic-prod-docs\",\"arn:aws:s3:::saf-logistic-prod-docs/*\"]}],\"Version\":\"2012-10-17\"}",
+            "policy_id": "ANPATA34TFREKOI7URHSW",
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_s3_bucket.docs"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_iam_role",
+      "name": "ecs_execution",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:iam::208030346312:role/saf-logistic-prod-ecs-exec-role",
+            "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ecs-tasks.amazonaws.com\"}}],\"Version\":\"2012-10-17\"}",
+            "create_date": "2026-03-24T21:16:59Z",
+            "description": "",
+            "force_detach_policies": false,
+            "id": "saf-logistic-prod-ecs-exec-role",
+            "inline_policy": [],
+            "managed_policy_arns": [
+              "arn:aws:iam::208030346312:policy/saf-logistic-prod-ecs-exec-secrets",
+              "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+            ],
+            "max_session_duration": 3600,
+            "name": "saf-logistic-prod-ecs-exec-role",
+            "name_prefix": "",
+            "path": "/",
+            "permissions_boundary": "",
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "unique_id": "AROATA34TFREDP5BDYE6X"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_iam_role",
+      "name": "ecs_task",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:iam::208030346312:role/saf-logistic-prod-ecs-task-role",
+            "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ecs-tasks.amazonaws.com\"}}],\"Version\":\"2012-10-17\"}",
+            "create_date": "2026-03-24T21:16:59Z",
+            "description": "",
+            "force_detach_policies": false,
+            "id": "saf-logistic-prod-ecs-task-role",
+            "inline_policy": [],
+            "managed_policy_arns": [
+              "arn:aws:iam::208030346312:policy/saf-logistic-prod-ecs-task-policy"
+            ],
+            "max_session_duration": 3600,
+            "name": "saf-logistic-prod-ecs-task-role",
+            "name_prefix": "",
+            "path": "/",
+            "permissions_boundary": "",
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "unique_id": "AROATA34TFREEZFJ7O5NY"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_iam_role_policy_attachment",
+      "name": "ecs_execution_base",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "saf-logistic-prod-ecs-exec-role-20260324211701066000000006",
+            "policy_arn": "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+            "role": "saf-logistic-prod-ecs-exec-role"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_iam_role.ecs_execution"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_iam_role_policy_attachment",
+      "name": "ecs_execution_secrets",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "saf-logistic-prod-ecs-exec-role-20260324211702116000000007",
+            "policy_arn": "arn:aws:iam::208030346312:policy/saf-logistic-prod-ecs-exec-secrets",
+            "role": "saf-logistic-prod-ecs-exec-role"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_iam_policy.ecs_execution_secrets",
+            "aws_iam_role.ecs_execution",
+            "data.aws_caller_identity.current"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_iam_role_policy_attachment",
+      "name": "ecs_task",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "saf-logistic-prod-ecs-task-role-20260324211704536000000008",
+            "policy_arn": "arn:aws:iam::208030346312:policy/saf-logistic-prod-ecs-task-policy",
+            "role": "saf-logistic-prod-ecs-task-role"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_iam_policy.ecs_task",
+            "aws_iam_role.ecs_task",
+            "aws_s3_bucket.docs"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_lb_listener_certificate",
+      "name": "saf",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "certificate_arn": "arn:aws:acm:us-east-1:208030346312:certificate/e7c788fb-afa6-4833-9a1d-67848cef398a",
+            "id": "arn:aws:elasticloadbalancing:us-east-1:208030346312:listener/app/zinovia-formation-prod-alb/476ee206c7d3240a/c6f9329dacf4fe67_arn:aws:acm:us-east-1:208030346312:certificate/e7c788fb-afa6-4833-9a1d-67848cef398a",
+            "listener_arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:listener/app/zinovia-formation-prod-alb/476ee206c7d3240a/c6f9329dacf4fe67"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_acm_certificate.saf",
+            "aws_acm_certificate_validation.saf",
+            "aws_route53_record.acm_validation",
+            "data.aws_lb.formation",
+            "data.aws_lb_listener.formation_https",
+            "data.aws_route53_zone.main"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_lb_listener_rule",
+      "name": "api",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "action": [
+              {
+                "authenticate_cognito": [],
+                "authenticate_oidc": [],
+                "fixed_response": [],
+                "forward": [],
+                "order": 1,
+                "redirect": [],
+                "target_group_arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:targetgroup/saf-logistic-prod-api-tg/b83c068102beaed7",
+                "type": "forward"
+              }
+            ],
+            "arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:listener-rule/app/zinovia-formation-prod-alb/476ee206c7d3240a/c6f9329dacf4fe67/460d3cb17e4c4c73",
+            "condition": [
+              {
+                "host_header": [
+                  {
+                    "values": [
+                      "api-saf.dataforgeai.fr"
+                    ]
+                  }
+                ],
+                "http_header": [],
+                "http_request_method": [],
+                "path_pattern": [],
+                "query_string": [],
+                "source_ip": []
+              }
+            ],
+            "id": "arn:aws:elasticloadbalancing:us-east-1:208030346312:listener-rule/app/zinovia-formation-prod-alb/476ee206c7d3240a/c6f9329dacf4fe67/460d3cb17e4c4c73",
+            "listener_arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:listener/app/zinovia-formation-prod-alb/476ee206c7d3240a/c6f9329dacf4fe67",
+            "priority": 30,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_lb_target_group.api",
+            "data.aws_lb.formation",
+            "data.aws_lb_listener.formation_https",
+            "data.aws_vpc.existing"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_lb_listener_rule",
+      "name": "web",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "action": [
+              {
+                "authenticate_cognito": [],
+                "authenticate_oidc": [],
+                "fixed_response": [],
+                "forward": [],
+                "order": 1,
+                "redirect": [],
+                "target_group_arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:targetgroup/saf-logistic-prod-web-tg/07686b2b031cc806",
+                "type": "forward"
+              }
+            ],
+            "arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:listener-rule/app/zinovia-formation-prod-alb/476ee206c7d3240a/c6f9329dacf4fe67/44f8859fac779b94",
+            "condition": [
+              {
+                "host_header": [
+                  {
+                    "values": [
+                      "saf.dataforgeai.fr"
+                    ]
+                  }
+                ],
+                "http_header": [],
+                "http_request_method": [],
+                "path_pattern": [],
+                "query_string": [],
+                "source_ip": []
+              }
+            ],
+            "id": "arn:aws:elasticloadbalancing:us-east-1:208030346312:listener-rule/app/zinovia-formation-prod-alb/476ee206c7d3240a/c6f9329dacf4fe67/44f8859fac779b94",
+            "listener_arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:listener/app/zinovia-formation-prod-alb/476ee206c7d3240a/c6f9329dacf4fe67",
+            "priority": 35,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_lb_target_group.web",
+            "data.aws_lb.formation",
+            "data.aws_lb_listener.formation_https",
+            "data.aws_vpc.existing"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_lb_target_group",
+      "name": "api",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:targetgroup/saf-logistic-prod-api-tg/b83c068102beaed7",
+            "arn_suffix": "targetgroup/saf-logistic-prod-api-tg/b83c068102beaed7",
+            "connection_termination": null,
+            "deregistration_delay": "30",
+            "health_check": [
+              {
+                "enabled": true,
+                "healthy_threshold": 2,
+                "interval": 15,
+                "matcher": "200",
+                "path": "/health",
+                "port": "traffic-port",
+                "protocol": "HTTP",
+                "timeout": 5,
+                "unhealthy_threshold": 3
+              }
+            ],
+            "id": "arn:aws:elasticloadbalancing:us-east-1:208030346312:targetgroup/saf-logistic-prod-api-tg/b83c068102beaed7",
+            "ip_address_type": "ipv4",
+            "lambda_multi_value_headers_enabled": false,
+            "load_balancer_arns": [
+              "arn:aws:elasticloadbalancing:us-east-1:208030346312:loadbalancer/app/zinovia-formation-prod-alb/476ee206c7d3240a"
+            ],
+            "load_balancing_algorithm_type": "round_robin",
+            "load_balancing_anomaly_mitigation": "off",
+            "load_balancing_cross_zone_enabled": "use_load_balancer_configuration",
+            "name": "saf-logistic-prod-api-tg",
+            "name_prefix": "",
+            "port": 8000,
+            "preserve_client_ip": null,
+            "protocol": "HTTP",
+            "protocol_version": "HTTP1",
+            "proxy_protocol_v2": false,
+            "slow_start": 0,
+            "stickiness": [
+              {
+                "cookie_duration": 86400,
+                "cookie_name": "",
+                "enabled": false,
+                "type": "lb_cookie"
+              }
+            ],
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "target_failover": [
+              {
+                "on_deregistration": null,
+                "on_unhealthy": null
+              }
+            ],
+            "target_group_health": [
+              {
+                "dns_failover": [
+                  {
+                    "minimum_healthy_targets_count": "1",
+                    "minimum_healthy_targets_percentage": "off"
+                  }
+                ],
+                "unhealthy_state_routing": [
+                  {
+                    "minimum_healthy_targets_count": 1,
+                    "minimum_healthy_targets_percentage": "off"
+                  }
+                ]
+              }
+            ],
+            "target_health_state": [
+              {
+                "enable_unhealthy_connection_termination": null,
+                "unhealthy_draining_interval": null
+              }
+            ],
+            "target_type": "ip",
+            "vpc_id": "vpc-04096ae7aea767aa8"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "data.aws_vpc.existing"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_lb_target_group",
+      "name": "web",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:elasticloadbalancing:us-east-1:208030346312:targetgroup/saf-logistic-prod-web-tg/07686b2b031cc806",
+            "arn_suffix": "targetgroup/saf-logistic-prod-web-tg/07686b2b031cc806",
+            "connection_termination": null,
+            "deregistration_delay": "30",
+            "health_check": [
+              {
+                "enabled": true,
+                "healthy_threshold": 2,
+                "interval": 15,
+                "matcher": "200",
+                "path": "/",
+                "port": "traffic-port",
+                "protocol": "HTTP",
+                "timeout": 5,
+                "unhealthy_threshold": 3
+              }
+            ],
+            "id": "arn:aws:elasticloadbalancing:us-east-1:208030346312:targetgroup/saf-logistic-prod-web-tg/07686b2b031cc806",
+            "ip_address_type": "ipv4",
+            "lambda_multi_value_headers_enabled": false,
+            "load_balancer_arns": [
+              "arn:aws:elasticloadbalancing:us-east-1:208030346312:loadbalancer/app/zinovia-formation-prod-alb/476ee206c7d3240a"
+            ],
+            "load_balancing_algorithm_type": "round_robin",
+            "load_balancing_anomaly_mitigation": "off",
+            "load_balancing_cross_zone_enabled": "use_load_balancer_configuration",
+            "name": "saf-logistic-prod-web-tg",
+            "name_prefix": "",
+            "port": 3000,
+            "preserve_client_ip": null,
+            "protocol": "HTTP",
+            "protocol_version": "HTTP1",
+            "proxy_protocol_v2": false,
+            "slow_start": 0,
+            "stickiness": [
+              {
+                "cookie_duration": 86400,
+                "cookie_name": "",
+                "enabled": false,
+                "type": "lb_cookie"
+              }
+            ],
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "target_failover": [
+              {
+                "on_deregistration": null,
+                "on_unhealthy": null
+              }
+            ],
+            "target_group_health": [
+              {
+                "dns_failover": [
+                  {
+                    "minimum_healthy_targets_count": "1",
+                    "minimum_healthy_targets_percentage": "off"
+                  }
+                ],
+                "unhealthy_state_routing": [
+                  {
+                    "minimum_healthy_targets_count": 1,
+                    "minimum_healthy_targets_percentage": "off"
+                  }
+                ]
+              }
+            ],
+            "target_health_state": [
+              {
+                "enable_unhealthy_connection_termination": null,
+                "unhealthy_draining_interval": null
+              }
+            ],
+            "target_type": "ip",
+            "vpc_id": "vpc-04096ae7aea767aa8"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "data.aws_vpc.existing"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_route53_record",
+      "name": "acm_validation",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "index_key": "api-saf.dataforgeai.fr",
+          "schema_version": 2,
+          "attributes": {
+            "alias": [],
+            "allow_overwrite": true,
+            "cidr_routing_policy": [],
+            "failover_routing_policy": [],
+            "fqdn": "_851942c0180e9a80256c54a45be47d2b.api-saf.dataforgeai.fr",
+            "geolocation_routing_policy": [],
+            "geoproximity_routing_policy": [],
+            "health_check_id": "",
+            "id": "Z02751902GJ3XMJM896MH__851942c0180e9a80256c54a45be47d2b.api-saf.dataforgeai.fr._CNAME",
+            "latency_routing_policy": [],
+            "multivalue_answer_routing_policy": false,
+            "name": "_851942c0180e9a80256c54a45be47d2b.api-saf.dataforgeai.fr",
+            "records": [
+              "_f5ca3406230e5dda2cb1ef3b83d41ac9.jkddzztszm.acm-validations.aws."
+            ],
+            "set_identifier": "",
+            "timeouts": null,
+            "ttl": 60,
+            "type": "CNAME",
+            "weighted_routing_policy": [],
+            "zone_id": "Z02751902GJ3XMJM896MH"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInVwZGF0ZSI6MTgwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMiJ9",
+          "dependencies": [
+            "aws_acm_certificate.saf",
+            "data.aws_route53_zone.main"
+          ]
+        },
+        {
+          "index_key": "saf.dataforgeai.fr",
+          "schema_version": 2,
+          "attributes": {
+            "alias": [],
+            "allow_overwrite": true,
+            "cidr_routing_policy": [],
+            "failover_routing_policy": [],
+            "fqdn": "_bfaab2c07bde4898400cb7cc79e8472f.saf.dataforgeai.fr",
+            "geolocation_routing_policy": [],
+            "geoproximity_routing_policy": [],
+            "health_check_id": "",
+            "id": "Z02751902GJ3XMJM896MH__bfaab2c07bde4898400cb7cc79e8472f.saf.dataforgeai.fr._CNAME",
+            "latency_routing_policy": [],
+            "multivalue_answer_routing_policy": false,
+            "name": "_bfaab2c07bde4898400cb7cc79e8472f.saf.dataforgeai.fr",
+            "records": [
+              "_6abbb7a81a20aa4eb49859ddac24d676.jkddzztszm.acm-validations.aws."
+            ],
+            "set_identifier": "",
+            "timeouts": null,
+            "ttl": 60,
+            "type": "CNAME",
+            "weighted_routing_policy": [],
+            "zone_id": "Z02751902GJ3XMJM896MH"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInVwZGF0ZSI6MTgwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMiJ9",
+          "dependencies": [
+            "aws_acm_certificate.saf",
+            "data.aws_route53_zone.main"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_route53_record",
+      "name": "api",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "alias": [
+              {
+                "evaluate_target_health": true,
+                "name": "zinovia-formation-prod-alb-635329215.us-east-1.elb.amazonaws.com",
+                "zone_id": "Z35SXDOTRQ7X7K"
+              }
+            ],
+            "allow_overwrite": null,
+            "cidr_routing_policy": [],
+            "failover_routing_policy": [],
+            "fqdn": "api-saf.dataforgeai.fr",
+            "geolocation_routing_policy": [],
+            "geoproximity_routing_policy": [],
+            "health_check_id": "",
+            "id": "Z02751902GJ3XMJM896MH_api-saf.dataforgeai.fr_A",
+            "latency_routing_policy": [],
+            "multivalue_answer_routing_policy": false,
+            "name": "api-saf.dataforgeai.fr",
+            "records": [],
+            "set_identifier": "",
+            "timeouts": null,
+            "ttl": 0,
+            "type": "A",
+            "weighted_routing_policy": [],
+            "zone_id": "Z02751902GJ3XMJM896MH"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInVwZGF0ZSI6MTgwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMiJ9",
+          "dependencies": [
+            "data.aws_lb.formation",
+            "data.aws_route53_zone.main"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_route53_record",
+      "name": "web",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "alias": [
+              {
+                "evaluate_target_health": true,
+                "name": "zinovia-formation-prod-alb-635329215.us-east-1.elb.amazonaws.com",
+                "zone_id": "Z35SXDOTRQ7X7K"
+              }
+            ],
+            "allow_overwrite": null,
+            "cidr_routing_policy": [],
+            "failover_routing_policy": [],
+            "fqdn": "saf.dataforgeai.fr",
+            "geolocation_routing_policy": [],
+            "geoproximity_routing_policy": [],
+            "health_check_id": "",
+            "id": "Z02751902GJ3XMJM896MH_saf.dataforgeai.fr_A",
+            "latency_routing_policy": [],
+            "multivalue_answer_routing_policy": false,
+            "name": "saf.dataforgeai.fr",
+            "records": [],
+            "set_identifier": "",
+            "timeouts": null,
+            "ttl": 0,
+            "type": "A",
+            "weighted_routing_policy": [],
+            "zone_id": "Z02751902GJ3XMJM896MH"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInVwZGF0ZSI6MTgwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMiJ9",
+          "dependencies": [
+            "data.aws_lb.formation",
+            "data.aws_route53_zone.main"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_s3_bucket",
+      "name": "docs",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "acceleration_status": "",
+            "acl": null,
+            "arn": "arn:aws:s3:::saf-logistic-prod-docs",
+            "bucket": "saf-logistic-prod-docs",
+            "bucket_domain_name": "saf-logistic-prod-docs.s3.amazonaws.com",
+            "bucket_prefix": "",
+            "bucket_regional_domain_name": "saf-logistic-prod-docs.s3.us-east-1.amazonaws.com",
+            "cors_rule": [],
+            "force_destroy": true,
+            "grant": [
+              {
+                "id": "c7bcc1edf1ba99c31c8b702e89f3e2f361e4d0ea0d982e78219c27bb0375988e",
+                "permissions": [
+                  "FULL_CONTROL"
+                ],
+                "type": "CanonicalUser",
+                "uri": ""
+              }
+            ],
+            "hosted_zone_id": "Z3AQBSTGFYJSTF",
+            "id": "saf-logistic-prod-docs",
+            "lifecycle_rule": [],
+            "logging": [],
+            "object_lock_configuration": [],
+            "object_lock_enabled": false,
+            "policy": "",
+            "region": "us-east-1",
+            "replication_configuration": [],
+            "request_payer": "BucketOwner",
+            "server_side_encryption_configuration": [
+              {
+                "rule": [
+                  {
+                    "apply_server_side_encryption_by_default": [
+                      {
+                        "kms_master_key_id": "",
+                        "sse_algorithm": "AES256"
+                      }
+                    ],
+                    "bucket_key_enabled": false
+                  }
+                ]
+              }
+            ],
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "timeouts": null,
+            "versioning": [
+              {
+                "enabled": true,
+                "mfa_delete": false
+              }
+            ],
+            "website": [],
+            "website_domain": null,
+            "website_endpoint": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjM2MDAwMDAwMDAwMDAsInJlYWQiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19"
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_s3_bucket_public_access_block",
+      "name": "docs",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "block_public_acls": true,
+            "block_public_policy": true,
+            "bucket": "saf-logistic-prod-docs",
+            "id": "saf-logistic-prod-docs",
+            "ignore_public_acls": true,
+            "restrict_public_buckets": true
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_s3_bucket.docs"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_s3_bucket_server_side_encryption_configuration",
+      "name": "docs",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "bucket": "saf-logistic-prod-docs",
+            "expected_bucket_owner": "",
+            "id": "saf-logistic-prod-docs",
+            "rule": [
+              {
+                "apply_server_side_encryption_by_default": [
+                  {
+                    "kms_master_key_id": "",
+                    "sse_algorithm": "AES256"
+                  }
+                ],
+                "bucket_key_enabled": false
+              }
+            ]
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_s3_bucket.docs"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_s3_bucket_versioning",
+      "name": "docs",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "bucket": "saf-logistic-prod-docs",
+            "expected_bucket_owner": "",
+            "id": "saf-logistic-prod-docs",
+            "mfa": null,
+            "versioning_configuration": [
+              {
+                "mfa_delete": "",
+                "status": "Enabled"
+              }
+            ]
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_s3_bucket.docs"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_secretsmanager_secret",
+      "name": "app_secret_key",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:secretsmanager:us-east-1:208030346312:secret:saf-logistic-prod/app-secret-key-jCYuIE",
+            "description": "",
+            "force_overwrite_replica_secret": false,
+            "id": "arn:aws:secretsmanager:us-east-1:208030346312:secret:saf-logistic-prod/app-secret-key-jCYuIE",
+            "kms_key_id": "",
+            "name": "saf-logistic-prod/app-secret-key",
+            "name_prefix": "",
+            "policy": "",
+            "recovery_window_in_days": 0,
+            "replica": [],
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_secretsmanager_secret",
+      "name": "database_url",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:secretsmanager:us-east-1:208030346312:secret:saf-logistic-prod/database-url-pmkmzu",
+            "description": "",
+            "force_overwrite_replica_secret": false,
+            "id": "arn:aws:secretsmanager:us-east-1:208030346312:secret:saf-logistic-prod/database-url-pmkmzu",
+            "kms_key_id": "",
+            "name": "saf-logistic-prod/database-url",
+            "name_prefix": "",
+            "policy": "",
+            "recovery_window_in_days": 0,
+            "replica": [],
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_security_group",
+      "name": "ecs_backend",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-east-1:208030346312:security-group/sg-01b71d9b34331faf4",
+            "description": "SAF-Logistic ECS backend tasks (API + Worker)",
+            "egress": [
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 0,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "-1",
+                "security_groups": [],
+                "self": false,
+                "to_port": 0
+              }
+            ],
+            "id": "sg-01b71d9b34331faf4",
+            "ingress": [
+              {
+                "cidr_blocks": [],
+                "description": "From Formation ALB on API port",
+                "from_port": 8000,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "tcp",
+                "security_groups": [
+                  "sg-01c313d439bc1ca11"
+                ],
+                "self": false,
+                "to_port": 8000
+              }
+            ],
+            "name": "saf-logistic-prod-ecs-backend-20260324211659934900000005",
+            "name_prefix": "saf-logistic-prod-ecs-backend-",
+            "owner_id": "208030346312",
+            "revoke_rules_on_delete": false,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-04096ae7aea767aa8"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6OTAwMDAwMDAwMDAwfSwic2NoZW1hX3ZlcnNpb24iOiIxIn0=",
+          "dependencies": [
+            "data.aws_vpc.existing"
+          ],
+          "create_before_destroy": true
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_security_group",
+      "name": "ecs_web",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:us-east-1:208030346312:security-group/sg-047a00046f04ac315",
+            "description": "SAF-Logistic ECS web tasks",
+            "egress": [
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 0,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "-1",
+                "security_groups": [],
+                "self": false,
+                "to_port": 0
+              }
+            ],
+            "id": "sg-047a00046f04ac315",
+            "ingress": [
+              {
+                "cidr_blocks": [],
+                "description": "From Formation ALB on Web port",
+                "from_port": 3000,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "tcp",
+                "security_groups": [
+                  "sg-01c313d439bc1ca11"
+                ],
+                "self": false,
+                "to_port": 3000
+              }
+            ],
+            "name": "saf-logistic-prod-ecs-web-20260324211659851300000004",
+            "name_prefix": "saf-logistic-prod-ecs-web-",
+            "owner_id": "208030346312",
+            "revoke_rules_on_delete": false,
+            "tags": {},
+            "tags_all": {
+              "Environment": "prod",
+              "ManagedBy": "terraform",
+              "Owner": "akhai",
+              "Project": "saf-logistic"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-04096ae7aea767aa8"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6OTAwMDAwMDAwMDAwfSwic2NoZW1hX3ZlcnNpb24iOiIxIn0=",
+          "dependencies": [
+            "data.aws_vpc.existing"
+          ],
+          "create_before_destroy": true
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_security_group_rule",
+      "name": "rds_from_saf_backend",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "cidr_blocks": null,
+            "description": "Allow SAF-Logistic backend (API + Worker) to reach shared RDS",
+            "from_port": 5432,
+            "id": "sgrule-3281134891",
+            "ipv6_cidr_blocks": null,
+            "prefix_list_ids": null,
+            "protocol": "tcp",
+            "security_group_id": "sg-0af2b56a2eed179bb",
+            "security_group_rule_id": "sgr-01b7f75d00ac16432",
+            "self": false,
+            "source_security_group_id": "sg-01b71d9b34331faf4",
+            "timeouts": null,
+            "to_port": 5432,
+            "type": "ingress"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDB9LCJzY2hlbWFfdmVyc2lvbiI6IjIifQ==",
+          "dependencies": [
+            "aws_security_group.ecs_backend",
+            "data.aws_vpc.existing"
+          ]
+        }
+      ]
+    }
+  ],
+  "check_results": [
+    {
+      "object_kind": "var",
+      "config_addr": "var.environment",
+      "status": "pass",
+      "objects": [
+        {
+          "object_addr": "var.environment",
+          "status": "pass"
+        }
+      ]
+    }
+  ]
+}

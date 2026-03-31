@@ -54,8 +54,9 @@ export default function RouteRunsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const today = new Date().toISOString().split("T")[0];
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
   const [form, setForm] = useState({
     service_date: "",
     assigned_driver_id: "",
@@ -80,7 +81,7 @@ export default function RouteRunsPage() {
   if (dateTo) filters.date_to = dateTo;
 
   const { items: runs, loading, offset, limit, sortBy, order, handleSort, onPrev, onNext, refresh } =
-    usePaginatedFetch<RouteRun>("/v1/route-runs", filters, { defaultSort: "service_date", defaultOrder: "desc" });
+    usePaginatedFetch<RouteRun>("/v1/route-runs", filters, { defaultSort: "service_date", defaultOrder: "asc" });
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

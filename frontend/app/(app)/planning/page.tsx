@@ -43,6 +43,8 @@ const PILL_COLORS: Record<string, string> = {
   EN_COURS: "bg-orange-100 text-orange-800 border-orange-200",
   LIVREE: "bg-green-100 text-green-800 border-green-200",
   CLOTUREE: "bg-gray-100 text-gray-600 border-gray-200",
+  closed: "bg-gray-100 text-gray-600 border-gray-200",
+  CLOSED: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
 function getMonday(d: Date): Date {
@@ -118,8 +120,9 @@ export default function PlanningPage() {
   function blocksForDay(blocks: TimeBlock[], day: Date): TimeBlock[] {
     const dayStr = fmtISO(day);
     return blocks.filter((b) => {
-      const bStart = b.start.split("T")[0];
-      const bEnd = b.end.split("T")[0];
+      // Handle both ISO (T) and PostgreSQL (space) timestamp formats
+      const bStart = b.start.split(/[T ]/)[0];
+      const bEnd = b.end.split(/[T ]/)[0];
       return bStart <= dayStr && bEnd >= dayStr;
     });
   }

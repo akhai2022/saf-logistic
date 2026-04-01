@@ -39,3 +39,10 @@ playwright-report/
 
 # MinIO data
 minio_data/
+
+# Integration source files (large binaries — uploaded to S3, not tracked in git)
+integration/*.pdf
+integration/*.ods
+integration/*.xlsx
+integration/conducteur/*.pdf
+integration/conducteur/*.jpg

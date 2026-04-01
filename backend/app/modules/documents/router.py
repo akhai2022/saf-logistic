@@ -489,7 +489,7 @@ async def compliance_dashboard(
     tid = str(tenant.tenant_id)
     entities: list[ComplianceDashboardEntity] = []
 
-    etypes = [entity_type.upper()] if entity_type else ["DRIVER", "VEHICLE", "SUBCONTRACTOR"]
+    etypes = [entity_type.upper()] if entity_type else ["DRIVER", "VEHICLE", "SUBCONTRACTOR", "COMPANY"]
 
     for etype in etypes:
         if etype == "DRIVER":
@@ -505,6 +505,9 @@ async def compliance_dashboard(
             eq = """SELECT id, raison_sociale AS name
                     FROM subcontractors WHERE tenant_id = :tid
                     AND COALESCE(statut, 'ACTIF') = 'ACTIF'"""
+        elif etype == "COMPANY":
+            eq = """SELECT id, name
+                    FROM tenants WHERE id = :tid"""
         else:
             continue
 

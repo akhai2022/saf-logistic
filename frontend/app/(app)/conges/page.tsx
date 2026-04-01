@@ -12,9 +12,10 @@ import EmptyState from "@/components/EmptyState";
 
 const STATUS_TABS = [
   { key: "", label: "Tous" },
-  { key: "EN_ATTENTE", label: "En attente" },
+  { key: "DEMANDE", label: "En attente" },
   { key: "APPROUVE", label: "Approuves" },
   { key: "REFUSE", label: "Refuses" },
+  { key: "ANNULE", label: "Annules" },
 ];
 
 const TYPE_OPTIONS = [
@@ -59,7 +60,7 @@ export default function CongesPage() {
   const reload = useCallback(() => {
     setLoading(true);
     let url = "/v1/operations/leaves?limit=200";
-    if (statusFilter) url += `&statut=${statusFilter}`;
+    if (statusFilter) url += `&statut=${encodeURIComponent(statusFilter)}`;
     apiGet<Leave[]>(url)
       .then(setItems)
       .catch(() => setItems([]))
@@ -171,6 +172,7 @@ export default function CongesPage() {
           <table className="w-full text-sm">
             <thead className="table-header">
               <tr>
+                <th>Matricule</th>
                 <th>Conducteur</th>
                 <th>Date debut</th>
                 <th>Date fin</th>
@@ -182,6 +184,9 @@ export default function CongesPage() {
             <tbody className="table-body">
               {items.map((l) => (
                 <tr key={l.id}>
+                  <td className="text-gray-500 font-mono text-xs whitespace-nowrap">
+                    {l.driver_matricule ?? "\u2014"}
+                  </td>
                   <td className="font-medium whitespace-nowrap">
                     {l.driver_nom && l.driver_prenom
                       ? `${l.driver_nom} ${l.driver_prenom}`

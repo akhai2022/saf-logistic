@@ -129,6 +129,9 @@ class LeaveOut(BaseModel):
     id: str
     tenant_id: str
     driver_id: str
+    driver_matricule: str | None = None
+    driver_nom: str | None = None
+    driver_prenom: str | None = None
     date_debut: date
     date_fin: date
     type_conge: str = "CONGES_PAYES"

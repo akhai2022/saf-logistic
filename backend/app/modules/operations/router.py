@@ -97,6 +97,9 @@ def _leave_from_row(r) -> LeaveOut:
         id=str(r.id),
         tenant_id=str(r.tenant_id),
         driver_id=str(r.driver_id),
+        driver_matricule=getattr(r, "driver_matricule", None),
+        driver_nom=getattr(r, "driver_nom", None),
+        driver_prenom=getattr(r, "driver_prenom", None),
         date_debut=r.date_debut,
         date_fin=r.date_fin,
         type_conge=r.type_conge,
@@ -346,14 +349,18 @@ async def list_leaves(
     db: AsyncSession = Depends(get_db),
     driver_id: str | None = Query(None, description="Filter by driver"),
     type_conge: str | None = Query(None, description="Filter by leave type"),
+    statut: str | None = Query(None, description="Filter by status"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ) -> list[LeaveOut]:
     """List driver leaves for the tenant."""
-    q = "SELECT * FROM driver_leaves WHERE tenant_id = :tid"
+    q = """SELECT l.*, d.matricule AS driver_matricule, d.nom AS driver_nom, d.prenom AS driver_prenom
+           FROM driver_leaves l
+           LEFT JOIN drivers d ON d.id = l.driver_id
+           WHERE l.tenant_id = :tid"""
     params: dict = {"tid": str(tenant.tenant_id)}
     if driver_id:
-        q += " AND driver_id = :driver_id"
+        q += " AND l.driver_id = :driver_id"
         params["driver_id"] = driver_id
     if type_conge:
         if type_conge not in LEAVE_TYPES:
@@ -361,9 +368,14 @@ async def list_leaves(
                 422,
                 f"Type conge invalide. Valeurs: {', '.join(sorted(LEAVE_TYPES))}",
             )
-        q += " AND type_conge = :type_conge"
+        q += " AND l.type_conge = :type_conge"
         params["type_conge"] = type_conge
-    q += " ORDER BY date_debut DESC LIMIT :limit OFFSET :offset"
+    if statut:
+        if statut not in LEAVE_STATUSES:
+            raise HTTPException(422, f"Statut invalide. Valeurs: {', '.join(sorted(LEAVE_STATUSES))}")
+        q += " AND l.statut = :statut"
+        params["statut"] = statut
+    q += " ORDER BY l.date_debut DESC LIMIT :limit OFFSET :offset"
     params["limit"] = limit
     params["offset"] = offset
     rows = await db.execute(text(q), params)

@@ -101,9 +101,14 @@ export default function RouteTemplateDetailPage() {
     setGenerating(true);
     setGenResult(null);
     try {
-      const result = await apiPost<{ generated: number }>(`/v1/route-templates/${id}/generate-runs`, genForm);
-      setGenResult(result);
-      load();
+      const result = await mutate(
+        () => apiPost<{ generated: number }>(`/v1/route-templates/${id}/generate-runs`, genForm),
+        "Exécutions générées",
+      );
+      if (result) {
+        setGenResult(result);
+        load();
+      }
     } finally {
       setGenerating(false);
     }

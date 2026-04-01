@@ -70,13 +70,16 @@ export default function PayrollPage() {
     setComputing(true);
     setComputeResult(null);
     try {
-      const result = await apiPost<{ drivers_processed: number; variables_created: number }>(
-        `/v1/payroll/periods/${selectedPeriod}/compute-from-missions`
+      const result = await mutate(
+        () => apiPost<{ drivers_processed: number; variables_created: number }>(
+          `/v1/payroll/periods/${selectedPeriod}/compute-from-missions`
+        ),
+        "Variables calculées depuis les missions",
       );
-      setComputeResult(result);
-      apiGet<PayrollVar[]>(`/v1/payroll/periods/${selectedPeriod}/variables`).then(setVariables);
-    } catch (err) {
-      alert("Erreur: " + (err as Error).message);
+      if (result) {
+        setComputeResult(result);
+        apiGet<PayrollVar[]>(`/v1/payroll/periods/${selectedPeriod}/variables`).then(setVariables);
+      }
     } finally {
       setComputing(false);
     }

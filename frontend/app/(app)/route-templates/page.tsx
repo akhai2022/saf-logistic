@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiGet, apiPost } from "@/lib/api";
+import { mutate } from "@/lib/mutate";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageHeader from "@/components/PageHeader";
@@ -87,14 +88,14 @@ export default function RouteTemplatesPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await apiPost("/v1/route-templates", {
+      if (!await mutate(() => apiPost("/v1/route-templates", {
         ...form,
         default_sale_amount_ht: form.default_sale_amount_ht ? parseFloat(form.default_sale_amount_ht) : null,
         customer_id: form.customer_id || null,
         default_driver_id: form.default_driver_id || null,
         default_vehicle_id: form.default_vehicle_id || null,
         valid_to: form.valid_to || null,
-      });
+      }), "Modèle créé")) return;
       setShowCreate(false);
       setForm({
         code: "", label: "", customer_id: "", site: "",

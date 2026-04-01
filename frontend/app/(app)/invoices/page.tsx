@@ -50,12 +50,18 @@ export default function InvoicesPage() {
 
   const statusLabel = (s: string) => ({ draft: "Brouillon", validated: "Validée", paid: "Payée" }[s] || s);
 
+  const [creditNoteLoading, setCreditNoteLoading] = useState<string | null>(null);
+
   const createCreditNote = async (invoiceId: string) => {
+    setCreditNoteLoading(invoiceId);
     try {
-      await apiPost<CreditNote>("/v1/billing/credit-notes", { invoice_id: invoiceId });
-      alert("Avoir cree avec succes");
-    } catch {
-      alert("Erreur lors de la creation de l'avoir");
+      if (!await mutate(
+        () => apiPost<CreditNote>("/v1/billing/credit-notes", { invoice_id: invoiceId }),
+        "Avoir créé avec succès",
+      )) return;
+      refresh();
+    } finally {
+      setCreditNoteLoading(null);
     }
   };
 
@@ -132,9 +138,10 @@ export default function InvoicesPage() {
                   {inv.status === "validated" && (
                     <button
                       onClick={() => createCreditNote(inv.id)}
-                      className="text-xs text-red-600 hover:text-red-800 hover:underline"
+                      disabled={creditNoteLoading === inv.id}
+                      className="text-xs text-red-600 hover:text-red-800 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Creer un avoir
+                      {creditNoteLoading === inv.id ? "Création..." : "Créer un avoir"}
                     </button>
                   )}
                 </td>
@@ -142,6 +149,7 @@ export default function InvoicesPage() {
             ))}
           </tbody>
         </table>
+        {loading && <div className="py-8 text-center text-gray-400">Chargement...</div>}
         {invoices.length === 0 && !loading && (
           <EmptyState icon="receipt_long" title="Aucune facture" description="Créez votre première facture" />
         )}

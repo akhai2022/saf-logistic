@@ -53,11 +53,9 @@ export default function PricingPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer cette regle de tarification ?")) return;
-    try {
-      await apiDelete(`/v1/billing/pricing-rules/${id}`);
-      setRules(rules.filter((r) => r.id !== id));
-    } catch { /* pricing rule may not support delete yet */ }
+    if (!confirm("Supprimer cette règle de tarification ?")) return;
+    if (!await mutate(() => apiDelete(`/v1/billing/pricing-rules/${id}`), "Règle supprimée")) return;
+    setRules(rules.filter((r) => r.id !== id));
   };
 
   const startEdit = (r: PricingRule) => {

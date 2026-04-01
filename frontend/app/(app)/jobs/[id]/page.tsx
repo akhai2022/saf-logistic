@@ -168,10 +168,11 @@ export default function JobDetailPage() {
   const handleGenerateCmr = async () => {
     setGeneratingCmr(true);
     try {
-      await apiPost(`/v1/jobs/${id}/generate-cmr`);
+      if (!await mutate(
+        () => apiPost(`/v1/jobs/${id}/generate-cmr`),
+        "CMR généré",
+      )) return;
       reload();
-    } catch (err) {
-      alert("Erreur CMR: " + (err as Error).message);
     } finally {
       setGeneratingCmr(false);
     }

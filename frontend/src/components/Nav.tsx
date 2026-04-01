@@ -32,6 +32,10 @@ const ALL_SECTIONS: NavSection[] = [
       { href: "/disputes", label: "Litiges", icon: "gavel" },
       { href: "/subcontracting", label: "Affrètement", icon: "swap_horiz" },
       { href: "/tasks", label: "Tâches", icon: "task_alt" },
+      { href: "/reclamations", label: "Réclamations", icon: "feedback" },
+      { href: "/infractions", label: "Infractions", icon: "warning" },
+      { href: "/contraventions", label: "Contraventions", icon: "gavel" },
+      { href: "/conges", label: "Congés", icon: "event_available" },
       { href: "/onboarding", label: "Configuration", icon: "rocket_launch" },
     ],
   },
@@ -45,6 +49,7 @@ const ALL_SECTIONS: NavSection[] = [
       { href: "/drivers", label: "Conducteurs", icon: "person" },
       { href: "/vehicles", label: "Véhicules", icon: "directions_car" },
       { href: "/compliance", label: "Conformité", icon: "verified_user" },
+      { href: "/imports", label: "Import CSV", icon: "upload_file" },
     ],
   },
   {

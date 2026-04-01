@@ -101,6 +101,8 @@ SAF-Logistic centralise la gestion administrative, financiere, RH et documentair
 | **G - RH / Pre-paie** | Variables paie, periodes, exports | Implemente |
 | **H - Flotte** | Maintenance, couts, sinistres, echeances vehicules | Implemente |
 | **I - Reporting** | Dashboards KPI, exports CSV, pilotage par role | Implemente |
+| **J - Imports** | Import CSV/Excel en masse (wizard multi-etapes) | Implemente |
+| **K - Operations** | Reclamations, infractions, contraventions, conges, planning, reparations | Implemente |
 
 ---
 
@@ -153,6 +155,8 @@ saf-logistic/
 |   |       |-- tasks/                     # Gestion des taches
 |   |       |-- fleet/                     # Maintenance, couts, sinistres (Module H)
 |   |       |-- reports/                   # Reporting, KPI, exports CSV (Module I)
+|   |       |-- imports/                   # Import CSV/Excel wizard (Module J)
+|   |       |-- operations/                # Reclamations, infractions, contraventions, conges, planning, reparations (Module K)
 |   |       |-- settings/                  # Parametrage (company, banque, TVA, centres de cout)
 |   |       |-- audit/                     # Journal d'audit immutable
 |   |       |-- notifications/             # Notifications in-app
@@ -193,10 +197,16 @@ saf-logistic/
 |   |       |-- settings/page.tsx          # Parametrage (5 onglets)
 |   |       |-- audit/page.tsx             # Journal d'audit
 |   |       |-- notifications/page.tsx     # Centre de notifications
-|   |       |-- compliance/page.tsx        # Dashboard conformite
+|   |       |-- compliance/page.tsx        # Dashboard conformite (onglets CONDUCTEURS, VEHICULES, ENTREPRISE)
 |   |       |-- compliance/alerts/page.tsx # Alertes conformite
 |   |       |-- compliance/templates/page.tsx
 |   |       |-- compliance/[entityType]/[entityId]/page.tsx
+|   |       |-- imports/page.tsx           # Import CSV/Excel wizard (Module J)
+|   |       |-- reclamations/page.tsx      # Reclamations clients (Module K)
+|   |       |-- infractions/page.tsx       # Infractions tachygraphe (Module K)
+|   |       |-- contraventions/page.tsx    # Contraventions routieres (Module K)
+|   |       |-- conges/page.tsx            # Conges conducteurs (Module K)
+|   |       |-- reparations/page.tsx       # Reparations vehicules (Module K)
 |   |       |-- invoices/page.tsx          # Facturation
 |   |       |-- supplier-invoices/page.tsx # Factures fournisseurs
 |   |       |-- ocr/page.tsx              # OCR
@@ -341,6 +351,55 @@ Alertes progressives : J-60 -> J-30 -> J-15 -> J-7 -> J0 (expire)
 
 ---
 
+## Guide utilisateur — Nouvelles fonctionnalites
+
+### Import CSV/Excel (`/imports`)
+
+La page Imports permet d'alimenter les referentiels et donnees operationnelles depuis des fichiers CSV ou Excel (XLSX) plutot que de saisir chaque ligne manuellement.
+
+**Workflow en 4 etapes :**
+
+1. **Selection du type** : choisir l'entite cible (clients, conducteurs, vehicules, reclamations, infractions, contraventions, conges, planning, reparations)
+2. **Upload du fichier** : glisser-deposer ou selectionner un fichier CSV (UTF-8, separateur `;`) ou XLSX
+3. **Mapping des colonnes** : le systeme propose un mapping automatique entre les colonnes du fichier et les champs de la base. Corriger manuellement si necessaire
+4. **Validation et import** : le systeme valide chaque ligne (formats, FK, unicite). Les lignes valides sont importees, les erreurs sont detaillees dans un rapport
+
+L'historique des imports est consultable avec le statut de chaque job (en cours, termine, echoue).
+
+**Acces** : SUPER_ADMIN, ADMIN_AGENCE.
+
+### Reclamations clients (`/reclamations`)
+
+Page de suivi des reclamations clients (retard, casse, erreur de livraison). Chaque reclamation est liee a un client et optionnellement a un conducteur. Filtres par statut (OUVERTE, EN_COURS, FERMEE), client et date. Creation directe ou import CSV.
+
+**Acces** : SUPER_ADMIN, ADMIN_AGENCE, EXPLOITATION.
+
+### Infractions tachygraphe (`/infractions`)
+
+Vue matricielle des infractions tachygraphe par conducteur et par mois. Affiche le nombre d'infractions et d'anomalies pour chaque conducteur sur la periode selectionnee. Les donnees sont generalement importees depuis l'outil d'analyse tachygraphe via le wizard d'import.
+
+**Acces** : SUPER_ADMIN, ADMIN_AGENCE, EXPLOITATION, RH_PAIE.
+
+### Contraventions (`/contraventions`)
+
+Liste des PV et contraventions routieres avec suivi du paiement (A_PAYER, PAYE, CONTESTE). Chaque contravention est liee a un vehicule et optionnellement a un conducteur. Montant total affiche. Filtres par vehicule, statut de paiement et date.
+
+**Acces** : SUPER_ADMIN, ADMIN_AGENCE, EXPLOITATION, FLOTTE.
+
+### Conges conducteurs (`/conges`)
+
+Tableau des periodes d'absence et de conges des conducteurs. Types : CONGES_PAYES, RTT, MALADIE, SANS_SOLDE, FORMATION. Filtres par conducteur, type de conge, statut et periode.
+
+**Acces** : SUPER_ADMIN, ADMIN_AGENCE, RH_PAIE.
+
+### Conformite Entreprise (`/compliance`, onglet ENTREPRISE)
+
+L'onglet ENTREPRISE de la page Conformite permet de gerer les documents legaux de la societe (KBIS, attestation URSSAF, licence de transport, etc.). Il complete les onglets existants CONDUCTEURS et VEHICULES. Les documents sont uploades et suivis avec les memes mecanismes d'alerte d'expiration.
+
+**Acces** : SUPER_ADMIN.
+
+---
+
 ## API Endpoints
 
 ### Authentification
@@ -460,6 +519,29 @@ Alertes progressives : J-60 -> J-30 -> J-15 -> J-7 -> J0 (expire)
 | Methode | Endpoint | Description |
 |---------|----------|-------------|
 | GET | `/v1/audit-logs` | Liste des logs d'audit (filtrable par entity_type, action, date) |
+
+### Imports (Module J)
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/v1/imports/upload` | Upload CSV/Excel et creation job d'import |
+| GET | `/v1/imports` | Liste des jobs d'import (avec statut) |
+| GET | `/v1/imports/{id}` | Detail d'un job d'import (preview, erreurs) |
+| POST | `/v1/imports/{id}/validate` | Lancer la validation des lignes |
+| POST | `/v1/imports/{id}/execute` | Executer l'import (insert/upsert lignes valides) |
+
+### Operations (Module K)
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| GET/POST | `/v1/operations/complaints` | Liste / creation reclamations clients |
+| GET/PUT | `/v1/operations/complaints/{id}` | Detail / modification reclamation |
+| GET/POST | `/v1/operations/infractions` | Liste / creation infractions tachygraphe |
+| GET/POST | `/v1/operations/violations` | Liste / creation contraventions |
+| GET/PUT | `/v1/operations/violations/{id}` | Detail / modification contravention |
+| GET/POST | `/v1/operations/leaves` | Liste / creation conges conducteurs |
+| GET/PUT | `/v1/operations/leaves/{id}` | Detail / modification conge |
+| GET/POST | `/v1/operations/schedules` | Liste / creation planning conducteurs |
+| GET/POST | `/v1/operations/repairs` | Liste / creation reparations vehicules |
+| GET/PUT | `/v1/operations/repairs/{id}` | Detail / modification reparation |
 
 ### RGPD
 | Methode | Endpoint | Description |
@@ -924,6 +1006,9 @@ Le seed charge automatiquement les donnees suivantes pour le tenant demo :
 | `0004` | Module D : expansion documents (20+ colonnes), compliance_templates, compliance_checklists, compliance_alerts |
 | `0005` | Module H : maintenance_schedules, maintenance_records, vehicle_costs, vehicle_claims |
 | `0006` | Parametrage & Audit : company_settings, bank_accounts, vat_configs, cost_centers, notification_configs, audit_logs, notifications, credit_notes, credit_note_lines, password_reset_tokens + invoices.format |
+| `0015` | Module J : import_jobs (suivi imports CSV/Excel en masse) |
+| `0016` | Module K : customer_complaints, driver_infractions, traffic_violations, driver_leaves (donnees operationnelles) |
+| `0017` | Module K : staff_schedules, vehicle_repairs (planning, reparations) |
 
 ### Schema principal
 
@@ -957,6 +1042,20 @@ vehicles ──< maintenance_schedules
     +──< vehicle_costs (unified cost ledger)
     |
     +──< vehicle_claims (sinistres)
+    |
+    +──< vehicle_repairs (reparations)
+    |
+    +──< traffic_violations (via vehicle_id)
+
+drivers ──< driver_leaves (conges)
+    |
+    +──< driver_infractions (infractions tachygraphe)
+    |
+    +──< staff_schedules (planning journalier)
+
+customers ──< customer_complaints (reclamations)
+
+import_jobs (suivi imports CSV/Excel)
 ```
 
 ---
@@ -1352,6 +1451,10 @@ tenants (racine)
 ├── supplier_invoices, ocr_jobs
 ├── payroll_periods, payroll_variables, payroll_type_definitions, silae_mappings
 ├── maintenance_schedules, maintenance_records, vehicle_costs, vehicle_claims
+├── vehicle_repairs
+├── customer_complaints, driver_infractions, traffic_violations
+├── driver_leaves, staff_schedules
+├── import_jobs
 └── tasks
 ```
 
@@ -1524,7 +1627,7 @@ Chaque requete API inclut :
 | Contrats sous-traitants | Oui | table `subcontractor_contracts` | OK |
 | Lien conformite sous-traitant | Oui | colonne `conformite_statut` | OK |
 | Fournisseurs | Oui | table `suppliers` + 2 endpoints | OK (basique) |
-| Import CSV referentiels | **Non** | Pas d'endpoint d'import | **GAP : import bulk avec mapping UI (B-SCR-11)** |
+| Import CSV referentiels | Oui | Module J — /imports wizard (upload, mapping, validation, execution) | OK — import_jobs table + wizard UI |
 
 ### Module C — Missions (implemente)
 

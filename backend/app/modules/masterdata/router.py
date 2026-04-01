@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from datetime import date as date_type
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
@@ -1144,6 +1145,25 @@ async def change_driver_status(
 # VEHICLES
 # ══════════════════════════════════════════════════════════════════
 
+def _resolve_registration_date(
+    first_registration: str | None,
+    date_premiere_immatriculation: date_type | None,
+) -> date_type | None:
+    """Return a date object from either the legacy string field or the typed date field.
+
+    The DB column ``first_registration`` is of type DATE, so we must never
+    pass a raw string.  ``first_registration`` (legacy compat) comes in as
+    ``str | None`` from the schema, while ``date_premiere_immatriculation``
+    is already a ``date | None``.
+    """
+    if first_registration:
+        return date_type.fromisoformat(first_registration)
+    if date_premiere_immatriculation:
+        # Already a date object (validated by Pydantic), pass through.
+        return date_premiere_immatriculation
+    return None
+
+
 def _vehicle_from_row(r) -> VehicleOut:
     return VehicleOut(
         id=str(r.id),
@@ -1298,6 +1318,12 @@ async def create_vehicle(
             equipements, temperature_min, temperature_max,
             proprietaire, loueur_nom, contrat_location_ref, date_fin_contrat_location,
             km_compteur_actuel, date_dernier_releve_km,
+            nombre_places, mode_achat, valeur_assuree_ht, telematique,
+            reference_client, date_entree_flotte, date_sortie_flotte,
+            presence_matiere_dangereuse,
+            assurance_compagnie, assurance_numero_police,
+            controle_technique_date, limiteur_vitesse_date, tachygraphe_date,
+            siren_proprietaire,
             statut, notes, created_by, updated_by
         ) VALUES (
             :id, :tid, :aid, :plate, :vin, :brand, :model_legacy, :vtype,
@@ -1310,6 +1336,12 @@ async def create_vehicle(
             CAST(:equip AS jsonb), :tmin, :tmax,
             :proprio, :loueur, :clref, :dfcl,
             :km, :ddrk,
+            :npl, :machat, :vaht, :telem,
+            :refcli, :def_, :dsf,
+            :pmd,
+            :assur, :assur_police,
+            :ct_date, :lv_date, :tachy_date,
+            :siren_prop,
             :statut, :notes, :uid, :uid2
         )
     """), {
@@ -1318,12 +1350,12 @@ async def create_vehicle(
         "brand": body.brand or body.marque, "model_legacy": body.model or body.modele,
         "vtype": body.vehicle_type or body.categorie,
         "payload": body.payload_kg or body.charge_utile_kg,
-        "reg": body.first_registration or (str(body.date_premiere_immatriculation) if body.date_premiere_immatriculation else None),
+        "reg": _resolve_registration_date(body.first_registration, body.date_premiere_immatriculation),
         "immat": plate, "te": body.type_entity,
         "cat": body.categorie, "marque": body.marque or body.brand,
         "modele": body.modele or body.model,
         "amc": body.annee_mise_en_circulation,
-        "dpi": body.date_premiere_immatriculation,
+        "dpi": _resolve_registration_date(body.first_registration, body.date_premiere_immatriculation),
         "carros": body.carrosserie,
         "ptac": body.ptac_kg, "ptra": body.ptra_kg,
         "cu": body.charge_utile_kg, "vol": str(body.volume_m3) if body.volume_m3 else None,
@@ -1339,6 +1371,17 @@ async def create_vehicle(
         "clref": body.contrat_location_ref,
         "dfcl": body.date_fin_contrat_location,
         "km": body.km_compteur_actuel, "ddrk": body.date_dernier_releve_km,
+        "npl": body.nombre_places, "machat": body.mode_achat,
+        "vaht": str(body.valeur_assuree_ht) if body.valeur_assuree_ht else None,
+        "telem": body.telematique, "refcli": body.reference_client,
+        "def_": body.date_entree_flotte, "dsf": body.date_sortie_flotte,
+        "pmd": body.presence_matiere_dangereuse,
+        "assur": body.assurance_compagnie,
+        "assur_police": body.assurance_numero_police,
+        "ct_date": body.controle_technique_date,
+        "lv_date": body.limiteur_vitesse_date,
+        "tachy_date": body.tachygraphe_date,
+        "siren_prop": body.siren_proprietaire,
         "statut": "ACTIF", "notes": body.notes,
         "uid": user.get("user_id") if isinstance(user, dict) else None,
         "uid2": user.get("user_id") if isinstance(user, dict) else None,
@@ -1386,6 +1429,15 @@ async def update_vehicle(
             proprietaire = :proprio, loueur_nom = :loueur,
             contrat_location_ref = :clref, date_fin_contrat_location = :dfcl,
             km_compteur_actuel = :km, date_dernier_releve_km = :ddrk,
+            nombre_places = :npl, mode_achat = :machat,
+            valeur_assuree_ht = :vaht, telematique = :telem,
+            reference_client = :refcli,
+            date_entree_flotte = :def_, date_sortie_flotte = :dsf,
+            presence_matiere_dangereuse = :pmd,
+            assurance_compagnie = :assur, assurance_numero_police = :assur_police,
+            controle_technique_date = :ct_date,
+            limiteur_vitesse_date = :lv_date, tachygraphe_date = :tachy_date,
+            siren_proprietaire = :siren_prop, agency_id = :agency,
             notes = :notes, updated_at = now(), updated_by = :uid
         WHERE id = :id AND tenant_id = :tid
     """), {
@@ -1394,12 +1446,12 @@ async def update_vehicle(
         "brand_legacy": body.brand or body.marque, "model_legacy": body.model or body.modele,
         "vtype": body.vehicle_type or body.categorie,
         "payload": body.payload_kg or body.charge_utile_kg,
-        "reg": body.first_registration or (str(body.date_premiere_immatriculation) if body.date_premiere_immatriculation else None),
+        "reg": _resolve_registration_date(body.first_registration, body.date_premiere_immatriculation),
         "immat": plate, "te": body.type_entity,
         "cat": body.categorie, "marque": body.marque or body.brand,
         "modele": body.modele or body.model,
         "amc": body.annee_mise_en_circulation,
-        "dpi": body.date_premiere_immatriculation,
+        "dpi": _resolve_registration_date(body.first_registration, body.date_premiere_immatriculation),
         "carros": body.carrosserie,
         "ptac": body.ptac_kg, "ptra": body.ptra_kg,
         "cu": body.charge_utile_kg, "vol": str(body.volume_m3) if body.volume_m3 else None,
@@ -1415,6 +1467,18 @@ async def update_vehicle(
         "clref": body.contrat_location_ref,
         "dfcl": body.date_fin_contrat_location,
         "km": body.km_compteur_actuel, "ddrk": body.date_dernier_releve_km,
+        "npl": body.nombre_places, "machat": body.mode_achat,
+        "vaht": str(body.valeur_assuree_ht) if body.valeur_assuree_ht else None,
+        "telem": body.telematique, "refcli": body.reference_client,
+        "def_": body.date_entree_flotte, "dsf": body.date_sortie_flotte,
+        "pmd": body.presence_matiere_dangereuse,
+        "assur": body.assurance_compagnie,
+        "assur_police": body.assurance_numero_police,
+        "ct_date": body.controle_technique_date,
+        "lv_date": body.limiteur_vitesse_date,
+        "tachy_date": body.tachygraphe_date,
+        "siren_prop": body.siren_proprietaire,
+        "agency": body.agency_id,
         "notes": body.notes,
         "uid": user.get("user_id") if isinstance(user, dict) else None,
     })

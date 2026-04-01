@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.bootstrap import ensure_s3_bucket
+from app.core.logging_config import configure_logging
 from app.core.middleware import CorrelationIdMiddleware
 from app.modules.auth.router import router as auth_router
 from app.modules.billing.router import router as billing_router
@@ -29,11 +30,14 @@ from app.modules.subcontracting.router import router as subcontracting_router
 from app.modules.driver_mobile.router import router as driver_mobile_router
 from app.modules.route_templates.router import router as route_templates_router
 from app.modules.route_runs.router import router as route_runs_router
+from app.modules.imports.router import router as imports_router
+from app.modules.operations.router import router as operations_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    configure_logging()
     try:
         ensure_s3_bucket()
     except Exception as e:
@@ -97,8 +101,27 @@ app.include_router(subcontracting_router)
 app.include_router(driver_mobile_router)
 app.include_router(route_templates_router)
 app.include_router(route_runs_router)
+app.include_router(imports_router)
+app.include_router(operations_router)
 
 
 @app.get("/health")
 async def health():
+    """Liveness probe — always returns 200 for ALB."""
     return {"status": "ok"}
+
+
+@app.get("/health/ready")
+async def health_ready():
+    """Readiness probe — verifies DB connectivity."""
+    from app.core.db import async_session_factory
+    from sqlalchemy import text
+
+    try:
+        async with async_session_factory() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "ok"}
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error("Readiness check failed: %s", e)
+        return JSONResponse(status_code=503, content={"status": "degraded", "db": "unreachable"})

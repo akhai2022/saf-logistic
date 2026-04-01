@@ -80,6 +80,27 @@ const COLORS: Record<string, string> = {
   SUSPENDED: "bg-orange-100 text-orange-800",
   ARCHIVED: "bg-gray-200 text-gray-500",
   DRAFT: "bg-gray-100 text-gray-700",
+  // Complaint severity
+  NORMAL: "bg-blue-100 text-blue-700",
+  GRAVE: "bg-orange-100 text-orange-700",
+  CRITIQUE: "bg-red-100 text-red-700",
+  // Complaint statuses
+  OUVERTE: "bg-blue-100 text-blue-700",
+  RESOLUE: "bg-green-100 text-green-700",
+  CLASSEE: "bg-gray-200 text-gray-600",
+  // Violation payment statuses
+  A_PAYER: "bg-red-100 text-red-700",
+  PAYE: "bg-green-100 text-green-700",
+  CONTESTE: "bg-orange-100 text-orange-700",
+  // Leave types
+  CONGES_PAYES: "bg-blue-100 text-blue-700",
+  RTT: "bg-purple-100 text-purple-700",
+  MALADIE: "bg-red-100 text-red-700",
+  SANS_SOLDE: "bg-gray-200 text-gray-600",
+  // Leave statuses
+  APPROUVE: "bg-green-100 text-green-700",
+  REFUSE: "bg-red-100 text-red-700",
+  ANNULE: "bg-gray-200 text-gray-500",
 };
 
 const LABELS: Record<string, string> = {
@@ -108,6 +129,16 @@ const LABELS: Record<string, string> = {
   PARTAGE: "Partagé", A_DETERMINER: "À déterminer",
   // Route template statuses (English)
   ACTIVE: "Actif", SUSPENDED: "Suspendu", ARCHIVED: "Archivé", DRAFT: "Brouillon",
+  // Complaint severity
+  NORMAL: "Normal", GRAVE: "Grave", CRITIQUE: "Critique",
+  // Complaint statuses
+  OUVERTE: "Ouverte", RESOLUE: "Résolue", CLASSEE: "Classée",
+  // Violation payment statuses
+  A_PAYER: "À payer", PAYE: "Payé", CONTESTE: "Contesté",
+  // Leave types
+  CONGES_PAYES: "Congés payés", RTT: "RTT", MALADIE: "Maladie", SANS_SOLDE: "Sans solde",
+  // Leave statuses
+  APPROUVE: "Approuvé", REFUSE: "Refusé", ANNULE: "Annulé",
 };
 
 const ICONS: Record<string, string> = {
@@ -134,6 +165,16 @@ const ICONS: Record<string, string> = {
   PARTAGE: "swap_horiz", A_DETERMINER: "help",
   // Route template statuses (English)
   ACTIVE: "check_circle", SUSPENDED: "pause_circle", ARCHIVED: "archive", DRAFT: "edit_note",
+  // Complaint severity
+  NORMAL: "info", GRAVE: "warning", CRITIQUE: "dangerous",
+  // Complaint statuses
+  OUVERTE: "report", RESOLUE: "check_circle", CLASSEE: "archive",
+  // Violation payment statuses
+  A_PAYER: "payment", PAYE: "paid", CONTESTE: "gavel",
+  // Leave types
+  CONGES_PAYES: "beach_access", RTT: "schedule", MALADIE: "local_hospital", SANS_SOLDE: "money_off",
+  // Leave statuses
+  APPROUVE: "check_circle", REFUSE: "cancel", ANNULE: "close",
 };
 
 export default function StatusBadge({ statut, size = "sm" }: StatusBadgeProps) {

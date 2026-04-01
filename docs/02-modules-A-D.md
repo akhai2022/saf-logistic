@@ -2062,3 +2062,64 @@ Le module Gestion documentaire & Conformite est le pilier reglementaire de SAF-L
 | Modification de la date d'expiration d'un document deja valide | Autorise. Les flags d'alertes (alerte_j60_envoyee, etc.) sont reinitialises pour la nouvelle date. Le statut de conformite est recalcule. |
 
 ---
+
+# MODULE B — Extension : Import CSV/Excel
+
+## B.EXT.1 Objectif
+
+Permettre l'import en masse des donnees de referentiels et operationnelles depuis des fichiers CSV et Excel (XLSX), en remplacement de la saisie manuelle ligne par ligne. Cette extension correspond a l'ecran B-SCR-11 et generalise le concept a toutes les entites du systeme.
+
+**Personas concernes** : Super Admin, Admin Agence.
+
+## B.EXT.2 Parcours utilisateur « Import wizard »
+
+| Etape | Acteur | Action | Resultat attendu |
+|-------|--------|--------|-------------------|
+| 1 | Admin | Menu Referentiels > Imports (ou /imports) | Page listant les imports precedents avec statut |
+| 2 | Admin | Clique « Nouvel import » | Wizard step 1 : selection du type d'entite (clients, conducteurs, vehicules, contraventions, conges, etc.) |
+| 3 | Admin | Upload du fichier CSV ou XLSX (drag & drop ou file picker) | Le fichier est uploade sur S3. Le backend parse les en-tetes et retourne un apercu (5 premieres lignes) |
+| 4 | Admin | Step 2 : Mapping des colonnes (association colonnes fichier → champs base) | Suggestions automatiques par correspondance de noms, corrections manuelles possibles |
+| 5 | Admin | Step 3 : Validation | Le backend valide toutes les lignes (SIREN, SIRET, NIR, formats dates, FK existantes). Affichage du rapport : N valides, N erreurs, detail des erreurs par ligne |
+| 6 | Admin | Confirme l'import | Les lignes valides sont inserees/mises a jour (upsert). Lignes en erreur sont ignorees. Le rapport final est affiche |
+
+## B.EXT.3 Entites supportees
+
+| Entite | Route API | Colonnes cles |
+|--------|-----------|---------------|
+| Clients | POST /v1/imports/upload | code, raison_sociale, siret, adresse, cp, ville, delai_paiement |
+| Conducteurs | POST /v1/imports/upload | matricule, nom, prenom, date_naissance, nir, type_contrat, date_entree |
+| Vehicules | POST /v1/imports/upload | immatriculation, categorie, marque, modele, ptac, charge_utile |
+| Reclamations | POST /v1/imports/upload | date_incident, client_name, subject, severity, status |
+| Infractions | POST /v1/imports/upload | driver (matricule), year, month, infraction_count, anomaly_count |
+| Contraventions | POST /v1/imports/upload | date_infraction, lieu, immatriculation, description, montant, statut_paiement |
+| Conges | POST /v1/imports/upload | driver (matricule), date_debut, date_fin, type_conge, statut |
+
+## B.EXT.4 Ecrans
+
+| Code ecran | Nom | Description | Acces roles |
+|------------|-----|-------------|-------------|
+| B-SCR-11 | Liste des imports | Historique des imports avec statut, fichier, lignes traitees | SUPER_ADMIN, ADMIN_AGENCE |
+| B-SCR-12 | Wizard import — Upload | Selection entite + upload fichier | SUPER_ADMIN, ADMIN_AGENCE |
+| B-SCR-13 | Wizard import — Mapping | Association colonnes fichier → champs | SUPER_ADMIN, ADMIN_AGENCE |
+| B-SCR-14 | Wizard import — Validation | Rapport de validation, confirmation | SUPER_ADMIN, ADMIN_AGENCE |
+
+---
+
+# DONNEES OPERATIONNELLES — Reclamations, Infractions, Contraventions, Conges, Planning, Reparations
+
+## OPS.1 Objectif
+
+Ces pages centralisent les donnees operationnelles du quotidien d'un transporteur, historiquement gerees dans des tableurs Excel separes. Elles sont accessibles via des pages dediees et alimentees soit par saisie manuelle, soit par import CSV/Excel via le wizard d'import.
+
+## OPS.2 Pages et fonctionnalites
+
+| Page | Route | Description | Roles |
+|------|-------|-------------|-------|
+| Reclamations | /reclamations | Liste des reclamations clients avec filtres (statut, client, date). Creation/edition d'une reclamation. Lien vers fiche client et conducteur. | SUPER_ADMIN, ADMIN_AGENCE, EXPLOITATION |
+| Infractions | /infractions | Matrice mensuelle des infractions tachygraphe par conducteur. Vue tableau croisee (conducteurs en lignes, mois en colonnes). | SUPER_ADMIN, ADMIN_AGENCE, EXPLOITATION, RH_PAIE |
+| Contraventions | /contraventions | Liste des PV/contraventions avec filtres (statut paiement, vehicule, date). Montant total et suivi administratif. | SUPER_ADMIN, ADMIN_AGENCE, EXPLOITATION, FLOTTE |
+| Conges | /conges | Tableau des conges et absences conducteurs. Filtres par type, statut, periode. | SUPER_ADMIN, ADMIN_AGENCE, RH_PAIE |
+| Planning | /planning | Planning journalier des conducteurs (service, repos, conge). Vue calendrier. | SUPER_ADMIN, ADMIN_AGENCE, EXPLOITATION |
+| Reparations | /reparations | Suivi des reparations vehicules par categorie. Filtres par vehicule, statut, date. | SUPER_ADMIN, ADMIN_AGENCE, FLOTTE |
+
+---

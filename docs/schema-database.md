@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-La base de donnees PostgreSQL 16 contient **62 tables** organisees en **10 domaines fonctionnels**. L'architecture est **multi-tenant** : chaque table contient un `tenant_id` qui isole les donnees par entreprise.
+La base de donnees PostgreSQL 16 contient **69 tables** organisees en **12 domaines fonctionnels**. L'architecture est **multi-tenant** : chaque table contient un `tenant_id` qui isole les donnees par entreprise.
 
 ---
 
@@ -33,7 +33,19 @@ La base de donnees PostgreSQL 16 contient **62 tables** organisees en **10 domai
 │ credit_notes │  │ vehicle_costs│  │ bank_accounts        │
 │ pricing_rules│  │ vehicle_     │  │ vat_configs          │
 │ payroll      │  │  claims      │  │ notification_configs │
-└──────────────┘  └──────────────┘  └──────────────────────┘
+└──────────────┘  │ vehicle_     │  └──────────────────────┘
+                  │  repairs     │
+                  └──────────────┘
+
+┌──────────────────────┐  ┌──────────────────────┐
+│    OPERATIONS        │  │     IMPORTS           │
+│                      │  │                       │
+│ customer_complaints  │  │ import_jobs           │
+│ driver_infractions   │  │  (CSV/Excel tracking) │
+│ traffic_violations   │  │                       │
+│ driver_leaves        │  └───────────────────────┘
+│ staff_schedules      │
+└──────────────────────┘
 ```
 
 ---
@@ -376,7 +388,141 @@ compliance_checklists   →  Cache du statut par entite (OK/BLOQUANT)
 
 ---
 
-## 8. Tables annexes
+## 8. Operations
+
+### customer_complaints (Reclamations clients)
+> Reclamations et plaintes clients suite a un incident de livraison ou de service.
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| id | UUID PK | |
+| tenant_id | UUID FK→tenants | |
+| date_incident | DATE | Date de l'incident |
+| client_name | VARCHAR(200) | Nom du client (texte libre) |
+| client_id | UUID FK→customers | Client referenciel (optionnel) |
+| contact_name | VARCHAR(200) | Nom du contact chez le client |
+| subject | TEXT | Objet de la reclamation |
+| driver_id | UUID FK→drivers | Conducteur concerne (optionnel) |
+| severity | VARCHAR(20) | NORMAL, GRAVE, CRITIQUE |
+| status | VARCHAR(20) | OUVERTE, EN_COURS, FERMEE |
+| resolution | TEXT | Description de la resolution |
+
+### driver_infractions (Infractions tachygraphe)
+> Matrice mensuelle des infractions tachygraphe par conducteur. Importee depuis les outils d'analyse tachygraphe.
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| id | UUID PK | |
+| tenant_id | UUID FK→tenants | |
+| driver_id | UUID FK→drivers | Conducteur |
+| year | INTEGER | Annee |
+| month | INTEGER | Mois (1-12) |
+| infraction_count | INTEGER | Nombre d'infractions dans le mois |
+| anomaly_count | INTEGER | Nombre d'anomalies dans le mois |
+| notes | TEXT | Commentaires |
+
+**Contrainte :** UNIQUE(tenant_id, driver_id, year, month) — une seule ligne par conducteur par mois.
+
+### traffic_violations (Contraventions)
+> Proces-verbaux et contraventions routieres (exces de vitesse, stationnement, etc.).
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| id | UUID PK | |
+| tenant_id | UUID FK→tenants | |
+| date_infraction | DATE | Date de l'infraction |
+| lieu | VARCHAR(200) | Lieu de l'infraction |
+| vehicle_id | UUID FK→vehicles | Vehicule concerne |
+| immatriculation | VARCHAR(15) | Plaque d'immatriculation (copie) |
+| description | TEXT | Description de l'infraction |
+| numero_avis | VARCHAR(50) | Numero de l'avis de contravention |
+| montant | NUMERIC(10,2) | Montant de l'amende |
+| statut_paiement | VARCHAR(20) | A_PAYER, PAYE, CONTESTE |
+| statut_dossier | VARCHAR(30) | Suivi administratif du dossier |
+| driver_id | UUID FK→drivers | Conducteur identifie (optionnel) |
+
+### driver_leaves (Conges conducteurs)
+> Periodes d'absence et de conges des conducteurs (CP, RTT, maladie, etc.).
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| id | UUID PK | |
+| tenant_id | UUID FK→tenants | |
+| driver_id | UUID FK→drivers | Conducteur |
+| date_debut | DATE | Date de debut du conge |
+| date_fin | DATE | Date de fin du conge |
+| type_conge | VARCHAR(30) | CONGES_PAYES, RTT, MALADIE, SANS_SOLDE, FORMATION |
+| statut | VARCHAR(20) | DEMANDE, APPROUVE, REFUSE, ANNULE |
+| notes | TEXT | Commentaires |
+
+### staff_schedules (Planning de travail)
+> Planning journalier des conducteurs (service, repos, conge, absence).
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| id | UUID PK | |
+| tenant_id | UUID FK→tenants | |
+| driver_id | UUID FK→drivers | Conducteur |
+| date | DATE | Date du planning |
+| status | VARCHAR(20) | SERVICE, REPOS, CONGE, ABSENCE, FORMATION |
+| shift_start | TIME | Heure de debut de service |
+| shift_end | TIME | Heure de fin de service |
+| notes | TEXT | Commentaires |
+
+**Contrainte :** UNIQUE(tenant_id, driver_id, date) — une seule entree par conducteur par jour.
+
+---
+
+## 9. Imports
+
+### import_jobs (Jobs d'import CSV/Excel)
+> Suivi des imports en masse de donnees par fichier CSV ou Excel. Chaque import passe par un workflow : upload → preview → mapping → validation → execution.
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| id | UUID PK | |
+| tenant_id | UUID FK→tenants | |
+| entity_type | VARCHAR(30) | Type d'entite cible (customers, drivers, vehicles, etc.) |
+| status | VARCHAR(20) | uploaded, previewing, mapped, validating, importing, completed, failed |
+| file_name | VARCHAR(255) | Nom du fichier original |
+| file_s3_key | VARCHAR(500) | Cle S3 du fichier uploade |
+| content_type | VARCHAR(100) | Type MIME (text/csv, application/vnd.openxmlformats-...) |
+| total_rows | INTEGER | Nombre total de lignes dans le fichier |
+| valid_rows | INTEGER | Lignes ayant passe la validation |
+| error_rows | INTEGER | Lignes en erreur |
+| inserted_rows | INTEGER | Lignes inserees (creation) |
+| updated_rows | INTEGER | Lignes mises a jour (upsert) |
+| skipped_rows | INTEGER | Lignes ignorees (doublons, etc.) |
+| column_mapping | JSONB | Mapping colonnes fichier → colonnes base ({"col_fichier": "col_db"}) |
+| preview_data | JSONB | Apercu des N premieres lignes parsees |
+| errors_json | JSONB | Detail des erreurs par ligne ([{"row": 5, "field": "siret", "error": "..."}]) |
+| created_by | UUID | Utilisateur ayant lance l'import |
+
+---
+
+## 10. Flotte — Reparations
+
+### vehicle_repairs (Reparations vehicules)
+> Suivi detaille des reparations vehicules par categorie (mecanique, carrosserie, pneumatiques...). Importable depuis les tableaux de suivi atelier.
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| id | UUID PK | |
+| tenant_id | UUID FK→tenants | |
+| vehicle_id | UUID FK→vehicles | Vehicule concerne |
+| immatriculation | VARCHAR(15) | Plaque d'immatriculation (copie) |
+| category | VARCHAR(50) | Categorie de reparation (MECANIQUE, CARROSSERIE, PNEUMATIQUES, ELECTRICITE, etc.) |
+| description | TEXT | Description de la reparation |
+| status | VARCHAR(20) | A_FAIRE, EN_COURS, TERMINE |
+| date_signalement | DATE | Date de signalement du probleme |
+| date_realisation | DATE | Date effective de reparation |
+| cout | NUMERIC(10,2) | Cout de la reparation |
+| prestataire | VARCHAR(200) | Garage / prestataire |
+| notes | TEXT | Commentaires |
+
+---
+
+## 11. Tables annexes
 
 | Table | Description |
 |-------|-------------|
@@ -387,9 +533,7 @@ compliance_checklists   →  Cache du statut par entite (OK/BLOQUANT)
 | document_types | Types de documents FR (permis, FIMO...) |
 | number_sequences | Sequences de numerotation (factures, missions) |
 | password_reset_tokens | Tokens de reinitialisation mot de passe |
-| traffic_fines | PV/contraventions |
-| driver_leaves | Conges conducteurs |
-| driver_infractions | Infractions tachygraphe par mois |
+| traffic_fines | PV/contraventions (historique, remplace par traffic_violations) |
 
 ---
 
@@ -401,15 +545,21 @@ tenants
   ├── users ──── roles
   ├── customers
   │     ├── client_contacts
-  │     └── client_addresses
+  │     ├── client_addresses
+  │     └── customer_complaints
   ├── drivers
   │     ├── documents (entity_type='driver')
-  │     └── driver_leaves
+  │     ├── driver_leaves
+  │     ├── driver_infractions
+  │     ├── staff_schedules
+  │     └── traffic_violations (via driver_id)
   ├── vehicles
   │     ├── documents (entity_type='vehicle')
   │     ├── maintenance_records
   │     ├── vehicle_costs
-  │     └── vehicle_claims
+  │     ├── vehicle_claims
+  │     ├── vehicle_repairs
+  │     └── traffic_violations (via vehicle_id)
   ├── route_templates
   │     ├── route_template_stops
   │     └── route_runs
@@ -424,6 +574,7 @@ tenants
   ├── compliance_templates
   ├── compliance_checklists
   ├── compliance_alerts ──── documents
+  ├── import_jobs
   └── company_settings, bank_accounts, vat_configs
 ```
 

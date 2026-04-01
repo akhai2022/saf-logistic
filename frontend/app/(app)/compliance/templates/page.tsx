@@ -12,9 +12,9 @@ import Button from "@/components/Button";
 import Input from "@/components/Input";
 import EmptyState from "@/components/EmptyState";
 
-const ENTITY_TYPES = ["DRIVER", "VEHICLE", "SUBCONTRACTOR"];
+const ENTITY_TYPES = ["DRIVER", "VEHICLE", "SUBCONTRACTOR", "COMPANY"];
 const ENTITY_LABELS: Record<string, string> = {
-  DRIVER: "Conducteur", VEHICLE: "Véhicule", SUBCONTRACTOR: "Sous-traitant",
+  DRIVER: "Conducteur", VEHICLE: "Véhicule", SUBCONTRACTOR: "Sous-traitant", COMPANY: "Entreprise",
 };
 
 export default function ComplianceTemplatesPage() {

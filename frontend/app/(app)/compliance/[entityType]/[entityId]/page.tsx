@@ -15,11 +15,11 @@ import EmptyState from "@/components/EmptyState";
 import Input from "@/components/Input";
 
 const ENTITY_LABELS: Record<string, string> = {
-  DRIVER: "Conducteur", VEHICLE: "Véhicule", SUBCONTRACTOR: "Sous-traitant",
+  DRIVER: "Conducteur", VEHICLE: "Véhicule", SUBCONTRACTOR: "Sous-traitant", COMPANY: "Entreprise",
 };
 
 const ENTITY_PATHS: Record<string, string> = {
-  DRIVER: "drivers", VEHICLE: "vehicles", SUBCONTRACTOR: "subcontractors",
+  DRIVER: "drivers", VEHICLE: "vehicles", SUBCONTRACTOR: "subcontractors", COMPANY: "settings",
 };
 
 export default function EntityChecklistPage() {

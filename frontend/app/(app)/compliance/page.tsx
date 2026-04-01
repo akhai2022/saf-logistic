@@ -16,18 +16,19 @@ const ENTITY_TABS = [
   { key: "DRIVER", label: "Conducteurs" },
   { key: "VEHICLE", label: "Véhicules" },
   { key: "SUBCONTRACTOR", label: "Sous-traitants" },
+  { key: "COMPANY", label: "Entreprise" },
 ];
 
 const ENTITY_LABELS: Record<string, string> = {
-  DRIVER: "Conducteur", VEHICLE: "Véhicule", SUBCONTRACTOR: "Sous-traitant",
+  DRIVER: "Conducteur", VEHICLE: "Véhicule", SUBCONTRACTOR: "Sous-traitant", COMPANY: "Entreprise",
 };
 
 const ENTITY_ICONS: Record<string, string> = {
-  DRIVER: "person", VEHICLE: "directions_car", SUBCONTRACTOR: "handshake",
+  DRIVER: "person", VEHICLE: "directions_car", SUBCONTRACTOR: "handshake", COMPANY: "business",
 };
 
 const ENTITY_PATHS: Record<string, string> = {
-  DRIVER: "drivers", VEHICLE: "vehicles", SUBCONTRACTOR: "subcontractors",
+  DRIVER: "drivers", VEHICLE: "vehicles", SUBCONTRACTOR: "subcontractors", COMPANY: "settings",
 };
 
 export default function ComplianceDashboardPage() {

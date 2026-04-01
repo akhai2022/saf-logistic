@@ -1144,3 +1144,99 @@ export interface DriverEvent {
   notes: string | null;
   created_at: string;
 }
+
+// ── Import Wizard ───────────────────────────────────────────────
+
+export type ImportEntityType = "driver" | "vehicle" | "customer" | "subcontractor";
+
+export interface ImportJob {
+  id: string;
+  entity_type: ImportEntityType;
+  file_name: string;
+  status: string;
+  created_at: string;
+}
+
+export interface ColumnMapping {
+  csv_column: string;
+  mapped_field: string | null;
+}
+
+export interface ImportPreviewResult {
+  import_id: string;
+  column_mappings: ColumnMapping[];
+  available_fields: string[];
+  sample_rows: Record<string, string>[];
+  total_rows: number;
+  valid_rows: number;
+  errors: ImportValidationError[];
+}
+
+export interface ImportValidationError {
+  row: number;
+  column: string;
+  error: string;
+  value: string | null;
+}
+
+export interface ImportApplyResult {
+  import_id: string;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: ImportValidationError[];
+}
+
+// ── Module Operations ──────────────────────────────────────────
+
+export interface Complaint {
+  id: string;
+  date_incident: string;
+  client_name: string;
+  contact_name?: string;
+  subject: string;
+  severity: "NORMAL" | "GRAVE" | "CRITIQUE";
+  statut: "OUVERTE" | "EN_COURS" | "RESOLUE" | "CLASSEE";
+  driver_id?: string;
+  driver_name?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface InfractionRow {
+  driver_id: string;
+  driver_name: string;
+  months: number[];  // 12 values, Jan=0..Dec=11
+  total: number;
+}
+
+export interface Violation {
+  id: string;
+  date_infraction: string;
+  lieu: string;
+  immatriculation: string;
+  description: string;
+  numero_avis?: string;
+  montant: number;
+  statut_paiement: "A_PAYER" | "PAYE" | "CONTESTE";
+  driver_id?: string;
+  vehicle_id?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Leave {
+  id: string;
+  driver_id: string;
+  driver_nom?: string;
+  driver_prenom?: string;
+  date_debut: string;
+  date_fin: string;
+  type_conge: "CONGES_PAYES" | "RTT" | "MALADIE" | "SANS_SOLDE";
+  statut: "EN_ATTENTE" | "APPROUVE" | "REFUSE" | "ANNULE";
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}

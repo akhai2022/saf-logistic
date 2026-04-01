@@ -1230,12 +1230,13 @@ export interface Violation {
 export interface Leave {
   id: string;
   driver_id: string;
+  driver_matricule?: string;
   driver_nom?: string;
   driver_prenom?: string;
   date_debut: string;
   date_fin: string;
   type_conge: "CONGES_PAYES" | "RTT" | "MALADIE" | "SANS_SOLDE";
-  statut: "EN_ATTENTE" | "APPROUVE" | "REFUSE" | "ANNULE";
+  statut: "DEMANDE" | "APPROUVE" | "REFUSE" | "ANNULE";
   notes?: string;
   created_at?: string;
   updated_at?: string;

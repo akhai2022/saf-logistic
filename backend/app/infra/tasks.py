@@ -120,7 +120,10 @@ def compliance_scan_daily() -> dict:
                         link=f"/compliance/{doc.entity_type}/{doc.entity_id}",
                     )
                 except Exception:
-                    pass  # notification failure should not break compliance scan
+                    logger.warning(
+                        "Notification dispatch failed for doc %s (entity=%s/%s)",
+                        doc.id, doc.entity_type, doc.entity_id, exc_info=True,
+                    )
 
         # Also create legacy tasks for backward compat
         for doc in expired_rows:

@@ -41,7 +41,7 @@ test.describe("Mission Lifecycle (Module C)", () => {
     await expect(page).toHaveURL(/search=TEST/);
   });
 
-  test("should create a new mission with customer and type selection", async ({ page }) => {
+  test("should create a new mission with customer and type selection @critical", async ({ page }) => {
     await page.click("text=Nouvelle mission");
 
     // Fill the create mission form
@@ -53,7 +53,7 @@ test.describe("Mission Lifecycle (Module C)", () => {
     await page.waitForTimeout(1000);
   });
 
-  test("should navigate to mission detail page with 5 tabs", async ({ page }) => {
+  test("should navigate to mission detail page with 5 tabs @critical", async ({ page }) => {
     const firstMissionLink = page.locator("table tbody tr:first-child a");
     if (await firstMissionLink.isVisible()) {
       await firstMissionLink.click();
@@ -131,7 +131,7 @@ test.describe("Mission Lifecycle (Module C)", () => {
     await page.waitForTimeout(500);
   });
 
-  test("should transition mission status via action button", async ({ page }) => {
+  test("should transition mission status via action button @critical", async ({ page }) => {
     const firstMissionLink = page.locator("table tbody tr:first-child a");
     if (!(await firstMissionLink.isVisible())) {
       test.skip();

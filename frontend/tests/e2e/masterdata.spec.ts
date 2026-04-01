@@ -19,7 +19,7 @@ test.describe("Customers (Module B)", () => {
     await page.goto("/customers");
   });
 
-  test("should display customers list with table headers", async ({ page }) => {
+  test("should display customers list with table headers @critical", async ({ page }) => {
     await expect(page.locator("h1")).toContainText("Clients");
     await expect(page.locator("thead")).toContainText("Code");
     await expect(page.locator("thead")).toContainText("Raison sociale");
@@ -32,7 +32,7 @@ test.describe("Customers (Module B)", () => {
     await page.waitForTimeout(500); // debounced search
   });
 
-  test("should open create customer form and fill raison sociale and SIRET", async ({ page }) => {
+  test("should open create customer form and fill raison sociale and SIRET @critical", async ({ page }) => {
     await page.click("text=Nouveau client");
 
     await page.fill('input >> nth=0', "TEST-RAISON-SOCIALE");

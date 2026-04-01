@@ -168,7 +168,7 @@ async def create_template(
         "notes": body.notes, "uid": user.get("id"),
     })
     await db.commit()
-    row = (await db.execute(text(_BASE_SELECT + " WHERE rt.id = :id"), {"id": str(rtid)})).first()
+    row = (await db.execute(text(_BASE_SELECT + " WHERE rt.id = :id AND rt.tenant_id = :tid"), {"id": str(rtid), "tid": tid})).first()
     return _template_from_row(row)
 
 
@@ -248,7 +248,7 @@ async def update_template(
         "notes": body.notes, "status": body.status,
     })
     await db.commit()
-    row = (await db.execute(text(_BASE_SELECT + " WHERE rt.id = :id"), {"id": template_id})).first()
+    row = (await db.execute(text(_BASE_SELECT + " WHERE rt.id = :id AND rt.tenant_id = :tid"), {"id": template_id, "tid": tid})).first()
     return _template_from_row(row)
 
 

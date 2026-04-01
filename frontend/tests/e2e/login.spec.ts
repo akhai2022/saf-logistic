@@ -9,13 +9,13 @@ import { loginAsAdmin } from "./helpers/auth";
  * which drives the entire frontend (sidebar sections, page access).
  */
 test.describe("Login", () => {
-  test("should login with valid credentials and redirect to jobs page", async ({ page }) => {
+  test("should login with valid credentials and redirect to jobs page @critical", async ({ page }) => {
     await loginAsAdmin(page);
     await expect(page).toHaveURL(/.*\/jobs/);
     await expect(page.locator("text=Missions")).toBeVisible();
   });
 
-  test("should show error message for invalid credentials", async ({ page }) => {
+  test("should show error message for invalid credentials @critical", async ({ page }) => {
     await page.goto("/login");
     await page.fill('input[type="email"]', "wrong@test.com");
     await page.fill('input[type="password"]', "wrong");

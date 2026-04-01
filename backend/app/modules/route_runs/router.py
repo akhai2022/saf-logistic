@@ -143,7 +143,7 @@ async def create_run(
         "notes": body.notes, "uid": user.get("id"),
     })
     await db.commit()
-    row = (await db.execute(text(_BASE_SELECT + " WHERE rr.id = :id"), {"id": str(run_id)})).first()
+    row = (await db.execute(text(_BASE_SELECT + " WHERE rr.id = :id AND rr.tenant_id = :tid"), {"id": str(run_id), "tid": tid})).first()
     return _run_from_row(row)
 
 
@@ -282,6 +282,10 @@ async def regulate_runs(
                 aggregated_margin_ht=margin,
             ))
         except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Failed to regulate run %s (tenant=%s)", run.id, run.tenant_id,
+            )
             errors += 1
 
     await db.commit()
@@ -362,7 +366,7 @@ async def update_run(
         "notes": body.notes,
     })
     await db.commit()
-    row = (await db.execute(text(_BASE_SELECT + " WHERE rr.id = :id"), {"id": run_id})).first()
+    row = (await db.execute(text(_BASE_SELECT + " WHERE rr.id = :id AND rr.tenant_id = :tid"), {"id": run_id, "tid": tid})).first()
     return _run_from_row(row)
 
 

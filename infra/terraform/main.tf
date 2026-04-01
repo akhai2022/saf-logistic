@@ -472,12 +472,12 @@ resource "aws_iam_role_policy_attachment" "ecs_task" {
 # ──────────────────────────────────────────────
 resource "aws_secretsmanager_secret" "database_url" {
   name                    = "${local.prefix}/database-url"
-  recovery_window_in_days = 0
+  recovery_window_in_days = 7
 }
 
 resource "aws_secretsmanager_secret" "app_secret_key" {
   name                    = "${local.prefix}/app-secret-key"
-  recovery_window_in_days = 0
+  recovery_window_in_days = 7
 }
 
 # ──────────────────────────────────────────────
@@ -821,4 +821,123 @@ resource "aws_ecs_service" "worker" {
   lifecycle {
     ignore_changes = [desired_count, task_definition]
   }
+}
+
+# ──────────────────────────────────────────────
+# CloudWatch Alarms — Operational Alerting
+# ──────────────────────────────────────────────
+
+# SNS topic for alarm notifications (configure email/Slack subscription manually)
+resource "aws_sns_topic" "alarms" {
+  name = "${local.prefix}-alarms"
+}
+
+# ALB 5xx error rate (API target group)
+resource "aws_cloudwatch_metric_alarm" "api_5xx" {
+  alarm_name          = "${local.prefix}-api-5xx-high"
+  alarm_description   = "API target group returning elevated 5xx errors"
+  namespace           = "AWS/ApplicationELB"
+  metric_name         = "HTTPCode_Target_5XX_Count"
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 2
+  threshold           = 10
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    LoadBalancer = data.aws_lb.formation.arn_suffix
+    TargetGroup  = aws_lb_target_group.api.arn_suffix
+  }
+
+  alarm_actions = [aws_sns_topic.alarms.arn]
+  ok_actions    = [aws_sns_topic.alarms.arn]
+}
+
+# ALB unhealthy host count (API)
+resource "aws_cloudwatch_metric_alarm" "api_unhealthy" {
+  alarm_name          = "${local.prefix}-api-unhealthy-hosts"
+  alarm_description   = "API target group has unhealthy hosts"
+  namespace           = "AWS/ApplicationELB"
+  metric_name         = "UnHealthyHostCount"
+  statistic           = "Maximum"
+  period              = 60
+  evaluation_periods  = 3
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    LoadBalancer = data.aws_lb.formation.arn_suffix
+    TargetGroup  = aws_lb_target_group.api.arn_suffix
+  }
+
+  alarm_actions = [aws_sns_topic.alarms.arn]
+  ok_actions    = [aws_sns_topic.alarms.arn]
+}
+
+# API response latency P99
+resource "aws_cloudwatch_metric_alarm" "api_latency" {
+  alarm_name          = "${local.prefix}-api-latency-high"
+  alarm_description   = "API P99 latency exceeding 5 seconds"
+  namespace           = "AWS/ApplicationELB"
+  metric_name         = "TargetResponseTime"
+  extended_statistic  = "p99"
+  period              = 300
+  evaluation_periods  = 2
+  threshold           = 5
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    LoadBalancer = data.aws_lb.formation.arn_suffix
+    TargetGroup  = aws_lb_target_group.api.arn_suffix
+  }
+
+  alarm_actions = [aws_sns_topic.alarms.arn]
+  ok_actions    = [aws_sns_topic.alarms.arn]
+}
+
+# ECS API service — task count dropped to 0
+resource "aws_cloudwatch_metric_alarm" "api_running_tasks" {
+  alarm_name          = "${local.prefix}-api-no-running-tasks"
+  alarm_description   = "API service has zero running tasks"
+  namespace           = "ECS/ContainerInsights"
+  metric_name         = "RunningTaskCount"
+  statistic           = "Minimum"
+  period              = 60
+  evaluation_periods  = 2
+  threshold           = 1
+  comparison_operator = "LessThanThreshold"
+  treat_missing_data  = "breaching"
+
+  dimensions = {
+    ClusterName = split("/", var.existing_ecs_cluster_arn)[1]
+    ServiceName = aws_ecs_service.api.name
+  }
+
+  alarm_actions = [aws_sns_topic.alarms.arn]
+  ok_actions    = [aws_sns_topic.alarms.arn]
+}
+
+# ECS Worker service — task count dropped to 0
+resource "aws_cloudwatch_metric_alarm" "worker_running_tasks" {
+  alarm_name          = "${local.prefix}-worker-no-running-tasks"
+  alarm_description   = "Worker service has zero running tasks — background jobs not processing"
+  namespace           = "ECS/ContainerInsights"
+  metric_name         = "RunningTaskCount"
+  statistic           = "Minimum"
+  period              = 60
+  evaluation_periods  = 2
+  threshold           = 1
+  comparison_operator = "LessThanThreshold"
+  treat_missing_data  = "breaching"
+
+  dimensions = {
+    ClusterName = split("/", var.existing_ecs_cluster_arn)[1]
+    ServiceName = aws_ecs_service.worker.name
+  }
+
+  alarm_actions = [aws_sns_topic.alarms.arn]
+  ok_actions    = [aws_sns_topic.alarms.arn]
 }

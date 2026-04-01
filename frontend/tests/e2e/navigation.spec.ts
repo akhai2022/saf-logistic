@@ -16,7 +16,7 @@ test.describe("Navigation & Page Access", () => {
 
   // --- Exploitation ---
 
-  test("should access Jobs page and display Missions title", async ({ page }) => {
+  test("should access Jobs page and display Missions title @critical", async ({ page }) => {
     await page.goto("/jobs");
     await expect(page.locator("h1")).toContainText("Missions");
   });
@@ -143,7 +143,7 @@ test.describe("Navigation & Page Access", () => {
 
   // --- Sidebar Navigation ---
 
-  test("should show sidebar with all sections for admin including parametrage", async ({ page }) => {
+  test("should show sidebar with all sections for admin including parametrage @critical", async ({ page }) => {
     await page.goto("/jobs");
 
     // Exploitation section

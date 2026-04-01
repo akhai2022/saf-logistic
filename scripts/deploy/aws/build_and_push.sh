@@ -24,10 +24,10 @@ for arg in "$@"; do
   esac
 done
 
-# --skip-checks + --deploy is only allowed when called from the Makefile gate
-if [ "$SKIP_CHECKS" = true ] && [ "$DEPLOY" = true ] && [ "$GATED" = false ]; then
-  echo "ERROR: --skip-checks cannot be combined with --deploy directly."
-  echo "       Use 'make aws-prod-redeploy' which runs pre-deploy checks first."
+# --skip-checks is only allowed when called from the Makefile gate (--gated)
+if [ "$SKIP_CHECKS" = true ] && [ "$GATED" = false ]; then
+  echo "ERROR: --skip-checks requires the Makefile pre-deploy gate."
+  echo "       Use 'make aws-prod-build-push' or 'make aws-prod-redeploy'."
   exit 1
 fi
 

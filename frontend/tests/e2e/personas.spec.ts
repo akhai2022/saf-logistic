@@ -28,7 +28,7 @@ import {
  */
 
 test.describe("Persona: Dirigeant (admin)", () => {
-  test("should login and see all sidebar sections including parametrage", async ({ page }) => {
+  test("should login and see all sidebar sections including parametrage @critical", async ({ page }) => {
     await loginAsDirigeant(page);
     await page.goto("/jobs");
 
@@ -180,12 +180,12 @@ test.describe("Persona: Flotte", () => {
 });
 
 test.describe("Persona: Sous-traitant", () => {
-  test("should login successfully and redirect to jobs", async ({ page }) => {
+  test("should login successfully and redirect to jobs @critical", async ({ page }) => {
     await loginAsSousTraitant(page);
     await expect(page).toHaveURL(/\/jobs/);
   });
 
-  test("should see limited sidebar with exploitation section only", async ({ page }) => {
+  test("should see limited sidebar with exploitation section only @critical", async ({ page }) => {
     await loginAsSousTraitant(page);
     await page.goto("/jobs");
     await expect(page.locator("nav >> text=Missions")).toBeVisible();
@@ -193,12 +193,12 @@ test.describe("Persona: Sous-traitant", () => {
 });
 
 test.describe("Persona: Auditeur (lecture seule)", () => {
-  test("should login successfully and redirect to jobs", async ({ page }) => {
+  test("should login successfully and redirect to jobs @critical", async ({ page }) => {
     await loginAsAuditeur(page);
     await expect(page).toHaveURL(/\/jobs/);
   });
 
-  test("should see all sidebar sections for read-only access", async ({ page }) => {
+  test("should see all sidebar sections for read-only access @critical", async ({ page }) => {
     await loginAsAuditeur(page);
     await page.goto("/jobs");
     await expect(page.locator("nav >> text=Missions")).toBeVisible();

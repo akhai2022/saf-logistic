@@ -12,7 +12,7 @@ test.describe("Jobs", () => {
     await loginAsAdmin(page);
   });
 
-  test("should display jobs list page with Missions title", async ({ page }) => {
+  test("should display jobs list page with Missions title @critical", async ({ page }) => {
     await expect(page.locator("h1")).toContainText("Missions");
   });
 

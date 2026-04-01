@@ -15,7 +15,7 @@ test.describe("Invoices Page — Credit Notes", () => {
     await page.goto("/invoices");
   });
 
-  test("should display invoices page with title", async ({ page }) => {
+  test("should display invoices page with title @critical", async ({ page }) => {
     await expect(page.locator("h1")).toContainText("Factures");
     await expect(page.locator("text=Facturation clients")).toBeVisible();
   });
@@ -44,7 +44,7 @@ test.describe("Invoices Page — Credit Notes", () => {
     }
   });
 
-  test("should toggle create invoice form", async ({ page }) => {
+  test("should toggle create invoice form @critical", async ({ page }) => {
     await page.click("button:has-text('Nouvelle facture')");
     await expect(page.locator("text=Créer une facture")).toBeVisible();
     await expect(page.locator("text=Client")).toBeVisible();

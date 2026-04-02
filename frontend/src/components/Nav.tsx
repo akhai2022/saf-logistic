@@ -182,7 +182,7 @@ export default function Nav() {
             </div>
             <div className="space-y-0.5">
               {section.items.map((item) => {
-                const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href + "/"));
+                const active = pathname === item.href || (item.href !== "/" && item.href !== "/fleet" && item.href !== "/reports" && pathname.startsWith(item.href + "/"));
                 return (
                   <Link
                     key={item.href}

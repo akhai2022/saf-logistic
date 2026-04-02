@@ -77,7 +77,7 @@ export default function InfractionsPage() {
 
   const reload = useCallback(() => {
     setLoading(true);
-    apiGet<RawInfraction[]>(`/v1/operations/infractions?year=${year}&limit=500`)
+    apiGet<RawInfraction[]>(`/v1/operations/infractions?year=${year}&limit=200`)
       .then(setRawData)
       .catch(() => setRawData([]))
       .finally(() => setLoading(false));

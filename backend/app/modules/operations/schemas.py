@@ -52,6 +52,8 @@ class ComplaintOut(BaseModel):
     contact_name: str | None = None
     subject: str
     driver_id: str | None = None
+    driver_nom: str | None = None
+    driver_prenom: str | None = None
     severity: str = "NORMAL"
     status: str = "OUVERTE"
     resolution: str | None = None
@@ -74,6 +76,9 @@ class InfractionOut(BaseModel):
     id: str
     tenant_id: str
     driver_id: str
+    driver_matricule: str | None = None
+    driver_nom: str | None = None
+    driver_prenom: str | None = None
     year: int
     month: int
     infraction_count: int = 0

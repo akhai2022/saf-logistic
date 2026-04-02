@@ -125,8 +125,8 @@ async def driver_planning(
             job_id=str(m.job_id), numero=m.numero,
             client_name=m.client_name,
             statut=m.status or "BROUILLON",
-            start=str(m.date_chargement_prevue) if m.date_chargement_prevue else "",
-            end=str(m.date_livraison_prevue) if m.date_livraison_prevue else "",
+            start=m.date_chargement_prevue.isoformat() if m.date_chargement_prevue else "",
+            end=m.date_livraison_prevue.isoformat() if m.date_livraison_prevue else "",
             type_mission=m.type_mission,
             is_subcontracted=bool(m.is_subcontracted),
         ))
@@ -187,8 +187,8 @@ async def vehicle_planning(
             job_id=str(m.job_id), numero=m.numero,
             client_name=m.client_name,
             statut=m.status or "BROUILLON",
-            start=str(m.date_chargement_prevue) if m.date_chargement_prevue else "",
-            end=str(m.date_livraison_prevue) if m.date_livraison_prevue else "",
+            start=m.date_chargement_prevue.isoformat() if m.date_chargement_prevue else "",
+            end=m.date_livraison_prevue.isoformat() if m.date_livraison_prevue else "",
             type_mission=m.type_mission,
             is_subcontracted=bool(m.is_subcontracted),
         ))
@@ -231,7 +231,9 @@ async def check_availability(
         for r in rows:
             conflicts.append(TimeBlock(
                 job_id=str(r.id), numero=r.numero, client_name=r.client_name,
-                statut=r.status, start=str(r.date_chargement_prevue), end=str(r.date_livraison_prevue),
+                statut=r.status,
+                start=r.date_chargement_prevue.isoformat() if r.date_chargement_prevue else "",
+                end=r.date_livraison_prevue.isoformat() if r.date_livraison_prevue else "",
                 type_mission=r.type_mission,
             ))
 
@@ -250,7 +252,9 @@ async def check_availability(
         for r in rows:
             conflicts.append(TimeBlock(
                 job_id=str(r.id), numero=r.numero, client_name=r.client_name,
-                statut=r.status, start=str(r.date_chargement_prevue), end=str(r.date_livraison_prevue),
+                statut=r.status,
+                start=r.date_chargement_prevue.isoformat() if r.date_chargement_prevue else "",
+                end=r.date_livraison_prevue.isoformat() if r.date_livraison_prevue else "",
                 type_mission=r.type_mission,
             ))
 
@@ -290,8 +294,8 @@ async def validate_assignment(
             avail = await check_availability(
                 AvailabilityCheck(
                     driver_id=body.driver_id,
-                    start=str(job.date_chargement_prevue) if job.date_chargement_prevue else str(date.today()),
-                    end=str(job.date_livraison_prevue) if job.date_livraison_prevue else str(date.today()),
+                    start=job.date_chargement_prevue.isoformat() if job.date_chargement_prevue else date.today().isoformat(),
+                    end=job.date_livraison_prevue.isoformat() if job.date_livraison_prevue else date.today().isoformat(),
                 ),
                 tenant=tenant, user=user, db=db,
             )
@@ -342,8 +346,8 @@ async def validate_assignment(
             avail = await check_availability(
                 AvailabilityCheck(
                     vehicle_id=body.vehicle_id,
-                    start=str(job.date_chargement_prevue) if job.date_chargement_prevue else str(date.today()),
-                    end=str(job.date_livraison_prevue) if job.date_livraison_prevue else str(date.today()),
+                    start=job.date_chargement_prevue.isoformat() if job.date_chargement_prevue else date.today().isoformat(),
+                    end=job.date_livraison_prevue.isoformat() if job.date_livraison_prevue else date.today().isoformat(),
                 ),
                 tenant=tenant, user=user, db=db,
             )

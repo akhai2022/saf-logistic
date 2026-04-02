@@ -51,6 +51,8 @@ def _complaint_from_row(r) -> ComplaintOut:
         contact_name=r.contact_name,
         subject=r.subject,
         driver_id=str(r.driver_id) if r.driver_id else None,
+        driver_nom=getattr(r, "driver_nom", None),
+        driver_prenom=getattr(r, "driver_prenom", None),
         severity=r.severity,
         status=r.status,
         resolution=r.resolution,
@@ -64,6 +66,9 @@ def _infraction_from_row(r) -> InfractionOut:
         id=str(r.id),
         tenant_id=str(r.tenant_id),
         driver_id=str(r.driver_id),
+        driver_matricule=getattr(r, "driver_matricule", None),
+        driver_nom=getattr(r, "driver_nom", None),
+        driver_prenom=getattr(r, "driver_prenom", None),
         year=r.year,
         month=r.month,
         infraction_count=r.infraction_count,
@@ -124,7 +129,10 @@ async def list_complaints(
     offset: int = Query(0, ge=0),
 ) -> list[ComplaintOut]:
     """List customer complaints for the tenant."""
-    q = "SELECT * FROM customer_complaints WHERE tenant_id = :tid"
+    q = """SELECT c.*, d.nom AS driver_nom, d.prenom AS driver_prenom
+           FROM customer_complaints c
+           LEFT JOIN drivers d ON d.id = c.driver_id
+           WHERE c.tenant_id = :tid"""
     params: dict = {"tid": str(tenant.tenant_id)}
     if status:
         if status not in COMPLAINT_STATUSES:
@@ -132,9 +140,9 @@ async def list_complaints(
                 422,
                 f"Statut invalide. Valeurs: {', '.join(sorted(COMPLAINT_STATUSES))}",
             )
-        q += " AND status = :status"
+        q += " AND c.status = :status"
         params["status"] = status
-    q += " ORDER BY created_at DESC LIMIT :limit OFFSET :offset"
+    q += " ORDER BY c.created_at DESC LIMIT :limit OFFSET :offset"
     params["limit"] = limit
     params["offset"] = offset
     rows = await db.execute(text(q), params)
@@ -201,15 +209,18 @@ async def list_infractions(
     offset: int = Query(0, ge=0),
 ) -> list[InfractionOut]:
     """List driver infraction records for the tenant."""
-    q = "SELECT * FROM driver_infractions WHERE tenant_id = :tid"
+    q = """SELECT i.*, d.matricule AS driver_matricule, d.nom AS driver_nom, d.prenom AS driver_prenom
+           FROM driver_infractions i
+           LEFT JOIN drivers d ON d.id = i.driver_id
+           WHERE i.tenant_id = :tid"""
     params: dict = {"tid": str(tenant.tenant_id)}
     if driver_id:
-        q += " AND driver_id = :driver_id"
+        q += " AND i.driver_id = :driver_id"
         params["driver_id"] = driver_id
     if year:
-        q += " AND year = :year"
+        q += " AND i.year = :year"
         params["year"] = year
-    q += " ORDER BY year DESC, month DESC LIMIT :limit OFFSET :offset"
+    q += " ORDER BY i.year DESC, i.month DESC LIMIT :limit OFFSET :offset"
     params["limit"] = limit
     params["offset"] = offset
     rows = await db.execute(text(q), params)

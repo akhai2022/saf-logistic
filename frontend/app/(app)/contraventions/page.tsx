@@ -77,7 +77,7 @@ export default function ContraventionsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="gavel" title="Contraventions" description="Suivi des contraventions et amendes">
+      <PageHeader icon="gavel" title="Contraventions" count={items.length} loading={loading} description="Suivi des contraventions et amendes">
         <Button icon="add" onClick={() => setShowForm(!showForm)}>
           Ajouter
         </Button>

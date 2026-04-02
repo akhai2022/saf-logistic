@@ -64,7 +64,7 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="business" title="Clients" description="Gestion de vos clients">
+      <PageHeader icon="business" title="Clients" count={clients.length} loading={loading} description="Gestion de vos clients">
         <Button onClick={() => setShowCreate(!showCreate)} icon={showCreate ? "close" : "add"}>
           {showCreate ? "Annuler" : "Nouveau client"}
         </Button>

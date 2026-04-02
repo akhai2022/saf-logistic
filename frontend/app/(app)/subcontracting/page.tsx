@@ -116,7 +116,7 @@ export default function SubcontractingPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="handshake" title="Affretement" description="Gestion des offres sous-traitants">
+      <PageHeader icon="handshake" title="Affretement" count={offers.length} loading={loading} description="Gestion des offres sous-traitants">
         <Button
           onClick={() => setShowCreate(!showCreate)}
           icon={showCreate ? "close" : "add"}

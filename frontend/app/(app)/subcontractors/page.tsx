@@ -57,7 +57,7 @@ export default function SubcontractorsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="handshake" title="Sous-traitants" description="Gestion des sous-traitants">
+      <PageHeader icon="handshake" title="Sous-traitants" count={items.length} loading={loading} description="Gestion des sous-traitants">
         <Button onClick={() => setShowCreate(!showCreate)} icon={showCreate ? "close" : "add"}>
           {showCreate ? "Annuler" : "Nouveau sous-traitant"}
         </Button>

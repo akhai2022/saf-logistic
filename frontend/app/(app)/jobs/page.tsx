@@ -85,7 +85,7 @@ export default function JobsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="local_shipping" title="Missions" description="Gestion des missions de transport">
+      <PageHeader icon="local_shipping" title="Missions" count={missions.length} loading={loading} description="Gestion des missions de transport">
         <Button onClick={() => setShowCreate(!showCreate)} icon={showCreate ? "close" : "add"}>
           {showCreate ? "Annuler" : "Nouvelle mission"}
         </Button>

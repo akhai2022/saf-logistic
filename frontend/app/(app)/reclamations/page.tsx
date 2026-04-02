@@ -75,7 +75,7 @@ export default function ReclamationsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="feedback" title="Reclamations" description="Suivi des reclamations clients">
+      <PageHeader icon="feedback" title="Reclamations" count={items.length} loading={loading} description="Suivi des reclamations clients">
         <Button icon="add" onClick={() => setShowForm(!showForm)}>
           Ajouter
         </Button>

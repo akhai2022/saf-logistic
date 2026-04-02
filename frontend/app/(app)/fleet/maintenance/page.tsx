@@ -93,7 +93,7 @@ export default function MaintenanceListPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Maintenance" icon="build" description="Vue d'ensemble des interventions de maintenance">
+      <PageHeader title="Maintenance" icon="build" count={records.length} loading={loading} description="Vue d'ensemble des interventions de maintenance">
         <Button onClick={() => setShowCreate(!showCreate)} icon={showCreate ? "close" : "add"}>
           {showCreate ? "Annuler" : "Nouvelle intervention"}
         </Button>

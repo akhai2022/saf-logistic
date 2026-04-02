@@ -98,7 +98,7 @@ export default function ClaimsListPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Sinistres" icon="car_crash" description="Gestion des sinistres et accidents vehicules">
+      <PageHeader title="Sinistres" count={claims.length} loading={loading} icon="car_crash" description="Gestion des sinistres et accidents vehicules">
         <Button onClick={() => setShowCreate(!showCreate)} icon={showCreate ? "close" : "add"}>
           {showCreate ? "Annuler" : "Declarer un sinistre"}
         </Button>

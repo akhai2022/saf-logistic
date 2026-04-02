@@ -181,7 +181,7 @@ export default function RouteRunsPage() {
     <div className="space-y-6">
       <PageHeader
         icon="play_circle"
-        title="Executions"
+        title="Executions" count={runs.length} loading={loading}
         description="Tournees du jour et executions operationnelles"
       />
 

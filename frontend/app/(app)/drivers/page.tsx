@@ -80,7 +80,7 @@ export default function DriversPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="person" title="Conducteurs" description="Gestion des conducteurs">
+      <PageHeader icon="person" title="Conducteurs" count={drivers.length} loading={loading} description="Gestion des conducteurs">
         <Button onClick={() => setShowCreate(!showCreate)} icon={showCreate ? "close" : "add"}>
           {showCreate ? "Annuler" : "Nouveau conducteur"}
         </Button>

@@ -31,7 +31,7 @@ export default function SupplierInvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="inventory_2" title="Factures Fournisseurs" description="Factures fournisseurs validées" />
+      <PageHeader icon="inventory_2" title="Factures Fournisseurs" count={invoices.length} loading={loading} description="Factures fournisseurs validées" />
       <p className="text-gray-500 text-sm flex items-center gap-2">
         <span className="material-symbols-outlined icon-sm">info</span>
         Les factures fournisseurs sont créées automatiquement après validation OCR.

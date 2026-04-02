@@ -64,7 +64,7 @@ export default function DisputesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="gavel" title="Litiges" description="Suivi des litiges transport">
+      <PageHeader icon="gavel" title="Litiges" count={disputes.length} loading={loading} description="Suivi des litiges transport">
         <Link href="/jobs" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
           <span className="material-symbols-outlined icon-sm">add</span>
           Nouveau litige (depuis mission)

@@ -67,7 +67,7 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="receipt_long" title="Factures" description="Facturation clients">
+      <PageHeader icon="receipt_long" title="Factures" count={invoices.length} loading={loading} description="Facturation clients">
         <Button onClick={() => setShowCreate(!showCreate)} icon={showCreate ? "close" : "add"}>
           {showCreate ? "Annuler" : "Nouvelle facture"}
         </Button>

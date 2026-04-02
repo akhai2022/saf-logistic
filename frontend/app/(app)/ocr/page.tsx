@@ -299,7 +299,7 @@ export default function OcrPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="document_scanner" title="OCR Documents" description="Numérisation et extraction automatique de documents">
+      <PageHeader icon="document_scanner" title="OCR Documents" count={jobs.length} loading={loading} description="Numérisation et extraction automatique de documents">
         <FilePicker onFileSelected={handleUpload} accept="application/pdf,image/*" uploading={uploading} label="Scanner un document" />
       </PageHeader>
 

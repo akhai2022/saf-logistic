@@ -105,7 +105,7 @@ export default function PricingPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="sell" title="Tarifs" description="Regles de tarification">
+      <PageHeader icon="sell" title="Tarifs" count={rules.length} description="Regles de tarification">
         <Button onClick={() => { setShowCreate(!showCreate); setEditingId(null); setForm(EMPTY_FORM); }} icon={showCreate ? "close" : "add"}>
           {showCreate ? "Annuler" : "Nouveau tarif"}
         </Button>

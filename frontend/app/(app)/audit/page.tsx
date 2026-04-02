@@ -33,7 +33,7 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="history" title="Journal d'audit" description="Historique des actions" />
+      <PageHeader icon="history" title="Journal d'audit" count={logs.length} loading={loading} description="Historique des actions" />
 
       <Card>
         <div className="flex flex-wrap gap-3 mb-4">

@@ -73,7 +73,7 @@ export default function VehiclesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="directions_car" title="Véhicules" description="Gestion de la flotte">
+      <PageHeader icon="directions_car" title="Véhicules" count={vehicles.length} loading={loading} description="Gestion de la flotte">
         <Button onClick={() => setShowCreate(!showCreate)} icon={showCreate ? "close" : "add"}>
           {showCreate ? "Annuler" : "Nouveau véhicule"}
         </Button>

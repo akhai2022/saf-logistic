@@ -113,7 +113,7 @@ export default function RouteTemplatesPage() {
     <div className="space-y-6">
       <PageHeader
         icon="repeat"
-        title="Tournees modeles"
+        title="Tournees modeles" count={templates.length} loading={loading}
         description="Gerer les modeles de tournees recurrentes"
       />
 

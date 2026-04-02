@@ -94,7 +94,7 @@ export default function CongesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon="event_available" title="Conges" description="Gestion des conges et absences conducteurs">
+      <PageHeader icon="event_available" title="Conges" count={items.length} loading={loading} description="Gestion des conges et absences conducteurs">
         <Button icon="add" onClick={() => setShowForm(!showForm)}>
           Ajouter
         </Button>
